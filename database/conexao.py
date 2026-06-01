@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 load_dotenv(dotenv_path="database.env")
 
 url: str = os.environ.get("SUPABASE_URL")
-key: str = os.environ.get("SUPABASE_KEY")
+key: str = os.environ.get("service_role")
 
 if not url or not key:
     raise ValueError(
