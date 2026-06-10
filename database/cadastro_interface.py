@@ -56,3 +56,4 @@ if __name__ == '__main__':
     print("🚀 Servidor do Spa iniciado!")
     print("👉 Acesse no seu navegador: http://127.0.0.1:5000")
     app.run(debug=True, port=5000)
+    
