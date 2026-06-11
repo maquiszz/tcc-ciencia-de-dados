@@ -72,6 +72,46 @@ def listar_servicos():
         return jsonify({"error": "Erro ao ler a tabela de serviços do banco de dados."}), 500
 
 
+@app.route('/api/agendar', methods=['POST'])
+def criar_agendamento():
+    dados = request.json
+    email = dados.get('email')
+    servico_id = dados.get('servico_id')
+    data_atendimento = dados.get('data')
+
+    if not email or not servico_id or not data_atendimento:
+        return jsonify({"error": "Todos os campos são obrigatórios."}), 400
+
+    try:
+        # 🔍 1. VALIDAÇÃO: Verifica se o e-mail existe na tabela 'usuarios'
+        usuario_existe = supabase.table("usuarios").select("email").eq("email", email).execute()
+        
+        # Se a lista de dados retornar vazia, significa que o e-mail não está cadastrado
+        if not usuario_existe.data:
+            return jsonify({
+                "error": "Usuário Inexistente. Por favor, faça o seu cadastro na aba 'Cadastro' antes de agendar um atendimento."
+            }), 404
+
+        # 📅 2. Se o usuário existir, prossegue com o agendamento normal
+        supabase.table("agendamentos").insert({
+            "email_cliente": email,
+            "servico_id": servico_id,
+            "data_atendimento": data_atendimento
+        }).execute()
+
+        # 📊 3. Busca a quantidade atual de contratos do serviço para atualizar
+        servico_atual = supabase.table("servico").select("contratos").eq("id", servico_id).single().execute()
+        contratos_atuais = servico_atual.data.get('contratos', 0) if servico_atual.data else 0
+        
+        # 📈 4. Atualiza a tabela 'servico' somando +1 contrato
+        supabase.table("servico").update({"contratos": contratos_atuais + 1}).eq("id", servico_id).execute()
+
+        print(f"🎉 Novo agendamento realizado por {email} para o serviço ID {servico_id}")
+        return jsonify({"message": "Agendamento realizado com sucesso!"}), 201
+
+    except Exception as e:
+        print(f"❌ Erro ao processar agendamento: {e}")
+        return jsonify({"error": "Erro ao salvar o agendamento no banco de dados."}), 500
 # ==============================================================================
 # --- 🚀 INICIALIZAÇÃO DO SERVIDOR ---
 # ==============================================================================
