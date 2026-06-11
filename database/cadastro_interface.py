@@ -3,71 +3,85 @@ from flask import Flask, request, jsonify, send_from_directory
 from dotenv import load_dotenv
 from supabase import create_client, Client
 
-# Inicializa o servidor web Flask
 app = Flask(__name__)
 
-# --- CARREGAMENTO DO BACKEND (SUPABASE) ---
+# 📌 Carrega o arquivo de configuração diretamente da raiz do projeto
 load_dotenv(dotenv_path="database.env")
 
 url = os.environ.get("SUPABASE_URL")
-# Usa a service_role (ou SUPABASE_KEY com RLS liberado) para evitar erro 42501
-key = os.environ.get("service_role")
+key = os.environ.get("service_role") or os.environ.get("SUPABASE_KEY")
+
+# Validação das credenciais antes de iniciar o servidor
 if not url or not key:
-    print("❌ ERRO: Verifique se as credenciais estão corretas no database.env!")
+    print("❌ ERRO CRÍTICO: Credenciais ausentes no database.env!")
     exit()
 
+# Cria a conexão oficial com o Supabase
 supabase: Client = create_client(url, key)
 
-# --- ROTA 1: Serve a página visual (HTML/CSS) ---
+
+# ==============================================================================
+# --- 🌍 ROTAS DE PÁGINAS VISUAIS (HTML) ---
+# ==============================================================================
+
 @app.route('/')
 def pagina_principal():
-    # Busca o index.html na mesma pasta do script
+    """A PÁGINA INICIAL DO LINK ENTREGA O CATÁLOGO (servicos.html)"""
+    return send_from_directory('.', 'servicos.html')
+
+
+@app.route('/cadastro')
+def pagina_cadastro():
+    """A PÁGINA DE CADASTRO FICA NO CAMINHO /cadastro (index.html)"""
     return send_from_directory('.', 'index.html')
 
-# --- ROTA 2: Recebe os dados do formulário e envia ao Supabase ---
+
+# ==============================================================================
+# --- ⚙️ ROTAS DE PROCESSAMENTO DE DADOS (API) ---
+# ==============================================================================
+
 @app.route('/cadastrar', methods=['POST'])
 def cadastrar():
-    dados_recebidos = request.json
-    nome = dados_recebidos.get('nome')
-    email = dados_recebidos.get('email')
-    servico = dados_recebidos.get('servico')
+    """Recebe os dados do formulário e grava na tabela 'usuarios' do Supabase"""
+    dados = request.json
+    nome = dados.get('nome')
+    email = dados.get('email')
 
     if not nome or not email:
-        return jsonify({"error": "Nome e e-mail são campos obrigatórios."}), 400
-
-    # Estrutura para salvar no banco
-    dados_usuario = {
-        "nome": nome,
-        "email": email
-        # Se sua tabela no Supabase aceitar o campo de serviço, descomente a linha abaixo:
-        # "servico": servico
-    }
+        return jsonify({"error": "Nome e e-mail são obrigatórios."}), 400
 
     try:
-        # Executa o insert no Supabase
-        supabase.table("usuarios").insert(dados_usuario).execute()
-        return jsonify({"message": "Usuário cadastrado com sucesso!"}), 201
+        # Executa a inserção no Supabase
+        supabase.table("usuarios").insert({"nome": nome, "email": email}).execute()
+        print(f"✅ Usuário gravado com sucesso no Supabase: {nome}")
+        return jsonify({"message": "Cadastrado com sucesso!"}), 201
+        
     except Exception as e:
-        print(f"Erro no banco: {e}")
-        return jsonify({"error": "Erro ao salvar no banco de dados. Verifique a política RLS."}), 500
+        print(f"❌ Erro interno ao salvar no banco: {e}")
+        return jsonify({"error": "Não foi possível completar o cadastro no banco de dados."}), 500
 
-# Inicializa o servidor local
-# --- ROTA 3: Busca os serviços disponíveis no Supabase ---
+
 @app.route('/api/servicos', methods=['GET'])
 def listar_servicos():
+    """Busca os dados da tabela 'servico' (no singular) do Supabase"""
     try:
-        # Busca todos os dados da tabela 'servicos' ordenados pelo id
-        resposta = supabase.table("servicos").select("*").order("id").execute()
+        resposta = supabase.table("servico").select("*").execute()
         return jsonify(resposta.data), 200
     except Exception as e:
-        print(f"Erro ao buscar serviços: {e}")
-        return jsonify({"error": "Não foi possível carregar os serviços."}), 500
+        print(f"❌ Erro ao buscar serviços no Supabase: {e}")
+        return jsonify({"error": "Erro ao ler a tabela de serviços do banco de dados."}), 500
+
+
+# ==============================================================================
+# --- 🚀 INICIALIZAÇÃO DO SERVIDOR ---
+# ==============================================================================
 if __name__ == '__main__':
-    print("🚀 Servidor do Spa iniciado!")
-    print("👉 Acesse no seu navegador: http://127.0.0.1:5000")
-    app.run(debug=True, port=5000)
+    print("\n" + "="*50)
+    print("🚀 SERVIDOR ZENITH SPA INICIADO COM SUCESSO!")
+    print("="*50)
+    print("👉 Página Inicial (Catálogo): http://127.0.0.1:5000")
+    print("👉 Página Secundária (Cadastro): http://127.0.0.1:5000/cadastro")
+    print("="*50 + "\n")
     
-# --- ROTA 4: Serve a página do catálogo de serviços ---
-@app.route('/servicos')
-def pagina_servicos():
-    return send_from_directory('.', 'servicos.html')
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port)
