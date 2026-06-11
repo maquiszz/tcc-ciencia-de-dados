@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zenith Spa - Serviços</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        header h1 {
+            color: #333;
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+
+        header p {
+            color: #666;
+            font-size: 16px;
+        }
+
+        /* Grade que organiza os cards */
+        .grid-servicos {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 30px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        /* Estilo do Card */
+        .card {
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(0,0,0,0.1);
+        }
+
+        .card img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+        }
+
+        .card-conteudo {
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1;
+            justify-content: space-between;
+        }
+
+        .card-titulo {
+            font-size: 20px;
+            color: #333;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .card-preco {
+            font-size: 22px;
+            color: #2b6cb0;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+
+        .card-contratos {
+            font-size: 12px;
+            color: #718096;
+            margin-bottom: 15px;
+            font-style: italic;
+        }
+
+        .btn-contratar {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        .btn-contratar:hover {
+            opacity: 0.9;
+        }
+
+        #mensagem-erro {
+            text-align: center;
+            color: #e53e3e;
+            font-weight: bold;
+            grid-column: 1 / -1;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>✨ Nossos Serviços Realçantes ✨</h1>
+        <p>Escolha a melhor experiência para o seu dia de bem-estar</p>
+    </header>
+
+    <main class="grid-servicos" id="container-servicos">
+        <p style="text-align: center; grid-column: 1/-1;">⏳ Carregando catálogo de bem-estar...</p>
+    </main>
+
+    <script>
+        // Função que busca os dados do backend e monta a tela
+        async function carregarServicos() {
+            const container = document.getElementById('container-servicos');
+            
+            try {
+                const response = await fetch('/api/servicos');
+                if (!response.ok) throw new Error();
+                
+                const servicos = await response.json();
+                container.innerHTML = ''; // Limpa o texto de "Carregando"
+
+                if (servicos.length === 0) {
+                    container.innerHTML = '<p style="text-align: center; grid-column: 1/-1;">Nenhum serviço disponível no momento.</p>';
+                    return;
+                }
+
+                // Loop para criar o HTML de cada card dinamicamente
+                servicos.forEach(servico => {
+                    const cardHtml = `
+                        <div class="card">
+                            <img src="${servico.imagem_url || 'https://via.placeholder.com/300x200'}" alt="${servico.tipo}">
+                            <div class="card-conteudo">
+                                <div>
+                                    <h2 class="card-titulo">${servico.tipo}</h2>
+                                    <p class="card-preco">R$ ${parseFloat(servico.valor).toFixed(2).replace('.', ',')}</p>
+                                </div>
+                                <div>
+                                    <p class="card-contratos">Contratado ${servico.contratos} vezes</p>
+                                    <button class="btn-contratar">Agendar Serviço</button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    container.innerHTML += cardHtml;
+                });
+
+            } catch (error) {
+                container.innerHTML = '<p id="mensagem-erro">❌ Erro ao carregar os serviços. Tente novamente mais tarde.</p>';
+            }
+        }
+
+        // Executa a função assim que a página abre
+        window.onload = carregarServicos;
+    </script>
+</body>
+</html>

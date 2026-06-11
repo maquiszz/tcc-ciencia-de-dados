@@ -52,8 +52,22 @@ def cadastrar():
         return jsonify({"error": "Erro ao salvar no banco de dados. Verifique a política RLS."}), 500
 
 # Inicializa o servidor local
+# --- ROTA 3: Busca os serviços disponíveis no Supabase ---
+@app.route('/api/servicos', methods=['GET'])
+def listar_servicos():
+    try:
+        # Busca todos os dados da tabela 'servicos' ordenados pelo id
+        resposta = supabase.table("servicos").select("*").order("id").execute()
+        return jsonify(resposta.data), 200
+    except Exception as e:
+        print(f"Erro ao buscar serviços: {e}")
+        return jsonify({"error": "Não foi possível carregar os serviços."}), 500
 if __name__ == '__main__':
     print("🚀 Servidor do Spa iniciado!")
     print("👉 Acesse no seu navegador: http://127.0.0.1:5000")
     app.run(debug=True, port=5000)
     
+# --- ROTA 4: Serve a página do catálogo de serviços ---
+@app.route('/servicos')
+def pagina_servicos():
+    return send_from_directory('.', 'servicos.html')
