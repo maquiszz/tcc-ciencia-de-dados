@@ -5,20 +5,37 @@ from supabase import create_client, Client
 
 app = Flask(__name__)
 
-# 📌 Carrega o arquivo de configuração diretamente da raiz do projeto
-load_dotenv(dotenv_path="database.env")
+# ==============================================================================
+# --- 🔑 CONFIGURAÇÃO FIXA DO BANCO VIA TCC-CIENCIA-DE-DADOS ---
+# ==============================================================================
 
-url = os.environ.get("SUPABASE_URL")
-key = os.environ.get("service_role") or os.environ.get("SUPABASE_KEY")
+# Pega o caminho da pasta 'database' (onde este script está)
+diretorio_do_script = os.path.dirname(os.path.abspath(__file__))
 
-# Validação das credenciais antes de iniciar o servidor
-if not url or not key:
-    print("❌ ERRO CRÍTICO: Credenciais ausentes no database.env!")
+# Sobe um nível para chegar na pasta principal 'tcc-ciencia-de-dados'
+raiz_do_projeto = os.path.dirname(diretorio_do_script)
+
+# Aponta direto para o arquivo database.env na raiz correta
+caminho_env = os.path.join(raiz_do_projeto, "database.env")
+
+if not os.path.exists(caminho_env):
+    print("\n❌ ERRO CRÍTICO: Arquivo 'database.env' não existe na raiz do projeto!")
+    print(f"👉 Caminho procurado: {caminho_env}")
     exit()
 
-# Cria a conexão oficial com o Supabase
-supabase: Client = create_client(url, key)
+# Carrega o arquivo correto
+load_dotenv(dotenv_path=caminho_env)
 
+url = os.environ.get("SUPABASE_URL")
+key = os.environ.get("SUPABASE_KEY")
+
+if not url or not key:
+    print("\n❌ ERRO CRÍTICO: O arquivo 'database.env' foi aberto na raiz, mas as variáveis estão vazias!")
+    print("👉 Abra o arquivo no VS Code, preencha as chaves e lembre-se de salvar com Ctrl+S.")
+    exit()
+
+# Conecta ao Supabase
+supabase: Client = create_client(url, key)
 
 # ==============================================================================
 # --- 🌍 ROTAS DE PÁGINAS VISUAIS (HTML) ---
@@ -26,15 +43,14 @@ supabase: Client = create_client(url, key)
 
 @app.route('/')
 def pagina_principal():
-    """A PÁGINA INICIAL DO LINK ENTREGA O CATÁLOGO (servicos.html)"""
-    return send_from_directory('.', 'servicos.html')
+    """Busca o servicos.html obrigatoriamente na pasta database"""
+    return send_from_directory(diretorio_do_script, 'servicos.html')
 
 
 @app.route('/cadastro')
 def pagina_cadastro():
-    """A PÁGINA DE CADASTRO FICA NO CAMINHO /cadastro (index.html)"""
-    return send_from_directory('.', 'index.html')
-
+    """Busca o index.html obrigatoriamente na pasta database"""
+    return send_from_directory(diretorio_do_script, 'index.html')
 
 # ==============================================================================
 # --- ⚙️ ROTAS DE PROCESSAMENTO DE DADOS (API) ---
@@ -42,7 +58,6 @@ def pagina_cadastro():
 
 @app.route('/cadastrar', methods=['POST'])
 def cadastrar():
-    """Recebe os dados do formulário e grava na tabela 'usuarios' do Supabase"""
     dados = request.json
     nome = dados.get('nome')
     email = dados.get('email')
@@ -51,25 +66,38 @@ def cadastrar():
         return jsonify({"error": "Nome e e-mail são obrigatórios."}), 400
 
     try:
-        # Executa a inserção no Supabase
         supabase.table("usuarios").insert({"nome": nome, "email": email}).execute()
-        print(f"✅ Usuário gravado com sucesso no Supabase: {nome}")
         return jsonify({"message": "Cadastrado com sucesso!"}), 201
-        
     except Exception as e:
-        print(f"❌ Erro interno ao salvar no banco: {e}")
-        return jsonify({"error": "Não foi possível completar o cadastro no banco de dados."}), 500
+        print(f"❌ Erro ao salvar no banco: {e}")
+        return jsonify({"error": "Erro ao salvar usuário. O e-mail já pode estar em uso."}), 500
+
+
+@app.route('/api/login', methods=['POST'])
+def login():
+    dados = request.json
+    email = dados.get('email')
+
+    if not email:
+        return jsonify({"error": "E-mail é obrigatório."}), 400
+
+    try:
+        usuario = supabase.table("usuarios").select("*").eq("email", email).execute()
+        if not usuario.data:
+            return jsonify({"error": "E-mail não encontrado. Por favor, crie uma conta primeiro."}), 404
+        
+        return jsonify({"message": "Login realizado com sucesso!", "usuario": usuario.data[0]}), 200
+    except Exception as e:
+        return jsonify({"error": "Erro interno no servidor de autenticação."}), 500
 
 
 @app.route('/api/servicos', methods=['GET'])
 def listar_servicos():
-    """Busca os dados da tabela 'servico' (no singular) do Supabase"""
     try:
         resposta = supabase.table("servico").select("*").execute()
         return jsonify(resposta.data), 200
     except Exception as e:
-        print(f"❌ Erro ao buscar serviços no Supabase: {e}")
-        return jsonify({"error": "Erro ao ler a tabela de serviços do banco de dados."}), 500
+        return jsonify({"error": "Erro ao ler a tabela de serviços."}), 500
 
 
 @app.route('/api/agendar', methods=['POST'])
@@ -83,45 +111,80 @@ def criar_agendamento():
         return jsonify({"error": "Todos os campos são obrigatórios."}), 400
 
     try:
-        # 🔍 1. VALIDAÇÃO: Verifica se o e-mail existe na tabela 'usuarios'
         usuario_existe = supabase.table("usuarios").select("email").eq("email", email).execute()
-        
-        # Se a lista de dados retornar vazia, significa que o e-mail não está cadastrado
         if not usuario_existe.data:
-            return jsonify({
-                "error": "Usuário Inexistente. Por favor, faça o seu cadastro na aba 'Cadastro' antes de agendar um atendimento."
-            }), 404
+            return jsonify({"error": "Usuário Inexistente. Crie uma conta antes de agendar."}), 404
 
-        # 📅 2. Se o usuário existir, prossegue com o agendamento normal
         supabase.table("agendamentos").insert({
             "email_cliente": email,
             "servico_id": servico_id,
             "data_atendimento": data_atendimento
         }).execute()
 
-        # 📊 3. Busca a quantidade atual de contratos do serviço para atualizar
+        # Atualiza a contagem de contratos do serviço (+1)
         servico_atual = supabase.table("servico").select("contratos").eq("id", servico_id).single().execute()
         contratos_atuais = servico_atual.data.get('contratos', 0) if servico_atual.data else 0
-        
-        # 📈 4. Atualiza a tabela 'servico' somando +1 contrato
         supabase.table("servico").update({"contratos": contratos_atuais + 1}).eq("id", servico_id).execute()
 
-        print(f"🎉 Novo agendamento realizado por {email} para o serviço ID {servico_id}")
         return jsonify({"message": "Agendamento realizado com sucesso!"}), 201
-
     except Exception as e:
         print(f"❌ Erro ao processar agendamento: {e}")
-        return jsonify({"error": "Erro ao salvar o agendamento no banco de dados."}), 500
-# ==============================================================================
-# --- 🚀 INICIALIZAÇÃO DO SERVIDOR ---
-# ==============================================================================
+        return jsonify({"error": "Erro ao salvar o agendamento no banco."}), 500
+
+
+@app.route('/api/meus-agendamentos', methods=['GET'])
+def meus_agendamentos():
+    email = request.args.get('email')
+    if not email:
+        return jsonify({"error": "E-mail do usuário não informado."}), 400
+
+    try:
+        resposta = supabase.table("agendamentos").select("id, data_atendimento, servico_id, servico(tipo, valor)").eq("email_cliente", email).execute()
+        return jsonify(resposta.data), 200
+    except Exception as e:
+        print(f"❌ Erro ao buscar agendamentos: {e}")
+        return jsonify({"error": "Erro ao carregar a lista de agendamentos."}), 500
+
+
+@app.route('/api/agendamentos/<int:id>', methods=['PUT'])
+def alterar_horario(id):
+    dados = request.json
+    nova_data = dados.get('data')
+
+    if not nova_data:
+        return jsonify({"error": "Nova data/hora é obrigatória."}), 400
+
+    try:
+        supabase.table("agendamentos").update({"data_atendimento": nova_data}).eq("id", id).execute()
+        return jsonify({"message": "Horário atualizado!"}), 200
+    except Exception as e:
+        return jsonify({"error": "Erro ao atualizar horário no banco."}), 500
+
+
+@app.route('/api/agendamentos/<int:id>', methods=['DELETE'])
+def cancelar_agendamento(id):
+    try:
+        supabase.table("agendamentos").delete().eq("id", id).execute()
+        return jsonify({"message": "Agendamento cancelado!"}), 200
+    except Exception as e:
+        return jsonify({"error": "Erro ao cancelar agendamento no banco."}), 500
+
+
+# Bloqueia o cache para desenvolvimento
+@app.after_request
+def adicionar_cabecalhos_sem_cache(resposta):
+    resposta.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    resposta.headers["Pragma"] = "no-cache"
+    resposta.headers["Expires"] = "0"
+    return resposta
+
+
 if __name__ == '__main__':
-    print("\n" + "="*50)
-    print("🚀 SERVIDOR ZENITH SPA INICIADO COM SUCESSO!")
-    print("="*50)
-    print("👉 Página Inicial (Catálogo): http://127.0.0.1:5000")
-    print("👉 Página Secundária (Cadastro): http://127.0.0.1:5000/cadastro")
-    print("="*50 + "\n")
+    print("\n" + "═"*50)
+    print(" 🌿 SERVIDOR PANACEIA SPA INICIADO COM SUCESSO! 🌿")
+    print("═"*50)
+    print(f" 👉 Carregando chaves de: {caminho_env}")
+    print(" 👉 Link da Plataforma: http://127.0.0.1:5002")
+    print("═"*50 + "\n")
     
-    port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port)
+    app.run(host='0.0.0.0', port=5002, debug=True)
