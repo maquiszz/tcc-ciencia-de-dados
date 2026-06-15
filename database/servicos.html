@@ -24,7 +24,7 @@
         header { text-align: center; margin-bottom: 40px; }
         header h1 { color: #333; font-size: 32px; margin-bottom: 10px; }
         header p { color: #666; font-size: 16px; }
-
+ 
         /* 🔐 ÁREA DE AUTENTICAÇÃO */
         .auth-container {
             background: white; padding: 20px; border-radius: 15px; margin-bottom: 30px;
@@ -34,7 +34,7 @@
         .auth-container button { width: 100%; padding: 10px; background: #6a11cb; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 5px; }
         .auth-toggle { font-size: 13px; color: #2575fc; cursor: pointer; margin-top: 10px; display: inline-block; }
         .user-logado { display: none; background: #e2f0d9; padding: 10px; border-radius: 8px; color: #385723; font-weight: bold; margin-bottom: 20px; text-align: center; width: 100%; max-width: 400px; }
-
+ 
         /* 📦 SEÇÕES VISUAIS */
         .secao-conteudo { width: 100%; max-width: 1200px; display: none; }
         .secao-conteudo.ativa { display: block; }
@@ -67,35 +67,44 @@
         .item-agendamento-acoes { display: flex; gap: 10px; }
         .btn-remarcar { background: #f39c12; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; }
         .btn-cancelar { background: #e74c3c; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; }
-
+ 
         /* 🗓️ ESTILOS DOS MODAIS */
         .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.5); display: none; justify-content: center; align-items: center;
-            backdrop-filter: blur(5px); z-index: 1000;
+            background: rgba(0, 0, 0, 0.4); display: none; justify-content: center; align-items: center;
+            backdrop-filter: blur(6px); z-index: 1000;
         }
         .modal-box {
-            background: white; padding: 30px; border-radius: 15px; width: 90%; max-width: 400px;
-            box-shadow: 0 5px 25px rgba(0,0,0,0.2); text-align: center; position: relative;
+            background: rgba(255, 255, 255, 0.95); padding: 30px; border-radius: 20px; width: 90%; max-width: 420px;
+            box-shadow: 0 15px 35px rgba(31, 38, 135, 0.15); text-align: center; position: relative;
+            border: 1px solid rgba(255, 255, 255, 0.2);
         }
-        .modal-box h3 { margin-bottom: 15px; color: #333; }
+        .modal-box h3 { margin-bottom: 15px; color: #333; font-size: 22px; }
         .modal-box label { display: block; text-align: left; margin: 12px 0 5px; font-size: 14px; font-weight: 600; color: #555; }
-        .modal-box input { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; }
+        .modal-box input { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 8px; font-size: 14px; }
         .btn-confirmar { width: 100%; padding: 12px; background: #2ecc71; color: white; border: none; border-radius: 8px; font-size: 15px; font-weight: bold; cursor: pointer; margin-top: 20px; }
-        .btn-fechar { position: absolute; top: 10px; right: 15px; background: none; border: none; font-size: 20px; cursor: pointer; color: #aaa; }
+        .btn-fechar { position: absolute; top: 12px; right: 15px; background: none; border: none; font-size: 24px; cursor: pointer; color: #aaa; }
+        .btn-fechar:hover { color: #333; }
+
+        /* ✨ INTERFACE DE NOTIFICAÇÕES CUSTOMIZADAS ✨ */
+        .modal-icone font-size: 45px; margin-bottom: 15px; display: block; }
+        .modal-mensagem { color: #555; font-size: 15px; line-height: 1.6; margin-bottom: 10px; }
+        
+        .btn-modal-neutro { background: #6a11cb; color: white; padding: 12px 25px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 15px; width: 100%; }
+        .btn-modal-cancelar-sim { background: #e74c3c; color: white; padding: 12px 20px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; flex: 1; }
+        .btn-modal-cancelar-nao { background: #95a5a6; color: white; padding: 12px 20px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; flex: 1; }
+        .flex-botoes { display: flex; gap: 12px; margin-top: 20px; }
     </style>
 </head>
 <body>
-
+ 
     <nav>
         <a id="nav-catalogo" class="active" onclick="alternarAbas('catalogo')">Catálogo de Serviços</a>
         <a id="nav-agendamentos" onclick="alternarAbas('agendamentos')">Meus Agendamentos</a>
     </nav>
-
-    <!-- Seção de Identificação do Usuário Logado -->
+ 
     <div id="userLogadoBox" class="user-logado"></div>
-
-    <!-- Caixa de Login / Cadastro por e-mail e senha -->
+ 
     <div id="authBox" class="auth-container">
         <h3 id="authTitulo">Fazer Login</h3>
         <input type="text" id="authNome" placeholder="Seu Nome Completo (apenas para cadastro)" style="display: none;">
@@ -104,8 +113,7 @@
         <button id="btnAuth" onclick="processarAutenticacao()">Entrar</button>
         <span id="authToggle" class="auth-toggle" onclick="alternarModoAuth()">Não tem conta? Cadastre-se</span>
     </div>
-
-    <!-- ABA 1: CATÁLOGO DE SERVIÇOS -->
+ 
     <div id="secao-catalogo" class="secao-conteudo ativa">
         <header>
             <h1>✨ Nossos Serviços ✨</h1>
@@ -115,8 +123,7 @@
             <p style="text-align: center; grid-column: 1/-1;">⏳ Carregando catálogo de bem-estar...</p>
         </main>
     </div>
-
-    <!-- ABA 2: MEUS AGENDAMENTOS -->
+ 
     <div id="secao-agendamentos" class="secao-conteudo">
         <header>
             <h1>📅 Seus Agendamentos</h1>
@@ -126,8 +133,7 @@
             <p style="text-align: center;">Por favor, faça login para ver seus agendamentos.</p>
         </div>
     </div>
-
-    <!-- MODAL DE AGENDAMENTO -->
+ 
     <div class="modal-overlay" id="agendamentoModal">
         <div class="modal-box">
             <button class="btn-fechar" onclick="fecharModal('agendamentoModal')">&times;</button>
@@ -135,12 +141,11 @@
             <input type="hidden" id="modalServicoId">
             <label for="modalData">Escolha a Data e Horário:</label>
             <input type="datetime-local" id="modalData" required>
-            <button class="btn-confirmar" onclick="enviarAgendamento()">Confirmar Agendamento</button>
+            <button class="btn-confirmar" style="background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);" onclick="enviarAgendamento()">Confirmar Agendamento</button>
             <p id="modalStatus" style="margin-top: 15px; font-size: 14px; font-weight: 500;"></p>
         </div>
     </div>
-
-    <!-- MODAL DE REAGENDAMENTO (REMARCAR) -->
+ 
     <div class="modal-overlay" id="reagendamentoModal">
         <div class="modal-box">
             <button class="btn-fechar" onclick="fecharModal('reagendamentoModal')">&times;</button>
@@ -148,25 +153,53 @@
             <input type="hidden" id="reagendarId">
             <label for="novaData">Escolha a Nova Data e Horário:</label>
             <input type="datetime-local" id="novaData" required>
-            <button class="btn-confirmar" onclick="salvarRemarcacao()">Atualizar Horário</button>
+            <button class="btn-confirmar" style="background: #f39c12;" onclick="salvarRemarcacao()">Atualizar Horário</button>
             <p id="reagendarStatus" style="margin-top: 15px; font-size: 14px; font-weight: 500;"></p>
         </div>
     </div>
 
+    <div class="modal-overlay" id="notificacaoModal">
+        <div class="modal-box">
+            <div id="notificacaoIcone" style="font-size: 45px; margin-bottom: 15px;">🌿</div>
+            <h3 id="notificacaoTitulo">Mensagem</h3>
+            <p id="notificacaoTexto" class="modal-mensagem"></p>
+            <button class="btn-modal-neutro" onclick="fecharModal('notificacaoModal')">Compreendido</button>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="confirmarCancelamentoModal">
+        <div class="modal-box">
+            <div style="font-size: 45px; margin-bottom: 15px;">🌅</div>
+            <h3>Reavaliar Momento</h3>
+            <p class="modal-mensagem">Você está prestes a remover permanentemente esta reserva do seu histórico de autocuidado. Deseja prosseguir?</p>
+            <input type="hidden" id="cancelarAgendamentoId">
+            <div class="flex-botoes">
+                <button class="btn-modal-cancelar-nao" onclick="fecharModal('confirmarCancelamentoModal')">Manter Reserva</button>
+                <button class="btn-modal-cancelar-sim" onclick="executarCancelamentoConfirmado()">Sim, Cancelar</button>
+            </div>
+        </div>
+    </div>
+ 
     <script>
         let servicosDados = [];
         let modoAbas = 'catalogo';
-        let modoAuth = 'login'; 
+        let modoAuth = 'login';
         let usuarioLogado = JSON.parse(localStorage.getItem('usuario_spa')) || null;
+ 
+        function exibirNotificacaoSpa(titulo, texto, icone = '🌿') {
+            document.getElementById('notificacaoIcone').innerText = icone;
+            document.getElementById('notificacaoTitulo').innerText = titulo;
+            document.getElementById('notificacaoTexto').innerText = texto;
+            document.getElementById('notificacaoModal').style.display = 'flex';
+        }
 
-        // --- CONTROLE DE INTERFACE DE NAVEGAÇÃO ---
         function alternarAbas(aba) {
             modoAbas = aba;
             document.getElementById('nav-catalogo').classList.remove('active');
             document.getElementById('nav-agendamentos').classList.remove('active');
             document.getElementById('secao-catalogo').classList.remove('ativa');
             document.getElementById('secao-agendamentos').classList.remove('ativa');
-
+ 
             if(aba === 'catalogo') {
                 document.getElementById('nav-catalogo').classList.add('active');
                 document.getElementById('secao-catalogo').classList.add('ativa');
@@ -177,13 +210,13 @@
                 carregarMeusAgendamentos();
             }
         }
-
+ 
         function alternarModoAuth() {
             const nomeInput = document.getElementById('authNome');
             const titulo = document.getElementById('authTitulo');
             const btn = document.getElementById('btnAuth');
             const toggle = document.getElementById('authToggle');
-
+ 
             if (modoAuth === 'login') {
                 modoAuth = 'cadastro';
                 titulo.innerText = 'Criar uma Conta';
@@ -198,11 +231,11 @@
                 toggle.innerText = 'Não tem conta? Cadastre-se';
             }
         }
-
+ 
         function atualizarPainelUsuario() {
             const userBox = document.getElementById('userLogadoBox');
             const authBox = document.getElementById('authBox');
-
+ 
             if (usuarioLogado) {
                 authBox.style.display = 'none';
                 userBox.style.display = 'block';
@@ -212,28 +245,27 @@
                 userBox.style.display = 'none';
             }
         }
-
+ 
         function deslogar() {
             localStorage.removeItem('usuario_spa');
             usuarioLogado = null;
             atualizarPainelUsuario();
             alternarAbas('catalogo');
         }
-
-        // --- SISTEMA DE CADASTRO E LOGIN (API) ---
+ 
         async function processarAutenticacao() {
             const nome = document.getElementById('authNome').value;
             const email = document.getElementById('authEmail').value;
             const senha = document.getElementById('authSenha').value;
-
+ 
             if (!email || !senha || (modoAuth === 'cadastro' && !nome)) {
-                alert('⚠️ Por favor, preencha todos os campos necessários.');
+                exibirNotificacaoSpa('Atenção', '⚠️ Por favor, preencha todos os campos necessários para prosseguir.', '✨');
                 return;
             }
-
+ 
             const urlApi = modoAuth === 'cadastro' ? '/cadastrar' : '/api/login';
             const payload = modoAuth === 'cadastro' ? { nome, email, senha } : { email, senha };
-
+ 
             try {
                 const response = await fetch(urlApi, {
                     method: 'POST',
@@ -241,11 +273,11 @@
                     body: JSON.stringify(payload)
                 });
                 const data = await response.json();
-
+ 
                 if (!response.ok) throw new Error(data.error || "Erro na operação");
-
+ 
                 if (modoAuth === 'cadastro') {
-                    alert('🎉 Conta criada com sucesso! Faça seu login agora.');
+                    exibirNotificacaoSpa('Conta Criada', '🎉 Sua jornada começou! Conta criada com sucesso. Faça seu login agora para agendar.', '✨');
                     alternarModoAuth();
                 } else {
                     usuarioLogado = data.usuario;
@@ -254,11 +286,10 @@
                     alternarAbas('catalogo');
                 }
             } catch (err) {
-                alert(`❌ Erro: ${err.message}`);
+                exibirNotificacaoSpa('Ops!', `Falta de sintonia: ${err.message}`, '🍃');
             }
         }
-
-        // --- CONTROLADOR DOS CARDS DE SERVIÇO ---
+ 
         async function carregarServicos() {
             const container = document.getElementById('container-servicos');
             try {
@@ -266,13 +297,13 @@
                 if (!response.ok) throw new Error("Erro na requisição");
                 
                 servicosDados = await response.json();
-                container.innerHTML = ''; 
-
+                container.innerHTML = '';
+ 
                 if (servicosDados.length === 0) {
-                    container.innerHTML = '<p style="text-align: center; grid-column: 1/-1;">Nenhum serviço disponível.</p>';
+                    container.innerHTML = '<p style="text-align: center; grid-column: 1/-1;">Nenhum serviço disponível no momento.</p>';
                     return;
                 }
-
+ 
                 servicosDados.forEach(servico => {
                     const cardHtml = `
                         <div class="card">
@@ -295,11 +326,10 @@
                 container.innerHTML = '<p style="text-align: center; color: red;">❌ Erro ao carregar os serviços da API.</p>';
             }
         }
-
-        // --- SISTEMA DE SOLICITAÇÃO DE RESERVA (MODAL) ---
+ 
         function abrirModalAgendamento(id, tipo) {
             if(!usuarioLogado) {
-                alert("⚠️ Você precisa estar logado com seu e-mail e senha para realizar um agendamento!");
+                exibirNotificacaoSpa('Identificação Necessária', 'Para reservar uma experiência relaxante, por favor faça login na parte superior da página.', '🔒');
                 window.scrollTo({top: 0, behavior: 'smooth'});
                 return;
             }
@@ -308,64 +338,68 @@
             document.getElementById('modalStatus').innerText = '';
             document.getElementById('agendamentoModal').style.display = 'flex';
         }
-
+ 
         function fecharModal(idModal) {
             document.getElementById(idModal).style.display = 'none';
         }
-
+ 
         async function enviarAgendamento() {
             const id = document.getElementById('modalServicoId').value;
             const data = document.getElementById('modalData').value;
             const status = document.getElementById('modalStatus');
-
+ 
             if (!data) {
-                status.style.color = "red"; status.innerText = "⚠️ Preencha a data e hora do atendimento!"; return;
+                status.style.color = "#e74c3c"; status.innerText = "⚠️ Defina o dia e horário do seu momento!"; return;
             }
-
+ 
             try {
                 const response = await fetch('/api/agendar', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ servico_id: id, email: usuarioLogado.email, data: data })
                 });
-
+ 
                 const resultado = await response.json();
                 if (response.ok) {
-                    status.style.color = "green"; status.innerText = "🎉 Agendamento concluído!";
-                    setTimeout(() => { fecharModal('agendamentoModal'); carregarServicos(); }, 1500);
+                    fecharModal('agendamentoModal');
+                    exibirNotificacaoSpa(
+                        'Momento Confirmado!', 
+                        `Gratidão, ${usuarioLogado.nome}! Seu momento Zenith foi agendado com sucesso. Prepare-se para renovar suas energias e alinhar seu bem-estar.`, 
+                        '✨'
+                    );
+                    carregarServicos();
                 } else {
-                    status.style.color = "red"; status.innerText = `❌ ${resultado.error}`;
+                    status.style.color = "#e74c3c"; status.innerText = `❌ ${resultado.error}`;
                 }
             } catch (error) {
-                status.style.color = "red"; status.innerText = "❌ Falha de comunicação com o servidor.";
+                status.style.color = "#e74c3c"; status.innerText = "❌ Falha de comunicação com o templo.";
             }
         }
-
-        // --- GERENCIADOR DA ABA DE HISTÓRICO DE RESERVAS (CONSULTAR, REMARCAR E REMOVER) ---
+ 
         async function carregarMeusAgendamentos() {
             const container = document.getElementById('container-meus-agendamentos');
             if(!usuarioLogado) {
                 container.innerHTML = '<p style="text-align: center; color: #777;">Faça login acima para visualizar suas reservas ativas.</p>';
                 return;
             }
-
+ 
             container.innerHTML = '<p style="text-align: center;">⏳ Buscando suas marcações...</p>';
-
+ 
             try {
                 const response = await fetch(`/api/meus-agendamentos?email=${usuarioLogado.email}`);
                 const dados = await response.json();
-
+ 
                 if(!dados || dados.length === 0) {
                     container.innerHTML = '<p style="text-align: center; color: #555;">Você ainda não possui nenhum agendamento registrado.</p>';
                     return;
                 }
-
+ 
                 container.innerHTML = '';
                 dados.forEach(agend => {
                     const dataFormatada = new Date(agend.data_atendimento).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
                     const servicoNome = agend.servico ? agend.servico.tipo : "Serviço";
                     const servicoValor = agend.servico ? `R$ ${parseFloat(agend.servico.valor).toFixed(2).replace('.', ',')}` : "Consultar";
-
+ 
                     const itemHtml = `
                         <div class="item-agendamento">
                             <div class="item-agendamento-info">
@@ -375,7 +409,7 @@
                             </div>
                             <div class="item-agendamento-acoes">
                                 <button class="btn-remarcar" onclick="abrirModalRemarcar(${agend.id})">Remarcar</button>
-                                <button class="btn-cancelar" onclick="deletarAgendamento(${agend.id})">Cancelar</button>
+                                <button class="btn-cancelar" onclick="solicitarCancelamento(${agend.id})">Cancelar</button>
                             </div>
                         </div>
                     `;
@@ -385,49 +419,72 @@
                 container.innerHTML = '<p style="text-align: center; color: red;">❌ Erro crítico ao carregar agendamentos.</p>';
             }
         }
-
+ 
         function abrirModalRemarcar(id) {
             document.getElementById('reagendarId').value = id;
             document.getElementById('reagendarStatus').innerText = '';
             document.getElementById('reagendamentoModal').style.display = 'flex';
         }
-
+ 
         async function salvarRemarcacao() {
             const id = document.getElementById('reagendarId').value;
             const novaData = document.getElementById('novaData').value;
             const status = document.getElementById('reagendarStatus');
-
-            if(!novaData) { alert("⚠️ Defina uma nova data e hora antes de salvar."); return; }
-
+ 
+            if(!novaData) { status.style.color = "red"; status.innerText = "⚠️ Defina uma nova data e hora antes de salvar."; return; }
+ 
             try {
                 const response = await fetch(`/api/agendamentos/${id}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ data: novaData })
                 });
-
+ 
                 if(response.ok) {
-                    status.style.color = "green"; status.innerText = "📅 Horário atualizado com sucesso!";
-                    setTimeout(() => { fecharModal('reagendamentoModal'); carregarMeusAgendamentos(); }, 1500);
+                    fecharModal('reagendamentoModal');
+                    exibirNotificacaoSpa('Horário Updated', 'Sua nova janela de tranquilidade foi reagendada com sucesso!', '📅');
+                    carregarMeusAgendamentos();
                 } else {
                     status.style.color = "red"; status.innerText = "❌ Ocorreu um erro ao atualizar.";
                 }
             } catch(e) { status.style.color = "red"; status.innerText = "❌ Erro na conexão."; }
         }
-
-        async function deletarAgendamento(id) {
-            if(!confirm("⚠️ Tem certeza absoluta de que deseja cancelar definitivamente esta reserva?")) return;
-
-            try {
-                const response = await fetch(`/api/agendamentos/${id}`, { method: 'DELETE' });
-                if(response.ok) {
-                    alert("🗑️ Agendamento cancelado!");
-                    carregarMeusAgendamentos();
-                } else { alert("Não foi possível processar o cancelamento."); }
-            } catch(e) { alert("Erro de comunicação com a API."); }
+ 
+        // --- FUNÇÕES CORRIGIDAS DO FLUXO DE CANCELAMENTO ---
+        function solicitarCancelamento(id) {
+            // Guarda o ID no input oculto do modal de confirmação
+            document.getElementById('cancelarAgendamentoId').value = id;
+            // Abre o modal estilizado na tela
+            document.getElementById('confirmarCancelamentoModal').style.display = 'flex';
         }
 
-        // Chamadas Automáticas de Inicialização
+        async function executarCancelamentoConfirmado() {
+            // Resgata o ID guardado anteriormente
+            const id = document.getElementById('cancelarAgendamentoId').value;
+            fecharModal('confirmarCancelamentoModal');
+ 
+            try {
+                const response = await fetch(`/api/agendamentos/${id}`, { 
+                    method: 'DELETE' 
+                });
+                
+                if(response.ok) {
+                    exibirNotificacaoSpa(
+                        'Reserva Cancelada', 
+                        'Seu agendamento foi cancelado. Sentiremos sua falta, mas lembre-se que as portas do templo Zenith estarão sempre abertas para quando seu espírito precisar de paz.', 
+                        '🌅'
+                    );
+                    // Atualiza a lista na tela imediatamente
+                    carregarMeusAgendamentos();
+                } else { 
+                    const erroServidor = await response.json();
+                    exibirNotificacaoSpa('Ops!', `Não foi possível processar o cancelamento: ${erroServidor.error || 'Erro desconhecido'}`, '🍃'); 
+                }
+            } catch(e) { 
+                exibirNotificacaoSpa('Erro de Conexão', 'Falha na comunicação com o servidor central.', '📴'); 
+            }
+        }
+ 
         window.onload = () => {
             atualizarPainelUsuario();
             carregarServicos();

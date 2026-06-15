@@ -9,13 +9,8 @@ app = Flask(__name__)
 # --- 🔑 CONFIGURAÇÃO FIXA DO BANCO VIA TCC-CIENCIA-DE-DADOS ---
 # ==============================================================================
 
-# Pega o caminho da pasta 'database' (onde este script está)
 diretorio_do_script = os.path.dirname(os.path.abspath(__file__))
-
-# Sobe um nível para chegar na pasta principal 'tcc-ciencia-de-dados'
 raiz_do_projeto = os.path.dirname(diretorio_do_script)
-
-# Aponta direto para o arquivo database.env na raiz correta
 caminho_env = os.path.join(raiz_do_projeto, "database.env")
 
 if not os.path.exists(caminho_env):
@@ -23,7 +18,6 @@ if not os.path.exists(caminho_env):
     print(f"👉 Caminho procurado: {caminho_env}")
     exit()
 
-# Carrega o arquivo correto
 load_dotenv(dotenv_path=caminho_env)
 
 url = os.environ.get("SUPABASE_URL")
@@ -34,7 +28,6 @@ if not url or not key:
     print("👉 Abra o arquivo no VS Code, preencha as chaves e lembre-se de salvar com Ctrl+S.")
     exit()
 
-# Conecta ao Supabase
 supabase: Client = create_client(url, key)
 
 
@@ -44,13 +37,11 @@ supabase: Client = create_client(url, key)
 
 @app.route('/')
 def pagina_principal():
-    """Busca o servicos.html obrigatoriamente na pasta database"""
     return send_from_directory(diretorio_do_script, 'servicos.html')
 
 
 @app.route('/cadastro')
 def pagina_cadastro():
-    """Busca o index.html obrigatoriamente na pasta database"""
     return send_from_directory(diretorio_do_script, 'index.html')
 
 
@@ -69,7 +60,6 @@ def cadastrar():
         return jsonify({"error": "Nome, e-mail e senha são obrigatórios."}), 400
 
     try:
-        # Insere o usuário com nome, email e senha no Supabase
         supabase.table("usuarios").insert({"nome": nome, "email": email, "senha": senha}).execute()
         return jsonify({"message": "Cadastrado com sucesso!"}), 201
     except Exception as e:
@@ -87,7 +77,6 @@ def login():
         return jsonify({"error": "E-mail e senha são obrigatórios."}), 400
 
     try:
-        # Busca o usuário pelo e-mail informado
         usuario = supabase.table("usuarios").select("*").eq("email", email).execute()
         
         if not usuario.data:
@@ -95,7 +84,6 @@ def login():
         
         user_db = usuario.data[0]
         
-        # Validação de senha textual simples
         if user_db.get('senha') != senha:
             return jsonify({"error": "Senha incorreta. Tente novamente."}), 401
         
@@ -135,10 +123,11 @@ def criar_agendamento():
             "data_atendimento": data_atendimento
         }).execute()
 
-        # Atualiza a contagem de contratos do serviço (+1)
-        servico_atual = supabase.table("servico").select("contratos").eq("id", servico_id).single().execute()
-        contratos_atuais = servico_atual.data.get('contratos', 0) if servico_atual.data else 0
-        supabase.table("servico").update({"contratos": contratos_atuais + 1}).eq("id", servico_id).execute()
+        # Usando .execute() em vez de .single() para prevenir quebras caso o ID venha incorreto
+        servico_atual = supabase.table("servico").select("contratos").eq("id", servico_id).execute()
+        if servico_atual.data:
+            contratos_atuais = servico_atual.data[0].get('contratos', 0)
+            supabase.table("servico").update({"contratos": contratos_atuais + 1}).eq("id", servico_id).execute()
 
         return jsonify({"message": "Agendamento realizado com sucesso!"}), 201
     except Exception as e:
@@ -153,7 +142,6 @@ def meus_agendamentos():
         return jsonify({"error": "E-mail do usuário não informado."}), 400
 
     try:
-        # Busca os agendamentos trazendo informações acopladas da tabela de serviços (tipo, valor)
         resposta = supabase.table("agendamentos").select("id, data_atendimento, servico_id, servico(tipo, valor)").eq("email_cliente", email).execute()
         return jsonify(resposta.data), 200
     except Exception as e:
@@ -171,50 +159,59 @@ def alterar_horario(id):
 
     try:
         supabase.table("agendamentos").update({"data_atendimento": nova_data}).eq("id", id).execute()
-        return jsonify({"message": "Horário atualizado!"}), 200
+        return jsonify({"message": "Horário updated!"}), 200
     except Exception as e:
         return jsonify({"error": "Erro ao atualizar horário no banco."}), 500
 
 
+# ==============================================================================
+# --- 🌅 ROTA DE CANCELAMENTO ATUALIZADA E BLINDADA ---
+# ==============================================================================
 @app.route('/api/agendamentos/<int:id>', methods=['DELETE'])
 def cancelar_agendamento(id):
     try:
-        # 1. Busca os dados do agendamento antes de removê-lo da tabela ativa
+        # 1. Busca os dados do agendamento ativo
         agendamento_busca = supabase.table("agendamentos").select("*").eq("id", id).execute()
         
         if not agendamento_busca.data:
-            return jsonify({"error": "Agendamento não encontrado."}), 404
+            return jsonify({"error": "Agendamento não encontrado no banco de dados."}), 404
             
         dados_agendamento = agendamento_busca.data[0]
         servico_id = dados_agendamento.get('servico_id')
 
-        # 2. Salva o registro histórico na tabela de 'agendamentos_cancelados' para auditoria
-        supabase.table("agendamentos_cancelados").insert({
-            "agendamento_id": dados_agendamento.get('id'),
-            "email_cliente": dados_agendamento.get('email_cliente'),
-            "servico_id": servico_id,
-            "data_atendimento_original": dados_agendamento.get('data_atendimento')
-        }).execute()
+        # 2. Histórico de Auditoria (Isolado em try/except para não travar a exclusão principal)
+        try:
+            supabase.table("agendamentos_cancelados").insert({
+                "agendamento_id": dados_agendamento.get('id'),
+                "email_cliente": dados_agendamento.get('email_cliente'),
+                "servico_id": servico_id,
+                "data_atendimento_original": dados_agendamento.get('data_atendimento')
+            }).execute()
+        except Exception as hist_err:
+            print(f"⚠️ Nota: Não foi possível salvar na tabela historica 'agendamentos_cancelados': {hist_err}")
+            print("👉 Verifique se as colunas da tabela coincidem com as chaves enviadas.")
 
-        # 3. Decrementa o número de contratos do serviço correspondente (-1)
+        # 3. Decrementa o contador de contratos
         if servico_id:
-            servico_atual = supabase.table("servico").select("contratos").eq("id", servico_id).single().execute()
-            if servico_atual.data:
-                contratos_atuais = servico_atual.data.get('contratos', 0)
-                novos_contratos = max(0, contratos_atuais - 1)  # Impede valores negativos por segurança
-                supabase.table("servico").update({"contratos": novos_contratos}).eq("id", servico_id).execute()
+            try:
+                servico_atual = supabase.table("servico").select("contratos").eq("id", servico_id).execute()
+                if servico_atual.data:
+                    contratos_atuais = servico_atual.data[0].get('contratos', 0)
+                    novos_contratos = max(0, contratos_atuais - 1)
+                    supabase.table("servico").update({"contratos": novos_contratos}).eq("id", servico_id).execute()
+            except Exception as serv_err:
+                print(f"⚠️ Nota: Falha ao atualizar contador na tabela 'servico': {serv_err}")
 
-        # 4. Deleta permanentemente o agendamento da tabela operacional ativa
+        # 4. Deleta de forma definitiva da tabela operacional ativa
         supabase.table("agendamentos").delete().eq("id", id).execute()
         
-        return jsonify({"message": "Agendamento cancelado e arquivado no histórico com sucesso!"}), 200
+        return jsonify({"message": "Agendamento cancelado com sucesso!"}), 200
 
     except Exception as e:
-        print(f"❌ Erro ao cancelar e arquivar agendamento: {e}")
-        return jsonify({"error": "Erro ao processar o cancelamento no banco."}), 500
+        print(f"❌ Erro crítico ao processar exclusão do agendamento: {e}")
+        return jsonify({"error": "Erro interno ao processar o cancelamento no servidor."}), 500
 
 
-# Bloqueia o cache para desenvolvimento
 @app.after_request
 def adicionar_cabecalhos_sem_cache(resposta):
     resposta.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"

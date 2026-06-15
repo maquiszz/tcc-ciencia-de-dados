@@ -53,52 +53,52 @@
     </style>
 </head>
 <body>
-
+ 
     <nav>
         <a href="/">Catálogo de Serviços</a>
         <a href="/cadastro" class="active">Cadastro</a>
     </nav>
-
+ 
     <div class="container">
         <h1>✨ Zenith Spa ✨</h1>
         <p class="subtitle">Cadastro de Clientes e Recepção</p>
-
+ 
         <form id="cadastroForm">
             <div class="form-group">
                 <label for="nome">Nome Completo:</label>
                 <input type="text" id="nome" placeholder="Digite o nome do cliente" required>
             </div>
-
+ 
             <div class="form-group">
                 <label for="email">E-mail de Contato:</label>
                 <input type="email" id="email" placeholder="exemplo@email.com" required>
             </div>
-
+ 
             <button type="submit">Confirmar Cadastro</button>
         </form>
-
+ 
         <div id="status"></div>
     </div>
-
+ 
     <script>
         document.getElementById('cadastroForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const statusDiv = document.getElementById('status');
             const nome = document.getElementById('nome').value;
             const email = document.getElementById('email').value;
-
+ 
             statusDiv.style.color = "#333";
             statusDiv.innerText = "⏳ Enviando dados...";
-
+ 
             try {
                 const response = await fetch('/cadastrar', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ nome, email })
                 });
-
+ 
                 const resultado = await response.json();
-
+ 
                 if (response.ok) {
                     statusDiv.style.color = "#2ecc71";
                     statusDiv.innerText = `🎉 ${nome} cadastrado com sucesso!`;
@@ -115,3 +115,4 @@
     </script>
 </body>
 </html>
+ 
