@@ -1,38 +1,117 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cadastro de Usuários</title>
+    <title>Zenith Spa - Recepção</title>
     <style>
-        body { font-family: Arial, sans-serif; background-color: #f4f4f9; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .cadastro-container { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); width: 300px; }
-        h2 { text-align: center; color: #333; margin-top: 0; }
-        input[type="text"], input[type="email"] { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
-        button { width: 100%; padding: 10px; background-color: #3fcf8e; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; font-weight: bold; }
-        button:hover { background-color: #34b279; }
-        .mensagem { text-align: center; margin-top: 15px; font-weight: bold; color: #2e7d32; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        body {
+            background: linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        nav {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 30px;
+            background: rgba(255, 255, 255, 0.8);
+            padding: 10px 20px;
+            border-radius: 30px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+        nav a { text-decoration: none; font-size: 15px; color: #666; font-weight: 500; padding: 5px 10px; }
+        nav a.active { color: #6a11cb; font-weight: bold; border-bottom: 2px solid #6a11cb; }
+        .container {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(10px);
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.15);
+            width: 100%;
+            max-width: 450px;
+            text-align: center;
+        }
+        h1 { color: #333; font-size: 28px; margin-bottom: 5px; }
+        p.subtitle { color: #666; font-size: 14px; margin-bottom: 30px; }
+        .form-group { text-align: left; margin-bottom: 20px; }
+        label { display: block; color: #444; font-size: 14px; font-weight: 600; margin-bottom: 6px; }
+        input { width: 100%; padding: 12px 15px; border: 1px solid #ccc; border-radius: 8px; font-size: 14px; }
+        input:focus { border-color: #4a90e2; outline: none; }
+        button {
+            width: 100%; padding: 14px;
+            background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+            color: white; border: none; border-radius: 8px;
+            font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 10px;
+        }
+        button:hover { opacity: 0.9; }
+        #status { margin-top: 20px; font-size: 14px; font-weight: 500; min-height: 20px; }
     </style>
 </head>
 <body>
 
-<div class="cadastro-container">
-    <h2>Cadastrar Usuário</h2>
-    
-    <form action="/cadastrar" method="POST">
-        <label for="nome">Nome:</label>
-        <input type="text" id="nome" name="nome" placeholder="Digite seu nome" required>
+    <nav>
+        <a href="/">Catálogo de Serviços</a>
+        <a href="/cadastro" class="active">Cadastro</a>
+    </nav>
 
-        <label for="email">E-mail:</label>
-        <input type="email" id="email" name="email" placeholder="Digite seu e-mail" required>
+    <div class="container">
+        <h1>✨ Zenith Spa ✨</h1>
+        <p class="subtitle">Cadastro de Clientes e Recepção</p>
 
-        <button type="submit">Enviar para o Banco</button>
-    </form>
+        <form id="cadastroForm">
+            <div class="form-group">
+                <label for="nome">Nome Completo:</label>
+                <input type="text" id="nome" placeholder="Digite o nome do cliente" required>
+            </div>
 
-    {% if mensagem %}
-        <div class="mensagem">{{ mensagem }}</div>
-    {% endif %}
-</div>
+            <div class="form-group">
+                <label for="email">E-mail de Contato:</label>
+                <input type="email" id="email" placeholder="exemplo@email.com" required>
+            </div>
 
+            <button type="submit">Confirmar Cadastro</button>
+        </form>
+
+        <div id="status"></div>
+    </div>
+
+    <script>
+        document.getElementById('cadastroForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const statusDiv = document.getElementById('status');
+            const nome = document.getElementById('nome').value;
+            const email = document.getElementById('email').value;
+
+            statusDiv.style.color = "#333";
+            statusDiv.innerText = "⏳ Enviando dados...";
+
+            try {
+                const response = await fetch('/cadastrar', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ nome, email })
+                });
+
+                const resultado = await response.json();
+
+                if (response.ok) {
+                    statusDiv.style.color = "#2ecc71";
+                    statusDiv.innerText = `🎉 ${nome} cadastrado com sucesso!`;
+                    document.getElementById('cadastroForm').reset();
+                } else {
+                    statusDiv.style.color = "#e74c3c";
+                    statusDiv.innerText = `❌ Erro: ${resultado.error}`;
+                }
+            } catch (error) {
+                statusDiv.style.color = "#e74c3c";
+                statusDiv.innerText = "❌ Não foi possível conectar ao servidor backend.";
+            }
+        });
+    </script>
 </body>
 </html>
