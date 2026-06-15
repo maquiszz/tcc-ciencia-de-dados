@@ -225,7 +225,7 @@ if __name__ == '__main__':
     print(" 🌿 SERVIDOR PANACEIA SPA INICIADO COM SUCESSO! 🌿")
     print("═"*50)
     print(f" 👉 Carregando chaves de: {caminho_env}")
-    print(" 👉 Link da Plataforma: http://127.0.0.1:5002")
+    print(" 👉 Link da Plataforma: http://127.0.0.1:5000")
     print("═"*50 + "\n")
     
-    app.run(host='0.0.0.0', port=5002, debug=True)
+    app.run(host='0.0.0.0', port=5000, debug=True)
