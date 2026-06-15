@@ -37,6 +37,7 @@ if not url or not key:
 # Conecta ao Supabase
 supabase: Client = create_client(url, key)
 
+
 # ==============================================================================
 # --- 🌍 ROTAS DE PÁGINAS VISUAIS (HTML) ---
 # ==============================================================================
@@ -52,6 +53,7 @@ def pagina_cadastro():
     """Busca o index.html obrigatoriamente na pasta database"""
     return send_from_directory(diretorio_do_script, 'index.html')
 
+
 # ==============================================================================
 # --- ⚙️ ROTAS DE PROCESSAMENTO DE DADOS (API) ---
 # ==============================================================================
@@ -61,12 +63,14 @@ def cadastrar():
     dados = request.json
     nome = dados.get('nome')
     email = dados.get('email')
+    senha = dados.get('senha')
 
-    if not nome or not email:
-        return jsonify({"error": "Nome e e-mail são obrigatórios."}), 400
+    if not nome or not email or not senha:
+        return jsonify({"error": "Nome, e-mail e senha são obrigatórios."}), 400
 
     try:
-        supabase.table("usuarios").insert({"nome": nome, "email": email}).execute()
+        # Insere o usuário com nome, email e senha no Supabase
+        supabase.table("usuarios").insert({"nome": nome, "email": email, "senha": senha}).execute()
         return jsonify({"message": "Cadastrado com sucesso!"}), 201
     except Exception as e:
         print(f"❌ Erro ao salvar no banco: {e}")
@@ -77,17 +81,27 @@ def cadastrar():
 def login():
     dados = request.json
     email = dados.get('email')
+    senha = dados.get('senha')
 
-    if not email:
-        return jsonify({"error": "E-mail é obrigatório."}), 400
+    if not email or not senha:
+        return jsonify({"error": "E-mail e senha são obrigatórios."}), 400
 
     try:
+        # Busca o usuário pelo e-mail informado
         usuario = supabase.table("usuarios").select("*").eq("email", email).execute()
+        
         if not usuario.data:
             return jsonify({"error": "E-mail não encontrado. Por favor, crie uma conta primeiro."}), 404
         
-        return jsonify({"message": "Login realizado com sucesso!", "usuario": usuario.data[0]}), 200
+        user_db = usuario.data[0]
+        
+        # Validação de senha textual simples
+        if user_db.get('senha') != senha:
+            return jsonify({"error": "Senha incorreta. Tente novamente."}), 401
+        
+        return jsonify({"message": "Login realizado com sucesso!", "usuario": user_db}), 200
     except Exception as e:
+        print(f"❌ Erro interno no login: {e}")
         return jsonify({"error": "Erro interno no servidor de autenticação."}), 500
 
 
@@ -139,6 +153,7 @@ def meus_agendamentos():
         return jsonify({"error": "E-mail do usuário não informado."}), 400
 
     try:
+        # Busca os agendamentos trazendo informações acopladas da tabela de serviços (tipo, valor)
         resposta = supabase.table("agendamentos").select("id, data_atendimento, servico_id, servico(tipo, valor)").eq("email_cliente", email).execute()
         return jsonify(resposta.data), 200
     except Exception as e:
@@ -164,10 +179,39 @@ def alterar_horario(id):
 @app.route('/api/agendamentos/<int:id>', methods=['DELETE'])
 def cancelar_agendamento(id):
     try:
+        # 1. Busca os dados do agendamento antes de removê-lo da tabela ativa
+        agendamento_busca = supabase.table("agendamentos").select("*").eq("id", id).execute()
+        
+        if not agendamento_busca.data:
+            return jsonify({"error": "Agendamento não encontrado."}), 404
+            
+        dados_agendamento = agendamento_busca.data[0]
+        servico_id = dados_agendamento.get('servico_id')
+
+        # 2. Salva o registro histórico na tabela de 'agendamentos_cancelados' para auditoria
+        supabase.table("agendamentos_cancelados").insert({
+            "agendamento_id": dados_agendamento.get('id'),
+            "email_cliente": dados_agendamento.get('email_cliente'),
+            "servico_id": servico_id,
+            "data_atendimento_original": dados_agendamento.get('data_atendimento')
+        }).execute()
+
+        # 3. Decrementa o número de contratos do serviço correspondente (-1)
+        if servico_id:
+            servico_atual = supabase.table("servico").select("contratos").eq("id", servico_id).single().execute()
+            if servico_atual.data:
+                contratos_atuais = servico_atual.data.get('contratos', 0)
+                novos_contratos = max(0, contratos_atuais - 1)  # Impede valores negativos por segurança
+                supabase.table("servico").update({"contratos": novos_contratos}).eq("id", servico_id).execute()
+
+        # 4. Deleta permanentemente o agendamento da tabela operacional ativa
         supabase.table("agendamentos").delete().eq("id", id).execute()
-        return jsonify({"message": "Agendamento cancelado!"}), 200
+        
+        return jsonify({"message": "Agendamento cancelado e arquivado no histórico com sucesso!"}), 200
+
     except Exception as e:
-        return jsonify({"error": "Erro ao cancelar agendamento no banco."}), 500
+        print(f"❌ Erro ao cancelar e arquivar agendamento: {e}")
+        return jsonify({"error": "Erro ao processar o cancelamento no banco."}), 500
 
 
 # Bloqueia o cache para desenvolvimento
