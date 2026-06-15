@@ -6,26 +6,25 @@ from supabase import create_client, Client
 app = Flask(__name__)
 
 # ==============================================================================
-# --- 🔑 CONFIGURAÇÃO FIXA DO BANCO VIA TCC-CIENCIA-DE-DADOS ---
+# --- 🔑 CONFIGURAÇÃO INTELIGENTE DO BANCO (LOCAL VS PRODUÇÃO) ---
 # ==============================================================================
 
 diretorio_do_script = os.path.dirname(os.path.abspath(__file__))
 raiz_do_projeto = os.path.dirname(diretorio_do_script)
 caminho_env = os.path.join(raiz_do_projeto, "database.env")
 
-if not os.path.exists(caminho_env):
-    print("\n❌ ERRO CRÍTICO: Arquivo 'database.env' não existe na raiz do projeto!")
-    print(f"👉 Caminho procurado: {caminho_env}")
-    exit()
-
-load_dotenv(dotenv_path=caminho_env)
+# Se o arquivo existir (local), carrega ele. Se não existir (Render), usa as variáveis do sistema.
+if os.path.exists(caminho_env):
+    load_dotenv(dotenv_path=caminho_env)
+    print(f"👉 Chaves carregadas localmente de: {caminho_env}")
+else:
+    print("👉 Arquivo 'database.env' não encontrado. Usando variáveis de ambiente do Render.")
 
 url = os.environ.get("SUPABASE_URL")
 key = os.environ.get("SUPABASE_KEY")
 
 if not url or not key:
-    print("\n❌ ERRO CRÍTICO: O arquivo 'database.env' foi aberto na raiz, mas as variáveis estão vazias!")
-    print("👉 Abra o arquivo no VS Code, preencha as chaves e lembre-se de salvar com Ctrl+S.")
+    print("\n❌ ERRO CRÍTICO: As variáveis SUPABASE_URL ou SUPABASE_KEY não foram encontradas!")
     exit()
 
 supabase: Client = create_client(url, key)
@@ -123,7 +122,6 @@ def criar_agendamento():
             "data_atendimento": data_atendimento
         }).execute()
 
-        # Usando .execute() em vez de .single() para prevenir quebras caso o ID venha incorreto
         servico_atual = supabase.table("servico").select("contratos").eq("id", servico_id).execute()
         if servico_atual.data:
             contratos_atuais = servico_atual.data[0].get('contratos', 0)
@@ -170,7 +168,6 @@ def alterar_horario(id):
 @app.route('/api/agendamentos/<int:id>', methods=['DELETE'])
 def cancelar_agendamento(id):
     try:
-        # 1. Busca os dados do agendamento ativo
         agendamento_busca = supabase.table("agendamentos").select("*").eq("id", id).execute()
         
         if not agendamento_busca.data:
@@ -179,7 +176,6 @@ def cancelar_agendamento(id):
         dados_agendamento = agendamento_busca.data[0]
         servico_id = dados_agendamento.get('servico_id')
 
-        # 2. Histórico de Auditoria (Isolado em try/except para não travar a exclusão principal)
         try:
             supabase.table("agendamentos_cancelados").insert({
                 "agendamento_id": dados_agendamento.get('id'),
@@ -188,10 +184,8 @@ def cancelar_agendamento(id):
                 "data_atendimento_original": dados_agendamento.get('data_atendimento')
             }).execute()
         except Exception as hist_err:
-            print(f"⚠️ Nota: Não foi possível salvar na tabela historica 'agendamentos_cancelados': {hist_err}")
-            print("👉 Verifique se as colunas da tabela coincidem com as chaves enviadas.")
+            print(f"⚠️ Nota: Não foi possível salvar na tabela histórica: {hist_err}")
 
-        # 3. Decrementa o contador de contratos
         if servico_id:
             try:
                 servico_atual = supabase.table("servico").select("contratos").eq("id", servico_id).execute()
@@ -202,9 +196,7 @@ def cancelar_agendamento(id):
             except Exception as serv_err:
                 print(f"⚠️ Nota: Falha ao atualizar contador na tabela 'servico': {serv_err}")
 
-        # 4. Deleta de forma definitiva da tabela operacional ativa
         supabase.table("agendamentos").delete().eq("id", id).execute()
-        
         return jsonify({"message": "Agendamento cancelado com sucesso!"}), 200
 
     except Exception as e:
@@ -220,12 +212,15 @@ def adicionar_cabecalhos_sem_cache(resposta):
     return resposta
 
 
+# ==============================================================================
+# --- 🚀 INICIALIZAÇÃO DINÂMICA COMPATÍVEL COM RENDER ---
+# ==============================================================================
 if __name__ == '__main__':
     print("\n" + "═"*50)
-    print(" 🌿 SERVIDOR PANACEIA SPA INICIADO COM SUCESSO! 🌿")
+    print(" 🌿 SERVIDOR PANACEIA SPA CONFIGURADO 🌿")
     print("═"*50)
-    print(f" 👉 Carregando chaves de: {caminho_env}")
-    print(" 👉 Link da Plataforma: http://127.0.0.1:5000")
-    print("═"*50 + "\n")
     
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    # Captura a porta do Render (ou usa 5000 se estiver local)
+    porta = int(os.environ.get("PORT", 5000))
+    
+    app.run(host='0.0.0.0', port=porta)
