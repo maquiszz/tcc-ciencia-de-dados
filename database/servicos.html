@@ -31,6 +31,24 @@
             box-shadow: 0 4px 15px rgba(0,0,0,0.05); width: 100%; max-width: 400px; text-align: center;
         }
         .auth-container input { width: 100%; padding: 10px; margin: 5px 0; border: 1px solid #ccc; border-radius: 6px; }
+        
+        /* Ajuste do container de senha para comportar o botão do olho */
+        .wrapper-senha {
+            position: relative;
+            display: flex;
+            align-items: center;
+            width: 100%;
+        }
+        .btn-olho {
+            position: absolute;
+            right: 12px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            z-index: 5;
+        }
+
         .auth-container button { width: 100%; padding: 10px; background: #6a11cb; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 5px; }
         .auth-toggle { font-size: 13px; color: #2575fc; cursor: pointer; margin-top: 10px; display: inline-block; }
         .user-logado { display: none; background: #e2f0d9; padding: 10px; border-radius: 8px; color: #385723; font-weight: bold; margin-bottom: 20px; text-align: center; width: 100%; max-width: 400px; }
@@ -109,7 +127,10 @@
         <h3 id="authTitulo">Fazer Login</h3>
         <input type="text" id="authNome" placeholder="Seu Nome Completo (apenas para cadastro)" style="display: none;">
         <input type="email" id="authEmail" placeholder="seuemail@gmail.com">
-        <input type="password" id="authSenha" placeholder="Sua Senha">
+        <div class="wrapper-senha">
+            <input type="password" id="authSenha" placeholder="Sua Senha">
+            <button type="button" id="btnVisualizarSenha" class="btn-olho" onclick="toggleVisualizacaoSenha()">👁️</button>
+        </div>
         <button id="btnAuth" onclick="processarAutenticacao()">Entrar</button>
         <span id="authToggle" class="auth-toggle" onclick="alternarModoAuth()">Não tem conta? Cadastre-se</span>
     </div>
@@ -186,6 +207,20 @@
         let modoAuth = 'login';
         let usuarioLogado = JSON.parse(localStorage.getItem('usuario_spa')) || null;
  
+        // 🔒 FUNÇÃO ATUALIZADA: CONTROLADOR VISUAL DA SENHA
+        function toggleVisualizacaoSenha() {
+            const campoSenha = document.getElementById('authSenha');
+            const botaoOlho = document.getElementById('btnVisualizarSenha');
+            
+            if (campoSenha.type === 'password') {
+                campoSenha.type = 'text';
+                botaoOlho.textContent = '🔒';
+            } else {
+                campoSenha.type = 'password';
+                botaoOlho.textContent = '👁️';
+            }
+        }
+
         function exibirNotificacaoSpa(titulo, texto, icone = '🌿') {
             document.getElementById('notificacaoIcone').innerText = icone;
             document.getElementById('notificacaoTitulo').innerText = titulo;
@@ -216,6 +251,12 @@
             const titulo = document.getElementById('authTitulo');
             const btn = document.getElementById('btnAuth');
             const toggle = document.getElementById('authToggle');
+            const campoSenha = document.getElementById('authSenha');
+            const botaoOlho = document.getElementById('btnVisualizarSenha');
+            
+            // Força a senha a voltar a ficar oculta ao alternar abas
+            campoSenha.type = 'password';
+            botaoOlho.textContent = '👁️';
  
             if (modoAuth === 'login') {
                 modoAuth = 'cadastro';
@@ -263,9 +304,7 @@
                 return;
             }
 
-            // 🔒 NOVA VALIDAÇÃO DE SEGURANÇA DA SENHA (Apenas para o momento do Cadastro)
             if (modoAuth === 'cadastro') {
-                // Regex para: Mínimo 8 caracteres, contendo no mínimo 1 letra maiúscula, 1 minúscula e 1 caractere especial
                 const regexSenha = /^(?=.*[a-z])(?=.*[A-Z])(?=.*[@$!%*?&#,.]).{8,}$/;
                 
                 if (!regexSenha.test(senha)) {
@@ -274,7 +313,7 @@
                         '⚠️ Sua senha precisa ter no mínimo 8 caracteres, incluindo pelo menos uma letra maiúscula, uma letra minúscula e um caractere especial (ex: @, #, $, !).', 
                         '🔒'
                     );
-                    return; // Interrompe o fluxo e impede o envio para a API
+                    return;
                 }
             }
  
@@ -294,7 +333,7 @@
                 if (modoAuth === 'cadastro') {
                     exibirNotificacaoSpa('Conta Criada', '🎉 Sua jornada começou! Conta criada com sucesso. Faça seu login agora para agendar.', '✨');
                     alternarModoAuth();
-                    document.getElementById('authSenha').value = ''; // Limpa o campo por segurança
+                    document.getElementById('authSenha').value = ''; 
                 } else {
                     usuarioLogado = data.usuario;
                     localStorage.setItem('usuario_spa', JSON.stringify(usuarioLogado));
@@ -471,13 +510,17 @@
             document.getElementById('confirmarCancelamentoModal').style.display = 'flex';
         }
 
-        async function ejecutarCancelamentoConfirmado() {
+        // 🛠️ FUNÇÃO DE CANCELAMENTO TOTALMENTE RESTAURADA E INTEGRADA AO BACKEND
+        async function executarCancelamentoConfirmado() {
             const id = document.getElementById('cancelarAgendamentoId').value;
             fecharModal('confirmarCancelamentoModal');
  
             try {
                 const response = await fetch(`/api/agendamentos/${id}`, { 
-                    method: 'DELETE' 
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
                 });
                 
                 if(response.ok) {
