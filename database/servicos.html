@@ -32,24 +32,28 @@
         }
         .auth-container input { width: 100%; padding: 10px; margin: 5px 0; border: 1px solid #ccc; border-radius: 6px; }
         
-        /* Ajuste do container de senha para comportar o botão do olho */
+        /* ALTERAÇÃO EXCLUSIVA DA SESSÃO DO BOTÃO DE VISUALIZAR SENHA (CORRIGIDO) */
         .wrapper-senha {
             position: relative;
-            display: flex;
-            align-items: center;
             width: 100%;
         }
-        /* Garante que o texto longo não fique por baixo do botão */
         .wrapper-senha input {
-            padding-right: 35px;
+            padding-right: 40px; /* Garante espaço para o olho sem cobrir o texto */
+            width: 100%;
         }
         .btn-olho {
             position: absolute;
-            right: 10px;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%); /* Centraliza perfeitamente na vertical */
             background: none;
             border: none;
+            padding: 0;
+            margin: 0;
+            width: auto;
+            height: auto;
             cursor: pointer;
-            font-size: 14px;
+            font-size: 16px;
             opacity: 0.6;
             z-index: 5;
             transition: opacity 0.2s ease;
@@ -57,6 +61,7 @@
         .btn-olho:hover {
             opacity: 1;
         }
+        /* ----------------------------------------------------------------- */
 
         .auth-container button { width: 100%; padding: 10px; background: #6a11cb; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 5px; }
         .auth-toggle { font-size: 13px; color: #2575fc; cursor: pointer; margin-top: 10px; display: inline-block; }
@@ -520,7 +525,7 @@
         }
 
         // 🛠️ FUNÇÃO DE CANCELAMENTO TOTALMENTE RESTAURADA E INTEGRADA AO BACKEND
-        async function ejecutarCancelamentoConfirmado() {
+        async function executarCancelamentoConfirmado() {
             const id = document.getElementById('cancelarAgendamentoId').value;
             fecharModal('confirmarCancelamentoModal');
  
