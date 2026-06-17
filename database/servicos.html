@@ -87,7 +87,7 @@
         .btn-fechar:hover { color: #333; }
 
         /* ✨ INTERFACE DE NOTIFICAÇÕES CUSTOMIZADAS ✨ */
-        .modal-icone font-size: 45px; margin-bottom: 15px; display: block; }
+        .modal-icone { font-size: 45px; margin-bottom: 15px; display: block; }
         .modal-mensagem { color: #555; font-size: 15px; line-height: 1.6; margin-bottom: 10px; }
         
         .btn-modal-neutro { background: #6a11cb; color: white; padding: 12px 25px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 15px; width: 100%; }
@@ -262,6 +262,21 @@
                 exibirNotificacaoSpa('Atenção', '⚠️ Por favor, preencha todos os campos necessários para prosseguir.', '✨');
                 return;
             }
+
+            // 🔒 NOVA VALIDAÇÃO DE SEGURANÇA DA SENHA (Apenas para o momento do Cadastro)
+            if (modoAuth === 'cadastro') {
+                // Regex para: Mínimo 8 caracteres, contendo no mínimo 1 letra maiúscula, 1 minúscula e 1 caractere especial
+                const regexSenha = /^(?=.*[a-z])(?=.*[A-Z])(?=.*[@$!%*?&#,.]).{8,}$/;
+                
+                if (!regexSenha.test(senha)) {
+                    exibirNotificacaoSpa(
+                        'Senha Fraca', 
+                        '⚠️ Sua senha precisa ter no mínimo 8 caracteres, incluindo pelo menos uma letra maiúscula, uma letra minúscula e um caractere especial (ex: @, #, $, !).', 
+                        '🔒'
+                    );
+                    return; // Interrompe o fluxo e impede o envio para a API
+                }
+            }
  
             const urlApi = modoAuth === 'cadastro' ? '/cadastrar' : '/api/login';
             const payload = modoAuth === 'cadastro' ? { nome, email, senha } : { email, senha };
@@ -279,6 +294,7 @@
                 if (modoAuth === 'cadastro') {
                     exibirNotificacaoSpa('Conta Criada', '🎉 Sua jornada começou! Conta criada com sucesso. Faça seu login agora para agendar.', '✨');
                     alternarModoAuth();
+                    document.getElementById('authSenha').value = ''; // Limpa o campo por segurança
                 } else {
                     usuarioLogado = data.usuario;
                     localStorage.setItem('usuario_spa', JSON.stringify(usuarioLogado));
@@ -450,16 +466,12 @@
             } catch(e) { status.style.color = "red"; status.innerText = "❌ Erro na conexão."; }
         }
  
-        // --- FUNÇÕES CORRIGIDAS DO FLUXO DE CANCELAMENTO ---
         function solicitarCancelamento(id) {
-            // Guarda o ID no input oculto do modal de confirmação
             document.getElementById('cancelarAgendamentoId').value = id;
-            // Abre o modal estilizado na tela
             document.getElementById('confirmarCancelamentoModal').style.display = 'flex';
         }
 
-        async function executarCancelamentoConfirmado() {
-            // Resgata o ID guardado anteriormente
+        async function ejecutarCancelamentoConfirmado() {
             const id = document.getElementById('cancelarAgendamentoId').value;
             fecharModal('confirmarCancelamentoModal');
  
@@ -474,7 +486,6 @@
                         'Seu agendamento foi cancelado. Sentiremos sua falta, mas lembre-se que as portas do templo Zenith estarão sempre abertas para quando seu espírito precisar de paz.', 
                         '🌅'
                     );
-                    // Atualiza a lista na tela imediatamente
                     carregarMeusAgendamentos();
                 } else { 
                     const erroServidor = await response.json();
