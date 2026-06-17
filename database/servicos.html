@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Zenith Spa - Serviços</title>
+    <title>Spa Panaceia - Serviços</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
         body {
@@ -39,14 +39,23 @@
             align-items: center;
             width: 100%;
         }
+        /* Garante que o texto longo não fique por baixo do botão */
+        .wrapper-senha input {
+            padding-right: 35px;
+        }
         .btn-olho {
             position: absolute;
-            right: 12px;
+            right: 10px;
             background: none;
             border: none;
             cursor: pointer;
-            font-size: 16px;
+            font-size: 14px;
+            opacity: 0.6;
             z-index: 5;
+            transition: opacity 0.2s ease;
+        }
+        .btn-olho:hover {
+            opacity: 1;
         }
 
         .auth-container button { width: 100%; padding: 10px; background: #6a11cb; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 5px; }
@@ -148,7 +157,7 @@
     <div id="secao-agendamentos" class="secao-conteudo">
         <header>
             <h1>📅 Seus Agendamentos</h1>
-            <p>Gerencie seus horários reservados no Zenith Spa</p>
+            <p>Gerencie seus horários reservados no Spa Panaceia</p>
         </header>
         <div class="lista-agendamentos" id="container-meus-agendamentos">
             <p style="text-align: center;">Por favor, faça login para ver seus agendamentos.</p>
@@ -162,7 +171,7 @@
             <input type="hidden" id="modalServicoId">
             <label for="modalData">Escolha a Data e Horário:</label>
             <input type="datetime-local" id="modalData" required>
-            <button class="btn-confirmar" style="background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);" onclick="enviarAgendamento()">Confirmar Agendamento</button>
+            <button class="btn-confirmar" style="background: linear-gradient(135deg, #6a11cb 0%, #2575fc(100%));" onclick="enviarAgendamento()">Confirmar Agendamento</button>
             <p id="modalStatus" style="margin-top: 15px; font-size: 14px; font-weight: 500;"></p>
         </div>
     </div>
@@ -419,7 +428,7 @@
                     fecharModal('agendamentoModal');
                     exibirNotificacaoSpa(
                         'Momento Confirmado!', 
-                        `Gratidão, ${usuarioLogado.nome}! Seu momento Zenith foi agendado com sucesso. Prepare-se para renovar suas energias e alinhar seu bem-estar.`, 
+                        `Gratidão, ${usuarioLogado.nome}! Seu momento Spa Panaceia foi agendado com sucesso. Prepare-se para renovar suas energias e alinhar seu bem-estar.`, 
                         '✨'
                     );
                     carregarServicos();
@@ -511,7 +520,7 @@
         }
 
         // 🛠️ FUNÇÃO DE CANCELAMENTO TOTALMENTE RESTAURADA E INTEGRADA AO BACKEND
-        async function executarCancelamentoConfirmado() {
+        async function ejecutarCancelamentoConfirmado() {
             const id = document.getElementById('cancelarAgendamentoId').value;
             fecharModal('confirmarCancelamentoModal');
  
@@ -526,7 +535,7 @@
                 if(response.ok) {
                     exibirNotificacaoSpa(
                         'Reserva Cancelada', 
-                        'Seu agendamento foi cancelado. Sentiremos sua falta, mas lembre-se que as portas do templo Zenith estarão sempre abertas para quando seu espírito precisar de paz.', 
+                        'Seu agendamento foi cancelado. Sentiremos sua falta, mas lembre-se que as portas do templo Spa Panaceia estarão sempre abertas para quando seu espírito precisar de paz.', 
                         '🌅'
                     );
                     carregarMeusAgendamentos();
