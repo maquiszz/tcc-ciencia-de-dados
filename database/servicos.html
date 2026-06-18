@@ -32,36 +32,8 @@
         }
         .auth-container input { width: 100%; padding: 10px; margin: 5px 0; border: 1px solid #ccc; border-radius: 6px; }
         
-        /* ALTERAÇÃO EXCLUSIVA DA SESSÃO DO BOTÃO DE VISUALIZAR SENHA (CORRIGIDO) */
-        .wrapper-senha {
-            position: relative;
-            width: 100%;
-        }
-        .wrapper-senha input {
-            padding-right: 40px; /* Garante espaço para o olho sem cobrir o texto */
-            width: 100%;
-        }
-        .btn-olho {
-            position: absolute;
-            right: 12px;
-            top: 50%;
-            transform: translateY(-50%); /* Centraliza perfeitamente na vertical */
-            background: none;
-            border: none;
-            padding: 0;
-            margin: 0;
-            width: auto;
-            height: auto;
-            cursor: pointer;
-            font-size: 16px;
-            opacity: 0.6;
-            z-index: 5;
-            transition: opacity 0.2s ease;
-        }
-        .btn-olho:hover {
-            opacity: 1;
-        }
-        /* ----------------------------------------------------------------- */
+        .wrapper-senha { position: relative; width: 100%; }
+        .wrapper-senha input { width: 100%; }
 
         .auth-container button { width: 100%; padding: 10px; background: #6a11cb; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 5px; }
         .auth-toggle { font-size: 13px; color: #2575fc; cursor: pointer; margin-top: 10px; display: inline-block; }
@@ -71,9 +43,7 @@
         .secao-conteudo { width: 100%; max-width: 1200px; display: none; }
         .secao-conteudo.ativa { display: block; }
         
-        .grid-servicos {
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 30px;
-        }
+        .grid-servicos { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 30px; }
         .card {
             background: white; border-radius: 15px; overflow: hidden;
             box-shadow: 0 10px 20px rgba(0,0,0,0.05); transition: transform 0.3s;
@@ -102,13 +72,27 @@
  
         /* 🗓️ ESTILOS DOS MODAIS */
         .modal-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.4); display: none; justify-content: center; align-items: center;
-            backdrop-filter: blur(6px); z-index: 1000;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.55);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(6px);
+            z-index: 99999 !important;
         }
         .modal-box {
-            background: rgba(255, 255, 255, 0.95); padding: 30px; border-radius: 20px; width: 90%; max-width: 420px;
-            box-shadow: 0 15px 35px rgba(31, 38, 135, 0.15); text-align: center; position: relative;
+            background: rgba(255, 255, 255, 1);
+            padding: 30px;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 420px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+            text-align: center;
+            position: relative;
             border: 1px solid rgba(255, 255, 255, 0.2);
         }
         .modal-box h3 { margin-bottom: 15px; color: #333; font-size: 22px; }
@@ -143,7 +127,6 @@
         <input type="email" id="authEmail" placeholder="seuemail@gmail.com">
         <div class="wrapper-senha">
             <input type="password" id="authSenha" placeholder="Sua Senha">
-            <button type="button" id="btnVisualizarSenha" class="btn-olho" onclick="toggleVisualizacaoSenha()">👁️</button>
         </div>
         <button id="btnAuth" onclick="processarAutenticacao()">Entrar</button>
         <span id="authToggle" class="auth-toggle" onclick="alternarModoAuth()">Não tem conta? Cadastre-se</span>
@@ -176,7 +159,7 @@
             <input type="hidden" id="modalServicoId">
             <label for="modalData">Escolha a Data e Horário:</label>
             <input type="datetime-local" id="modalData" required>
-            <button class="btn-confirmar" style="background: linear-gradient(135deg, #6a11cb 0%, #2575fc(100%));" onclick="enviarAgendamento()">Confirmar Agendamento</button>
+            <button class="btn-confirmar" style="background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);" onclick="enviarAgendamento()">Confirmar Agendamento</button>
             <p id="modalStatus" style="margin-top: 15px; font-size: 14px; font-weight: 500;"></p>
         </div>
     </div>
@@ -209,8 +192,8 @@
             <p class="modal-mensagem">Você está prestes a remover permanentemente esta reserva do seu histórico de autocuidado. Deseja prosseguir?</p>
             <input type="hidden" id="cancelarAgendamentoId">
             <div class="flex-botoes">
-                <button class="btn-modal-cancelar-nao" onclick="fecharModal('confirmarCancelamentoModal')">Manter Reserva</button>
-                <button class="btn-modal-cancelar-sim" onclick="executarCancelamentoConfirmado()">Sim, Cancelar</button>
+                <button type="button" class="btn-modal-cancelar-nao" onclick="fecharModal('confirmarCancelamentoModal')">Manter Reserva</button>
+                <button type="button" class="btn-modal-cancelar-sim" onclick="executarCancelamentoConfirmado()">Sim, Cancelar</button>
             </div>
         </div>
     </div>
@@ -221,25 +204,20 @@
         let modoAuth = 'login';
         let usuarioLogado = JSON.parse(localStorage.getItem('usuario_spa')) || null;
  
-        // 🔒 FUNÇÃO ATUALIZADA: CONTROLADOR VISUAL DA SENHA
-        function toggleVisualizacaoSenha() {
-            const campoSenha = document.getElementById('authSenha');
-            const botaoOlho = document.getElementById('btnVisualizarSenha');
-            
-            if (campoSenha.type === 'password') {
-                campoSenha.type = 'text';
-                botaoOlho.textContent = '🔒';
-            } else {
-                campoSenha.type = 'password';
-                botaoOlho.textContent = '👁️';
-            }
-        }
-
         function exibirNotificacaoSpa(titulo, texto, icone = '🌿') {
+            fecharTodosModais();
             document.getElementById('notificacaoIcone').innerText = icone;
             document.getElementById('notificacaoTitulo').innerText = titulo;
             document.getElementById('notificacaoTexto').innerText = texto;
             document.getElementById('notificacaoModal').style.display = 'flex';
+        }
+
+        function fecharTodosModais() {
+            const modais = ['agendamentoModal', 'reagendamentoModal', 'notificacaoModal', 'confirmarCancelamentoModal'];
+            modais.forEach(id => {
+                const el = document.getElementById(id);
+                if(el) el.style.display = 'none';
+            });
         }
 
         function alternarAbas(aba) {
@@ -266,11 +244,8 @@
             const btn = document.getElementById('btnAuth');
             const toggle = document.getElementById('authToggle');
             const campoSenha = document.getElementById('authSenha');
-            const botaoOlho = document.getElementById('btnVisualizarSenha');
             
-            // Força a senha a voltar a ficar oculta ao alternar abas
             campoSenha.type = 'password';
-            botaoOlho.textContent = '👁️';
  
             if (modoAuth === 'login') {
                 modoAuth = 'cadastro';
@@ -398,7 +373,7 @@
  
         function abrirModalAgendamento(id, tipo) {
             if(!usuarioLogado) {
-                exibirNotificacaoSpa('Identificação Necessária', 'Para reservar uma experiência relaxante, por favor faça login na parte superior da página.', '🔒');
+                exibirNotificacaoSpa('Identificação Necessary', 'Para reservar uma experiência relaxante, por favor faça login na parte superior da página.', '🔒');
                 window.scrollTo({top: 0, behavior: 'smooth'});
                 return;
             }
@@ -409,7 +384,8 @@
         }
  
         function fecharModal(idModal) {
-            document.getElementById(idModal).style.display = 'none';
+            const el = document.getElementById(idModal);
+            if(el) el.style.display = 'none';
         }
  
         async function enviarAgendamento() {
@@ -477,8 +453,8 @@
                                 <p>💰 <strong>Valor:</strong> ${servicoValor}</p>
                             </div>
                             <div class="item-agendamento-acoes">
-                                <button class="btn-remarcar" onclick="abrirModalRemarcar(${agend.id})">Remarcar</button>
-                                <button class="btn-cancelar" onclick="solicitarCancelamento(${agend.id})">Cancelar</button>
+                                <button type="button" class="btn-remarcar" onclick="abrirModalRemarcar(${agend.id})">Remarcar</button>
+                                <button type="button" class="btn-cancelar" onclick="solicitarCancelamento(${agend.id})">Cancelar</button>
                             </div>
                         </div>
                     `;
@@ -490,6 +466,7 @@
         }
  
         function abrirModalRemarcar(id) {
+            fecharTodosModais();
             document.getElementById('reagendarId').value = id;
             document.getElementById('reagendarStatus').innerText = '';
             document.getElementById('reagendamentoModal').style.display = 'flex';
@@ -520,24 +497,31 @@
         }
  
         function solicitarCancelamento(id) {
+            fecharTodosModais();
             document.getElementById('cancelarAgendamentoId').value = id;
             document.getElementById('confirmarCancelamentoModal').style.display = 'flex';
         }
 
-        // 🛠️ FUNÇÃO DE CANCELAMENTO TOTALMENTE RESTAURADA E INTEGRADA AO BACKEND
+        /* 🔎 FUNÇÃO COM TESTE DE DIAGNÓSTICO INTEGRADO */
         async function executarCancelamentoConfirmado() {
             const id = document.getElementById('cancelarAgendamentoId').value;
-            fecharModal('confirmarCancelamentoModal');
+            console.log(`[SPA DIAGNÓSTICO] Iniciando cancelamento para o ID: ${id}`);
  
             try {
-                const response = await fetch(`/api/agendamentos/${id}`, { 
+                const url = `/api/agendamentos/${id}`;
+                console.log(`[SPA DIAGNÓSTICO] Disparando FETCH DELETE para: ${url}`);
+
+                const response = await fetch(url, { 
                     method: 'DELETE',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
+                    headers: { 'Content-Type': 'application/json' }
                 });
                 
+                console.log(`[SPA DIAGNÓSTICO] Resposta do back-end recebida. Status HTTP: ${response.status}`);
+                
                 if(response.ok) {
+                    console.log("[SPA DIAGNÓSTICO] Sucesso! Status retornado na faixa 200 (OK).");
+                    fecharModal('confirmarCancelamentoModal'); 
+                    
                     exibirNotificacaoSpa(
                         'Reserva Cancelada', 
                         'Seu agendamento foi cancelado. Sentiremos sua falta, mas lembre-se que as portas do templo Spa Panaceia estarão sempre abertas para quando seu espírito precisar de paz.', 
@@ -545,11 +529,22 @@
                     );
                     carregarMeusAgendamentos();
                 } else { 
-                    const erroServidor = await response.json();
-                    exibirNotificacaoSpa('Ops!', `Não foi possível processar o cancelamento: ${erroServidor.error || 'Erro desconhecido'}`, '🍃'); 
+                    // O servidor respondeu, mas barrou com erro (ex: 400, 404, 500)
+                    const erroServidor = await response.json().catch(() => ({ error: 'Resposta não é um JSON válido.' }));
+                    console.error("[SPA DIAGNÓSTICO] O Back-end barrou a requisição:", erroServidor);
+                    
+                    fecharModal('confirmarCancelamentoModal');
+                    exibirNotificacaoSpa(
+                        'Não foi possível processar', 
+                        `O servidor rejeitou a ação. Motivo: ${erroServidor.error || 'Erro interno no servidor.'}`, 
+                        '🍃'
+                    ); 
                 }
             } catch(e) { 
-                exibirNotificacaoSpa('Erro de Conexão', 'Falha na comunicação com o servidor central.', '📴'); 
+                // Erro de rede total (Network Error / Rota inexistente / Servidor fora do ar)
+                console.error("[SPA DIAGNÓSTICO] Falha crítica de rede ao tentar fazer o Fetch:", e);
+                fecharModal('confirmarCancelamentoModal');
+                exibirNotificacaoSpa('Erro de Conexão', 'Não foi possível estabelecer contato com o servidor central.', '📴'); 
             }
         }
  
