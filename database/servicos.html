@@ -110,6 +110,20 @@
         .btn-modal-cancelar-sim { background: #e74c3c; color: white; padding: 12px 20px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; flex: 1; }
         .btn-modal-cancelar-nao { background: #95a5a6; color: white; padding: 12px 20px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; flex: 1; }
         .flex-botoes { display: flex; gap: 12px; margin-top: 20px; }
+
+        /* Estilo para a descrição do serviço no modal */
+        .modal-servico-descricao {
+            font-size: 14px;
+            color: #666;
+            line-height: 1.5;
+            background: #f8fafc;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: -5px;
+            margin-bottom: 15px;
+            text-align: left;
+            border-left: 3px solid #6a11cb;
+        }
     </style>
 </head>
 <body>
@@ -156,6 +170,9 @@
         <div class="modal-box">
             <button class="btn-fechar" onclick="fecharModal('agendamentoModal')">&times;</button>
             <h3 id="modalTitulo">Agendar Serviço</h3>
+            
+            <div id="modalServicoDescricao" class="modal-servico-descricao"></div>
+
             <input type="hidden" id="modalServicoId">
             <label for="modalData">Escolha a Data e Horário:</label>
             <input type="datetime-local" id="modalData" required>
@@ -193,7 +210,7 @@
             <input type="hidden" id="cancelarAgendamentoId">
             <div class="flex-botoes">
                 <button type="button" class="btn-modal-cancelar-nao" onclick="fecharModal('confirmarCancelamentoModal')">Manter Reserva</button>
-                <button type="button" class="btn-modal-cancelar-sim" onclick="executarCancelamentoConfirmado()">Sim, Cancelar</button>
+                <button type="button" class="btn-modal-cancelar-sim" onclick="ejecutarCancelamentoConfirmado()">Sim, Cancelar</button>
             </div>
         </div>
     </div>
@@ -295,13 +312,8 @@
 
             if (modoAuth === 'cadastro') {
                 const regexSenha = /^(?=.*[a-z])(?=.*[A-Z])(?=.*[@$!%*?&#,.]).{8,}$/;
-                
                 if (!regexSenha.test(senha)) {
-                    exibirNotificacaoSpa(
-                        'Senha Fraca', 
-                        '⚠️ Sua senha precisa ter no mínimo 8 caracteres, incluindo pelo menos uma letra maiúscula, uma letra minúscula e um caractere especial (ex: @, #, $, !).', 
-                        '🔒'
-                    );
+                    exibirNotificacaoSpa('Senha Fraca', '⚠️ Sua senha precisa ter no mínimo 8 caracteres, incluindo pelo menos uma letra maiúscula, uma letra minúscula e um caractere especial.', '🔒');
                     return;
                 }
             }
@@ -320,7 +332,7 @@
                 if (!response.ok) throw new Error(data.error || "Erro na operação");
  
                 if (modoAuth === 'cadastro') {
-                    exibirNotificacaoSpa('Conta Criada', '🎉 Sua jornada começou! Conta criada com sucesso. Faça seu login agora para agendar.', '✨');
+                    exibirNotificacaoSpa('Conta Criada', '🎉 Conta criada com sucesso. Faça seu login para agendar.', '✨');
                     alternarModoAuth();
                     document.getElementById('authSenha').value = ''; 
                 } else {
@@ -349,6 +361,8 @@
                 }
  
                 servicosDados.forEach(servico => {
+                    const descricaoTratada = (servico.descricao || "Sem descrição disponível para este serviço no momento.").replace(/'/g, "\\'");
+
                     const cardHtml = `
                         <div class="card">
                             <img src="${servico.imagem_url || 'https://images.unsplash.com/photo-1600334089648-b0d9d3028eb2?w=500'}" alt="${servico.tipo}">
@@ -359,7 +373,7 @@
                                 </div>
                                 <div>
                                     <p class="card-contratos">Contratado ${servico.contratos} vezes</p>
-                                    <button class="btn-contratar" onclick="abrirModalAgendamento(${servico.id}, '${servico.tipo}')">Agendar Serviço</button>
+                                    <button class="btn-contratar" onclick="abrirModalAgendamento(${servico.id}, '${servico.tipo}', '${descricaoTratada}')">Agendar Serviço</button>
                                 </div>
                             </div>
                         </div>
@@ -371,14 +385,20 @@
             }
         }
  
-        function abrirModalAgendamento(id, tipo) {
+        function abrirModalAgendamento(id, tipo, descricao) {
             if(!usuarioLogado) {
-                exibirNotificacaoSpa('Identificação Necessary', 'Para reservar uma experiência relaxante, por favor faça login na parte superior da página.', '🔒');
+                exibirNotificacaoSpa('Identificação Necessária', 'Para reservar uma experiência relaxante, por favor faça login na parte superior da página.', '🔒');
                 window.scrollTo({top: 0, behavior: 'smooth'});
                 return;
             }
             document.getElementById('modalServicoId').value = id;
             document.getElementById('modalTitulo').innerText = `Agendar: ${tipo}`;
+            
+            const campoDescricao = document.getElementById('modalServicoDescricao');
+            if (campoDescricao) {
+                campoDescricao.innerText = descricao;
+            }
+            
             document.getElementById('modalStatus').innerText = '';
             document.getElementById('agendamentoModal').style.display = 'flex';
         }
@@ -407,11 +427,7 @@
                 const resultado = await response.json();
                 if (response.ok) {
                     fecharModal('agendamentoModal');
-                    exibirNotificacaoSpa(
-                        'Momento Confirmado!', 
-                        `Gratidão, ${usuarioLogado.nome}! Seu momento Spa Panaceia foi agendado com sucesso. Prepare-se para renovar suas energias e alinhar seu bem-estar.`, 
-                        '✨'
-                    );
+                    exibirNotificacaoSpa('Momento Confirmado!', `Gratidão, ${usuarioLogado.nome}! Seu momento Spa Panaceia foi agendado com sucesso.`, '✨');
                     carregarServicos();
                 } else {
                     status.style.color = "#e74c3c"; status.innerText = `❌ ${resultado.error}`;
@@ -488,7 +504,7 @@
  
                 if(response.ok) {
                     fecharModal('reagendamentoModal');
-                    exibirNotificacaoSpa('Horário Updated', 'Sua nova janela de tranquilidade foi reagendada com sucesso!', '📅');
+                    exibirNotificacaoSpa('Horário Atualizado', 'Sua nova janela de tranquilidade foi reagendada com sucesso!', '📅');
                     carregarMeusAgendamentos();
                 } else {
                     status.style.color = "red"; status.innerText = "❌ Ocorreu um erro ao atualizar.";
@@ -502,8 +518,7 @@
             document.getElementById('confirmarCancelamentoModal').style.display = 'flex';
         }
 
-        /* 🔎 FUNÇÃO COM TESTE DE DIAGNÓSTICO INTEGRADO */
-        async function executarCancelamentoConfirmado() {
+        async function ejecutarCancelamentoConfirmado() {
             const id = document.getElementById('cancelarAgendamentoId').value;
             console.log(`[SPA DIAGNÓSTICO] Iniciando cancelamento para o ID: ${id}`);
  
@@ -529,7 +544,6 @@
                     );
                     carregarMeusAgendamentos();
                 } else { 
-                    // O servidor respondeu, mas barrou com erro (ex: 400, 404, 500)
                     const erroServidor = await response.json().catch(() => ({ error: 'Resposta não é um JSON válido.' }));
                     console.error("[SPA DIAGNÓSTICO] O Back-end barrou a requisição:", erroServidor);
                     
@@ -541,7 +555,6 @@
                     ); 
                 }
             } catch(e) { 
-                // Erro de rede total (Network Error / Rota inexistente / Servidor fora do ar)
                 console.error("[SPA DIAGNÓSTICO] Falha crítica de rede ao tentar fazer o Fetch:", e);
                 fecharModal('confirmarCancelamentoModal');
                 exibirNotificacaoSpa('Erro de Conexão', 'Não foi possível estabelecer contato com o servidor central.', '📴'); 
