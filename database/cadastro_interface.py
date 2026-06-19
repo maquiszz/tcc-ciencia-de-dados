@@ -59,8 +59,8 @@ def cadastrar():
     if not nome or not email or not senha_limpa:
         return jsonify({"error": "Nome, e-mail e senha são obrigatórios."}), 400
 
-    # 🔒 CRIPTOGRAFIA: Transforma a senha em um Hash seguro antes de salvar
-    senha_criptografada = generate_password_hash(senha_limpa)
+    # 🔒 CRIPTOGRAFIA ATUALIZADA: Especifica o método explicitamente para garantir compatibilidade entre ambientes
+    senha_criptografada = generate_password_hash(senha_limpa, method='pbkdf2:sha256')
 
     try:
         supabase.table("usuarios").insert({
@@ -137,8 +137,8 @@ def criar_agendamento():
 
         servico_atual = supabase.table("servico").select("contratos").eq("id", servico_id).execute()
         if servico_atual.data:
-            contratos_atuais = servico_atual.data[0].get('contratos', 0)
-            supabase.table("servico").update({"contratos": contratos_atuais + 1}).eq("id", servico_id).execute()
+            contracts_atuais = servico_atual.data[0].get('contratos', 0)
+            supabase.table("servico").update({"contratos": contracts_atuais + 1}).eq("id", servico_id).execute()
 
         return jsonify({"message": "Agendamento realizado com sucesso!"}), 201
     except Exception as e:

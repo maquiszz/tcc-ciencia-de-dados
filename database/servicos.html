@@ -104,7 +104,7 @@
         header h1 { color: #333; font-size: 32px; margin-bottom: 10px; }
         header p { color: #666; font-size: 16px; }
  
-        /* 🔐 ÁREA DE AUTENTICAÇÃO (MUDOU DE LUGAR NA TELA) */
+        /* 🔐 ÁREA DE AUTENTICAÇÃO */
         .auth-container {
             background: white; padding: 25px; border-radius: 15px; margin: 40px auto;
             box-shadow: 0 4px 15px rgba(0,0,0,0.05); width: 100%; max-width: 400px; text-align: center;
@@ -114,10 +114,6 @@
             display: block;
         }
         .auth-container input { width: 100%; padding: 10px; margin: 5px 0; border: 1px solid #ccc; border-radius: 6px; }
-        
-        .wrapper-senha { position: relative; width: 100%; }
-        .wrapper-senha input { width: 100%; }
-
         .auth-container button { width: 100%; padding: 10px; background: #6a11cb; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 5px; }
         .auth-toggle { font-size: 13px; color: #2575fc; cursor: pointer; margin-top: 10px; display: inline-block; }
  
@@ -184,35 +180,14 @@
         .btn-fechar { position: absolute; top: 12px; right: 15px; background: none; border: none; font-size: 24px; cursor: pointer; color: #aaa; }
         .btn-fechar:hover { color: #333; }
 
-<<<<<<< HEAD
-=======
-        /* ✨ INTERFACE DE NOTIFICAÇÕES CUSTOMIZADAS ✨ */
-        .modal-icone { font-size: 45px; margin-bottom: 15px; display: block; }
->>>>>>> 4de1232f92356df0a69647b5cab7d2b46c17e5c5
         .modal-mensagem { color: #555; font-size: 15px; line-height: 1.6; margin-bottom: 10px; }
         .btn-modal-neutro { background: #6a11cb; color: white; padding: 12px 25px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 15px; width: 100%; }
         .btn-modal-cancelar-sim { background: #e74c3c; color: white; padding: 12px 20px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; flex: 1; }
         .btn-modal-cancelar-nao { background: #95a5a6; color: white; padding: 12px 20px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; flex: 1; }
         .flex-botoes { display: flex; gap: 12px; margin-top: 20px; }
-<<<<<<< HEAD
         .modal-servico-descricao {
             font-size: 14px; color: #666; line-height: 1.5; background: #f8fafc; padding: 12px;
             border-radius: 8px; margin-top: -5px; margin-bottom: 15px; text-align: left; border-left: 3px solid #6a11cb;
-=======
-
-        /* Estilo para a descrição do serviço no modal */
-        .modal-servico-descricao {
-            font-size: 14px;
-            color: #666;
-            line-height: 1.5;
-            background: #f8fafc;
-            padding: 12px;
-            border-radius: 8px;
-            margin-top: -5px;
-            margin-bottom: 15px;
-            text-align: left;
-            border-left: 3px solid #6a11cb;
->>>>>>> 4de1232f92356df0a69647b5cab7d2b46c17e5c5
         }
     </style>
 </head>
@@ -268,13 +243,7 @@
         <div class="modal-box">
             <button class="btn-fechar" onclick="fecharModal('agendamentoModal')">&times;</button>
             <h3 id="modalTitulo">Agendar Serviço</h3>
-<<<<<<< HEAD
             <div id="modalServicoDescricao" class="modal-servico-descricao"></div>
-=======
-            
-            <div id="modalServicoDescricao" class="modal-servico-descricao"></div>
-
->>>>>>> 4de1232f92356df0a69647b5cab7d2b46c17e5c5
             <input type="hidden" id="modalServicoId">
             <label for="modalData">Escolha a Data e Horário:</label>
             <input type="datetime-local" id="modalData" required>
@@ -326,6 +295,13 @@
         // Controla o abre/fecha do Menu Dropdown do usuário
         function toggleDropdownMenu(event) {
             event.stopPropagation();
+            
+            // AJUSTE: Se estiver deslogado, direciona direto para a aba de login ao clicar
+            if (!usuarioLogado) {
+                alternarAbas('login_tela');
+                return;
+            }
+
             document.getElementById('menuDropdownSpa').classList.toggle('ativo');
         }
 
@@ -444,7 +420,7 @@
                 });
                 const data = await response.json();
  
-                if (!response.ok) throw new Error(data.error || "Erro na operação");
+                if (!response.ok) throw new Error(data.error || "Erro na operation");
  
                 if (modoAuth === 'cadastro') {
                     exibirNotificacaoSpa('Conta Criada', '🎉 Conta criada com sucesso. Faça seu login para agendar.', '✨');
@@ -619,7 +595,7 @@
  
                 if(response.ok) {
                     fecharModal('reagendamentoModal');
-                    exibirNotificacaoSpa('Horário Atualizado', 'Sua nova janela de tranquilidade foi reagendada com sucesso!', '📅');
+                    exibirNotificacaoSpa('Horário Updated', 'Sua nova janela de tranquilidade foi reagendada com sucesso!', '📅');
                     carregarMeusAgendamentos();
                 } else {
                     status.style.color = "red"; status.innerText = "❌ Ocorreu um erro ao atualizar.";
