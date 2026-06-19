@@ -2,6 +2,7 @@ import os
 from flask import Flask, request, jsonify, send_from_directory
 from dotenv import load_dotenv
 from supabase import create_client, Client
+from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
 
@@ -53,13 +54,20 @@ def cadastrar():
     dados = request.json
     nome = dados.get('nome')
     email = dados.get('email')
-    senha = dados.get('senha')
+    senha_limpa = dados.get('senha')
 
-    if not nome or not email or not senha:
+    if not nome or not email or not senha_limpa:
         return jsonify({"error": "Nome, e-mail e senha são obrigatórios."}), 400
 
+    # 🔒 CRIPTOGRAFIA: Transforma a senha em um Hash seguro antes de salvar
+    senha_criptografada = generate_password_hash(senha_limpa)
+
     try:
-        supabase.table("usuarios").insert({"nome": nome, "email": email, "senha": senha}).execute()
+        supabase.table("usuarios").insert({
+            "nome": nome, 
+            "email": email, 
+            "senha": senha_criptografada
+        }).execute()
         return jsonify({"message": "Cadastrado com sucesso!"}), 201
     except Exception as e:
         print(f"❌ Erro ao salvar no banco: {e}")
@@ -70,9 +78,9 @@ def cadastrar():
 def login():
     dados = request.json
     email = dados.get('email')
-    senha = dados.get('senha')
+    senha_digitada = dados.get('senha')
 
-    if not email or not senha:
+    if not email or not senha_digitada:
         return jsonify({"error": "E-mail e senha são obrigatórios."}), 400
 
     try:
@@ -82,9 +90,14 @@ def login():
             return jsonify({"error": "E-mail não encontrado. Por favor, crie uma conta primeiro."}), 404
         
         user_db = usuario.data[0]
+        senha_banco = user_db.get('senha')
         
-        if user_db.get('senha') != senha:
+        # 🔒 VERIFICAÇÃO: Compara a senha digitada com o hash criptografado salvo no banco
+        if not check_password_hash(senha_banco, senha_digitada):
             return jsonify({"error": "Senha incorreta. Tente novamente."}), 401
+        
+        # Remove a senha hash do objeto antes de enviar ao frontend por boas práticas de segurança
+        user_db.pop('senha', None)
         
         return jsonify({"message": "Login realizado com sucesso!", "usuario": user_db}), 200
     except Exception as e:
