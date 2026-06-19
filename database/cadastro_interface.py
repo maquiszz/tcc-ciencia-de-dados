@@ -1,4 +1,5 @@
 import os
+from datetime import datetime
 from flask import Flask, request, jsonify, send_from_directory
 from dotenv import load_dotenv
 from supabase import create_client, Client
@@ -119,26 +120,42 @@ def criar_agendamento():
     dados = request.json
     email = dados.get('email')
     servico_id = dados.get('servico_id')
-    data_atendimento = dados.get('data')
+    data_atendimento_str = dados.get('data') # Recebe o formato "YYYY-MM-DDTHH:MM"
 
-    if not email or not servico_id or not data_atendimento:
+    if not email or not servico_id or not data_atendimento_str:
         return jsonify({"error": "Todos os campos são obrigatórios."}), 400
 
     try:
+        # 1️⃣ VALIDAÇÃO: Impede agendamentos no passado e minutos quebrados
+        data_selecionada = datetime.fromisoformat(data_atendimento_str)
+        if data_selecionada < datetime.now():
+            return jsonify({"error": "Não é possível agendar numa data ou horário que já passou."}), 400
+            
+        if data_selecionada.minute != 0:
+            return jsonify({"error": "Os agendamentos devem ser feitos em horários cheios (ex: 09:00, 10:00)."}), 400
+
+        # 2️⃣ VERIFICAÇÃO: Se o usuário existe
         usuario_existe = supabase.table("usuarios").select("email").eq("email", email).execute()
         if not usuario_existe.data:
             return jsonify({"error": "Usuário Inexistente. Crie uma conta antes de agendar."}), 404
 
+        # 3️⃣ VERIFICAÇÃO DE CONFLITO: Garante que o horário está livre na tabela
+        conflito = supabase.table("agendamentos").select("id").eq("data_atendimento", data_atendimento_str).execute()
+        if conflito.data:
+            return jsonify({"error": "Este horário já está reservado por outro cliente. Por favor, escolha outra opção."}), 409
+
+        # Insere o agendamento após passar em todos os filtros
         supabase.table("agendamentos").insert({
             "email_cliente": email,
             "servico_id": servico_id,
-            "data_atendimento": data_atendimento
+            "data_atendimento": data_atendimento_str
         }).execute()
 
+        # Atualiza a contagem de contratos do serviço
         servico_atual = supabase.table("servico").select("contratos").eq("id", servico_id).execute()
         if servico_atual.data:
-            contracts_atuais = servico_atual.data[0].get('contratos', 0)
-            supabase.table("servico").update({"contratos": contracts_atuais + 1}).eq("id", servico_id).execute()
+            contratos_atuais = servico_atual.data[0].get('contratos', 0)
+            supabase.table("servico").update({"contratos": contratos_atuais + 1}).eq("id", servico_id).execute()
 
         return jsonify({"message": "Agendamento realizado com sucesso!"}), 201
     except Exception as e:
@@ -163,15 +180,29 @@ def meus_agendamentos():
 @app.route('/api/agendamentos/<int:id>', methods=['PUT'])
 def alterar_horario(id):
     dados = request.json
-    nova_data = dados.get('data')
+    nova_data_str = dados.get('data')
 
-    if not nova_data:
+    if not nova_data_str:
         return jsonify({"error": "Nova data/hora é obrigatória."}), 400
 
     try:
-        supabase.table("agendamentos").update({"data_atendimento": nova_data}).eq("id", id).execute()
-        return jsonify({"message": "Horário updated!"}), 200
+        # 1️⃣ VALIDAÇÃO: Impede remarcações no passado e minutos quebrados
+        data_selecionada = datetime.fromisoformat(nova_data_str)
+        if data_selecionada < datetime.now():
+            return jsonify({"error": "Não é possível remarcar para uma data no passado."}), 400
+            
+        if data_selecionada.minute != 0:
+            return jsonify({"error": "Os agendamentos devem ser feitos em horários cheios (ex: 09:00, 10:00)."}), 400
+
+        # 2️⃣ VERIFICAÇÃO DE CONFLITO: Ignora o ID do próprio agendamento atual que está a mudar
+        conflito = supabase.table("agendamentos").select("id").eq("data_atendimento", nova_data_str).neq("id", id).execute()
+        if conflito.data:
+            return jsonify({"error": "Este horário já está reservado. Escolha outro momento para a sua sessão."}), 409
+
+        supabase.table("agendamentos").update({"data_atendimento": nova_data_str}).eq("id", id).execute()
+        return jsonify({"message": "Horário atualizado com sucesso!"}), 200
     except Exception as e:
+        print(f"❌ Erro ao atualizar horário: {e}")
         return jsonify({"error": "Erro ao atualizar horário no banco."}), 500
 
 
@@ -233,7 +264,5 @@ if __name__ == '__main__':
     print(" 🌿 SERVIDOR PANACEIA SPA CONFIGURADO 🌿")
     print("═"*50)
     
-    # Captura a porta do Render (ou usa 5000 se estiver local)
     porta = int(os.environ.get("PORT", 5000))
-    
     app.run(host='0.0.0.0', port=porta)

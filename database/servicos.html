@@ -246,7 +246,7 @@
             <div id="modalServicoDescricao" class="modal-servico-descricao"></div>
             <input type="hidden" id="modalServicoId">
             <label for="modalData">Escolha a Data e Horário:</label>
-            <input type="datetime-local" id="modalData" required>
+            <input type="datetime-local" id="modalData" step="3600" required>
             <button class="btn-confirmar" style="background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);" onclick="enviarAgendamento()">Confirmar Agendamento</button>
             <p id="modalStatus" style="margin-top: 15px; font-size: 14px; font-weight: 500;"></p>
         </div>
@@ -258,7 +258,7 @@
             <h3>Alterar Horário</h3>
             <input type="hidden" id="reagendarId">
             <label for="novaData">Escolha a Nova Data e Horário:</label>
-            <input type="datetime-local" id="novaData" required>
+            <input type="datetime-local" id="novaData" step="3600" required>
             <button class="btn-confirmar" style="background: #f39c12;" onclick="salvarRemarcacao()">Atualizar Horário</button>
             <p id="reagendarStatus" style="margin-top: 15px; font-size: 14px; font-weight: 500;"></p>
         </div>
@@ -296,7 +296,6 @@
         function toggleDropdownMenu(event) {
             event.stopPropagation();
             
-            // AJUSTE: Se estiver deslogado, direciona direto para a aba de login ao clicar
             if (!usuarioLogado) {
                 alternarAbas('login_tela');
                 return;
@@ -420,7 +419,7 @@
                 });
                 const data = await response.json();
  
-                if (!response.ok) throw new Error(data.error || "Erro na operation");
+                if (!response.ok) throw new Error(data.error || "Erro na operação");
  
                 if (modoAuth === 'cadastro') {
                     exibirNotificacaoSpa('Conta Criada', '🎉 Conta criada com sucesso. Faça seu login para agendar.', '✨');
@@ -476,6 +475,7 @@
             }
         }
  
+        // 📅 AJUSTADO: Bloqueia o calendário visual no passado
         function abrirModalAgendamento(id, tipo, descricao) {
             if(!usuarioLogado) {
                 exibirNotificacaoSpa('Identificação Necessária', 'Para reservar uma experiência relaxante, por favor faça seu login no menu superior.', '🔒');
@@ -489,6 +489,18 @@
             if (campoDescricao) {
                 campoDescricao.innerText = descricao;
             }
+            
+            // Define o limite mínimo dinâmico com a data/hora atual
+            const campoData = document.getElementById('modalData');
+            const agora = new Date();
+            const ano = agora.getFullYear();
+            const mes = String(agora.getMonth() + 1).padStart(2, '0');
+            const dia = String(agora.getDate()).padStart(2, '0');
+            const hora = String(agora.getHours()).padStart(2, '0');
+            const minutos = String(agora.getMinutes()).padStart(2, '0');
+            
+            campoData.min = `${ano}-${mes}-${dia}T${hora}:${minutos}`;
+            campoData.value = ""; 
             
             document.getElementById('modalStatus').innerText = '';
             document.getElementById('agendamentoModal').style.display = 'flex';
@@ -572,9 +584,22 @@
             }
         }
  
+        // 📅 AJUSTADO: Bloqueia o calendário no passado ao remarcar horários
         function abrirModalRemarcar(id) {
             fecharTodosModais();
             document.getElementById('reagendarId').value = id;
+            
+            const campoNovaData = document.getElementById('novaData');
+            const agora = new Date();
+            const ano = agora.getFullYear();
+            const mes = String(agora.getMonth() + 1).padStart(2, '0');
+            const dia = String(agora.getDate()).padStart(2, '0');
+            const hora = String(agora.getHours()).padStart(2, '0');
+            const minutos = String(agora.getMinutes()).padStart(2, '0');
+            
+            campoNovaData.min = `${ano}-${mes}-${dia}T${hora}:${minutos}`;
+            campoNovaData.value = "";
+
             document.getElementById('reagendarStatus').innerText = '';
             document.getElementById('reagendamentoModal').style.display = 'flex';
         }
@@ -593,12 +618,13 @@
                     body: JSON.stringify({ data: novaData })
                 });
  
+                const resultado = await response.json();
                 if(response.ok) {
                     fecharModal('reagendamentoModal');
-                    exibirNotificacaoSpa('Horário Updated', 'Sua nova janela de tranquilidade foi reagendada com sucesso!', '📅');
+                    exibirNotificacaoSpa('Horário Atualizado', 'Sua nova janela de tranquilidade foi reagendada com sucesso!', '📅');
                     carregarMeusAgendamentos();
                 } else {
-                    status.style.color = "red"; status.innerText = "❌ Ocorreu um erro ao atualizar.";
+                    status.style.color = "red"; status.innerText = `❌ ${resultado.error}`;
                 }
             } catch(e) { status.style.color = "red"; status.innerText = "❌ Erro na conexão."; }
         }
@@ -611,23 +637,16 @@
 
         async function ejecutarCancelamentoConfirmado() {
             const id = document.getElementById('cancelarAgendamentoId').value;
-            console.log(`[SPA DIAGNÓSTICO] Iniciando cancelamento para o ID: ${id}`);
  
             try {
                 const url = `/api/agendamentos/${id}`;
-                console.log(`[SPA DIAGNÓSTICO] Disparando FETCH DELETE para: ${url}`);
-
                 const response = await fetch(url, { 
                     method: 'DELETE',
                     headers: { 'Content-Type': 'application/json' }
                 });
                 
-                console.log(`[SPA DIAGNÓSTICO] Resposta do back-end recebida. Status HTTP: ${response.status}`);
-                
                 if(response.ok) {
-                    console.log("[SPA DIAGNÓSTICO] Sucesso! Status retornado na faixa 200 (OK).");
                     fecharModal('confirmarCancelamentoModal'); 
-                    
                     exibirNotificacaoSpa(
                         'Reserva Cancelada', 
                         'Seu agendamento foi cancelado. Sentiremos sua falta, mas lembre-se que as portas do templo Spa Panaceia estarão sempre abertas para quando seu espírito precisar de paz.', 
@@ -636,8 +655,6 @@
                     carregarMeusAgendamentos();
                 } else { 
                     const erroServidor = await response.json().catch(() => ({ error: 'Resposta não é um JSON válido.' }));
-                    console.error("[SPA DIAGNÓSTICO] O Back-end barrou a requisição:", erroServidor);
-                    
                     fecharModal('confirmarCancelamentoModal');
                     exibirNotificacaoSpa(
                         'Não foi possível processar', 
@@ -646,7 +663,6 @@
                     ); 
                 }
             } catch(e) { 
-                console.error("[SPA DIAGNÓSTICO] Falha crítica de rede ao tentar fazer o Fetch:", e);
                 fecharModal('confirmarCancelamentoModal');
                 exibirNotificacaoSpa('Erro de Conexão', 'Não foi possível estabelecer contato com o servidor central.', '📴'); 
             }
