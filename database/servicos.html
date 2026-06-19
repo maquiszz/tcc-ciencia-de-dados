@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Zenith Spa - Serviços</title>
+    <title>Spa Panaceia - Serviços</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
         body {
@@ -14,34 +14,114 @@
             flex-direction: column;
             align-items: center;
         }
-        nav {
-            display: flex; gap: 20px; margin-bottom: 30px; background: white;
-            padding: 10px 20px; border-radius: 30px; box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        
+        /* 🗺️ BARRA DE NAVEGAÇÃO SUPERIOR */
+        .navbar-topo {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            max-width: 1200px;
+            background: white;
+            padding: 15px 30px;
+            border-radius: 30px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            margin-bottom: 40px;
+            position: relative;
         }
-        nav a { text-decoration: none; font-size: 15px; color: #666; font-weight: 500; padding: 5px 10px; cursor: pointer; }
-        nav a.active { color: #6a11cb; font-weight: bold; border-bottom: 2px solid #6a11cb; }
+        .logo-spa {
+            font-size: 18px;
+            font-weight: bold;
+            color: #6a11cb;
+            cursor: pointer;
+        }
+
+        /* 👤 MENU SUSPENSO (DROPDOWN) */
+        .menu-usuario-container {
+            position: relative;
+        }
+        .btn-perfil-gatilho {
+            background: #6a11cb;
+            color: white;
+            border: none;
+            padding: 8px 18px;
+            border-radius: 20px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            transition: background 0.3s;
+        }
+        .btn-perfil-gatilho:hover {
+            background: #2575fc;
+        }
+        .dropdown-menu-spa {
+            position: absolute;
+            top: calc(100% + 10px);
+            right: 0;
+            background: white;
+            min-width: 200px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+            display: none;
+            flex-direction: column;
+            overflow: hidden;
+            z-index: 10000;
+            border: 1px solid #eee;
+        }
+        .dropdown-menu-spa.ativo {
+            display: flex;
+        }
+        .dropdown-item {
+            padding: 12px 20px;
+            font-size: 14px;
+            color: #555;
+            text-decoration: none;
+            cursor: pointer;
+            text-align: left;
+            border: none;
+            background: none;
+            width: 100%;
+            font-weight: 500;
+            transition: background 0.2s, color 0.2s;
+        }
+        .dropdown-item:hover {
+            background: #f4f6f9;
+            color: #6a11cb;
+        }
+        .dropdown-item.btn-sair {
+            color: #e74c3c;
+            border-top: 1px solid #eee;
+        }
+        .dropdown-item.btn-sair:hover {
+            background: #fff5f5;
+            color: #c0392b;
+        }
         
         header { text-align: center; margin-bottom: 40px; }
         header h1 { color: #333; font-size: 32px; margin-bottom: 10px; }
         header p { color: #666; font-size: 16px; }
  
-        /* 🔐 ÁREA DE AUTENTICAÇÃO */
+        /* 🔐 ÁREA DE AUTENTICAÇÃO (MUDOU DE LUGAR NA TELA) */
         .auth-container {
-            background: white; padding: 20px; border-radius: 15px; margin-bottom: 30px;
+            background: white; padding: 25px; border-radius: 15px; margin: 40px auto;
             box-shadow: 0 4px 15px rgba(0,0,0,0.05); width: 100%; max-width: 400px; text-align: center;
+            display: none;
+        }
+        .auth-container.ativa {
+            display: block;
         }
         .auth-container input { width: 100%; padding: 10px; margin: 5px 0; border: 1px solid #ccc; border-radius: 6px; }
         .auth-container button { width: 100%; padding: 10px; background: #6a11cb; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 5px; }
         .auth-toggle { font-size: 13px; color: #2575fc; cursor: pointer; margin-top: 10px; display: inline-block; }
-        .user-logado { display: none; background: #e2f0d9; padding: 10px; border-radius: 8px; color: #385723; font-weight: bold; margin-bottom: 20px; text-align: center; width: 100%; max-width: 400px; }
  
         /* 📦 SEÇÕES VISUAIS */
         .secao-conteudo { width: 100%; max-width: 1200px; display: none; }
         .secao-conteudo.ativa { display: block; }
         
-        .grid-servicos {
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 30px;
-        }
+        .grid-servicos { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 30px; }
         .card {
             background: white; border-radius: 15px; overflow: hidden;
             box-shadow: 0 10px 20px rgba(0,0,0,0.05); transition: transform 0.3s;
@@ -70,13 +150,27 @@
  
         /* 🗓️ ESTILOS DOS MODAIS */
         .modal-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.4); display: none; justify-content: center; align-items: center;
-            backdrop-filter: blur(6px); z-index: 1000;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.55);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(6px);
+            z-index: 99999 !important;
         }
         .modal-box {
-            background: rgba(255, 255, 255, 0.95); padding: 30px; border-radius: 20px; width: 90%; max-width: 420px;
-            box-shadow: 0 15px 35px rgba(31, 38, 135, 0.15); text-align: center; position: relative;
+            background: rgba(255, 255, 255, 1);
+            padding: 30px;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 420px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+            text-align: center;
+            position: relative;
             border: 1px solid rgba(255, 255, 255, 0.2);
         }
         .modal-box h3 { margin-bottom: 15px; color: #333; font-size: 22px; }
@@ -86,30 +180,41 @@
         .btn-fechar { position: absolute; top: 12px; right: 15px; background: none; border: none; font-size: 24px; cursor: pointer; color: #aaa; }
         .btn-fechar:hover { color: #333; }
 
-        /* ✨ INTERFACE DE NOTIFICAÇÕES CUSTOMIZADAS ✨ */
-        .modal-icone font-size: 45px; margin-bottom: 15px; display: block; }
         .modal-mensagem { color: #555; font-size: 15px; line-height: 1.6; margin-bottom: 10px; }
-        
         .btn-modal-neutro { background: #6a11cb; color: white; padding: 12px 25px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 15px; width: 100%; }
         .btn-modal-cancelar-sim { background: #e74c3c; color: white; padding: 12px 20px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; flex: 1; }
         .btn-modal-cancelar-nao { background: #95a5a6; color: white; padding: 12px 20px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; flex: 1; }
         .flex-botoes { display: flex; gap: 12px; margin-top: 20px; }
+        .modal-servico-descricao {
+            font-size: 14px; color: #666; line-height: 1.5; background: #f8fafc; padding: 12px;
+            border-radius: 8px; margin-top: -5px; margin-bottom: 15px; text-align: left; border-left: 3px solid #6a11cb;
+        }
     </style>
 </head>
 <body>
  
-    <nav>
-        <a id="nav-catalogo" class="active" onclick="alternarAbas('catalogo')">Catálogo de Serviços</a>
-        <a id="nav-agendamentos" onclick="alternarAbas('agendamentos')">Meus Agendamentos</a>
-    </nav>
- 
-    <div id="userLogadoBox" class="user-logado"></div>
+    <div class="navbar-topo">
+        <div class="logo-spa" onclick="alternarAbas('catalogo')">✨ Spa Panaceia</div>
+        
+        <div class="menu-usuario-container">
+            <button class="btn-perfil-gatilho" onclick="toggleDropdownMenu(event)" id="btnDropdownGatilho">
+                👤 Acessar Conta
+            </button>
+            <div class="dropdown-menu-spa" id="menuDropdownSpa">
+                <button class="dropdown-item" onclick="alternarAbas('catalogo')">🌸 Catálogo</button>
+                <button class="dropdown-item" id="drop-meu-perfil" onclick="alternarAbas('agendamentos')" style="display: none;">📅 Meu Perfil</button>
+                <button class="dropdown-item btn-sair" id="drop-deslogar" onclick="deslogar()" style="display: none;">🚪 Sair</button>
+            </div>
+        </div>
+    </div>
  
     <div id="authBox" class="auth-container">
         <h3 id="authTitulo">Fazer Login</h3>
         <input type="text" id="authNome" placeholder="Seu Nome Completo (apenas para cadastro)" style="display: none;">
         <input type="email" id="authEmail" placeholder="seuemail@gmail.com">
-        <input type="password" id="authSenha" placeholder="Sua Senha">
+        <div class="wrapper-senha">
+            <input type="password" id="authSenha" placeholder="Sua Senha">
+        </div>
         <button id="btnAuth" onclick="processarAutenticacao()">Entrar</button>
         <span id="authToggle" class="auth-toggle" onclick="alternarModoAuth()">Não tem conta? Cadastre-se</span>
     </div>
@@ -127,7 +232,7 @@
     <div id="secao-agendamentos" class="secao-conteudo">
         <header>
             <h1>📅 Seus Agendamentos</h1>
-            <p>Gerencie seus horários reservados no Zenith Spa</p>
+            <p>Gerencie seus horários reservados no Spa Panaceia</p>
         </header>
         <div class="lista-agendamentos" id="container-meus-agendamentos">
             <p style="text-align: center;">Por favor, faça login para ver seus agendamentos.</p>
@@ -138,6 +243,7 @@
         <div class="modal-box">
             <button class="btn-fechar" onclick="fecharModal('agendamentoModal')">&times;</button>
             <h3 id="modalTitulo">Agendar Serviço</h3>
+            <div id="modalServicoDescricao" class="modal-servico-descricao"></div>
             <input type="hidden" id="modalServicoId">
             <label for="modalData">Escolha a Data e Horário:</label>
             <input type="datetime-local" id="modalData" required>
@@ -174,8 +280,8 @@
             <p class="modal-mensagem">Você está prestes a remover permanentemente esta reserva do seu histórico de autocuidado. Deseja prosseguir?</p>
             <input type="hidden" id="cancelarAgendamentoId">
             <div class="flex-botoes">
-                <button class="btn-modal-cancelar-nao" onclick="fecharModal('confirmarCancelamentoModal')">Manter Reserva</button>
-                <button class="btn-modal-cancelar-sim" onclick="executarCancelamentoConfirmado()">Sim, Cancelar</button>
+                <button type="button" class="btn-modal-cancelar-nao" onclick="fecharModal('confirmarCancelamentoModal')">Manter Reserva</button>
+                <button type="button" class="btn-modal-cancelar-sim" onclick="ejecutarCancelamentoConfirmado()">Sim, Cancelar</button>
             </div>
         </div>
     </div>
@@ -186,28 +292,48 @@
         let modoAuth = 'login';
         let usuarioLogado = JSON.parse(localStorage.getItem('usuario_spa')) || null;
  
+        // Controla o abre/fecha do Menu Dropdown do usuário
+        function toggleDropdownMenu(event) {
+            event.stopPropagation();
+            document.getElementById('menuDropdownSpa').classList.toggle('ativo');
+        }
+
+        // Fecha o dropdown se clicar em qualquer lugar fora dele
+        window.addEventListener('click', function() {
+            const dropdown = document.getElementById('menuDropdownSpa');
+            if (dropdown) dropdown.classList.remove('ativo');
+        });
+
         function exibirNotificacaoSpa(titulo, texto, icone = '🌿') {
+            fecharTodosModais();
             document.getElementById('notificacaoIcone').innerText = icone;
             document.getElementById('notificacaoTitulo').innerText = titulo;
             document.getElementById('notificacaoTexto').innerText = texto;
             document.getElementById('notificacaoModal').style.display = 'flex';
         }
 
+        function fecharTodosModais() {
+            const modais = ['agendamentoModal', 'reagendamentoModal', 'notificacaoModal', 'confirmarCancelamentoModal'];
+            modais.forEach(id => {
+                const el = document.getElementById(id);
+                if(el) el.style.display = 'none';
+            });
+        }
+
         function alternarAbas(aba) {
             modoAbas = aba;
-            document.getElementById('nav-catalogo').classList.remove('active');
-            document.getElementById('nav-agendamentos').classList.remove('active');
             document.getElementById('secao-catalogo').classList.remove('ativa');
             document.getElementById('secao-agendamentos').classList.remove('ativa');
+            document.getElementById('authBox').classList.remove('ativa');
  
             if(aba === 'catalogo') {
-                document.getElementById('nav-catalogo').classList.add('active');
                 document.getElementById('secao-catalogo').classList.add('ativa');
                 carregarServicos();
-            } else {
-                document.getElementById('nav-agendamentos').classList.add('active');
+            } else if(aba === 'agendamentos') {
                 document.getElementById('secao-agendamentos').classList.add('ativa');
                 carregarMeusAgendamentos();
+            } else if(aba === 'login_tela') {
+                document.getElementById('authBox').classList.add('ativa');
             }
         }
  
@@ -216,6 +342,9 @@
             const titulo = document.getElementById('authTitulo');
             const btn = document.getElementById('btnAuth');
             const toggle = document.getElementById('authToggle');
+            const campoSenha = document.getElementById('authSenha');
+            
+            campoSenha.type = 'password';
  
             if (modoAuth === 'login') {
                 modoAuth = 'cadastro';
@@ -233,16 +362,18 @@
         }
  
         function atualizarPainelUsuario() {
-            const userBox = document.getElementById('userLogadoBox');
-            const authBox = document.getElementById('authBox');
+            const btnGatilho = document.getElementById('btnDropdownGatilho');
+            const itemPerfil = document.getElementById('drop-meu-perfil');
+            const itemSair = document.getElementById('drop-deslogar');
  
             if (usuarioLogado) {
-                authBox.style.display = 'none';
-                userBox.style.display = 'block';
-                userBox.innerHTML = `Olá, ${usuarioLogado.nome}! 👋 <span style="color: #e74c3c; cursor:pointer; margin-left:15px; font-size:12px; font-weight:bold;" onclick="deslogar()">[Sair]</span>`;
+                btnGatilho.innerHTML = `👤 ${usuarioLogado.nome.split(' ')[0]}`;
+                itemPerfil.style.display = 'block';
+                itemSair.style.display = 'block';
             } else {
-                authBox.style.display = 'block';
-                userBox.style.display = 'none';
+                btnGatilho.innerHTML = `👤 Acessar Conta`;
+                itemPerfil.style.display = 'none';
+                itemSair.style.display = 'none';
             }
         }
  
@@ -262,6 +393,14 @@
                 exibirNotificacaoSpa('Atenção', '⚠️ Por favor, preencha todos os campos necessários para prosseguir.', '✨');
                 return;
             }
+
+            if (modoAuth === 'cadastro') {
+                const regexSenha = /^(?=.*[a-z])(?=.*[A-Z])(?=.*[@$!%*?&#,.]).{8,}$/;
+                if (!regexSenha.test(senha)) {
+                    exibirNotificacaoSpa('Senha Fraca', '⚠️ Sua senha precisa ter no mínimo 8 caracteres, incluindo pelo menos uma letra maiúscula, uma letra minúscula e um caractere especial.', '🔒');
+                    return;
+                }
+            }
  
             const urlApi = modoAuth === 'cadastro' ? '/cadastrar' : '/api/login';
             const payload = modoAuth === 'cadastro' ? { nome, email, senha } : { email, senha };
@@ -277,8 +416,9 @@
                 if (!response.ok) throw new Error(data.error || "Erro na operação");
  
                 if (modoAuth === 'cadastro') {
-                    exibirNotificacaoSpa('Conta Criada', '🎉 Sua jornada começou! Conta criada com sucesso. Faça seu login agora para agendar.', '✨');
+                    exibirNotificacaoSpa('Conta Criada', '🎉 Conta criada com sucesso. Faça seu login para agendar.', '✨');
                     alternarModoAuth();
+                    document.getElementById('authSenha').value = ''; 
                 } else {
                     usuarioLogado = data.usuario;
                     localStorage.setItem('usuario_spa', JSON.stringify(usuarioLogado));
@@ -305,6 +445,8 @@
                 }
  
                 servicosDados.forEach(servico => {
+                    const descricaoTratada = (servico.descricao || "Sem descrição disponível para este serviço no momento.").replace(/'/g, "\\'");
+
                     const cardHtml = `
                         <div class="card">
                             <img src="${servico.imagem_url || 'https://images.unsplash.com/photo-1600334089648-b0d9d3028eb2?w=500'}" alt="${servico.tipo}">
@@ -315,7 +457,7 @@
                                 </div>
                                 <div>
                                     <p class="card-contratos">Contratado ${servico.contratos} vezes</p>
-                                    <button class="btn-contratar" onclick="abrirModalAgendamento(${servico.id}, '${servico.tipo}')">Agendar Serviço</button>
+                                    <button class="btn-contratar" onclick="abrirModalAgendamento(${servico.id}, '${servico.tipo}', '${descricaoTratada}')">Agendar Serviço</button>
                                 </div>
                             </div>
                         </div>
@@ -327,20 +469,27 @@
             }
         }
  
-        function abrirModalAgendamento(id, tipo) {
+        function abrirModalAgendamento(id, tipo, descricao) {
             if(!usuarioLogado) {
-                exibirNotificacaoSpa('Identificação Necessária', 'Para reservar uma experiência relaxante, por favor faça login na parte superior da página.', '🔒');
-                window.scrollTo({top: 0, behavior: 'smooth'});
+                exibirNotificacaoSpa('Identificação Necessária', 'Para reservar uma experiência relaxante, por favor faça seu login no menu superior.', '🔒');
+                alternarAbas('login_tela');
                 return;
             }
             document.getElementById('modalServicoId').value = id;
             document.getElementById('modalTitulo').innerText = `Agendar: ${tipo}`;
+            
+            const campoDescricao = document.getElementById('modalServicoDescricao');
+            if (campoDescricao) {
+                campoDescricao.innerText = descricao;
+            }
+            
             document.getElementById('modalStatus').innerText = '';
             document.getElementById('agendamentoModal').style.display = 'flex';
         }
  
         function fecharModal(idModal) {
-            document.getElementById(idModal).style.display = 'none';
+            const el = document.getElementById(idModal);
+            if(el) el.style.display = 'none';
         }
  
         async function enviarAgendamento() {
@@ -362,11 +511,7 @@
                 const resultado = await response.json();
                 if (response.ok) {
                     fecharModal('agendamentoModal');
-                    exibirNotificacaoSpa(
-                        'Momento Confirmado!', 
-                        `Gratidão, ${usuarioLogado.nome}! Seu momento Zenith foi agendado com sucesso. Prepare-se para renovar suas energias e alinhar seu bem-estar.`, 
-                        '✨'
-                    );
+                    exibirNotificacaoSpa('Momento Confirmado!', `Gratidão, ${usuarioLogado.nome}! Seu momento Spa Panaceia foi agendado com sucesso.`, '✨');
                     carregarServicos();
                 } else {
                     status.style.color = "#e74c3c"; status.innerText = `❌ ${resultado.error}`;
@@ -408,8 +553,8 @@
                                 <p>💰 <strong>Valor:</strong> ${servicoValor}</p>
                             </div>
                             <div class="item-agendamento-acoes">
-                                <button class="btn-remarcar" onclick="abrirModalRemarcar(${agend.id})">Remarcar</button>
-                                <button class="btn-cancelar" onclick="solicitarCancelamento(${agend.id})">Cancelar</button>
+                                <button type="button" class="btn-remarcar" onclick="abrirModalRemarcar(${agend.id})">Remarcar</button>
+                                <button type="button" class="btn-cancelar" onclick="solicitarCancelamento(${agend.id})">Cancelar</button>
                             </div>
                         </div>
                     `;
@@ -421,6 +566,7 @@
         }
  
         function abrirModalRemarcar(id) {
+            fecharTodosModais();
             document.getElementById('reagendarId').value = id;
             document.getElementById('reagendarStatus').innerText = '';
             document.getElementById('reagendamentoModal').style.display = 'flex';
@@ -442,7 +588,7 @@
  
                 if(response.ok) {
                     fecharModal('reagendamentoModal');
-                    exibirNotificacaoSpa('Horário Updated', 'Sua nova janela de tranquilidade foi reagendada com sucesso!', '📅');
+                    exibirNotificacaoSpa('Horário Atualizado', 'Sua nova janela de tranquilidade foi reagendada com sucesso!', '📅');
                     carregarMeusAgendamentos();
                 } else {
                     status.style.color = "red"; status.innerText = "❌ Ocorreu um erro ao atualizar.";
@@ -450,38 +596,52 @@
             } catch(e) { status.style.color = "red"; status.innerText = "❌ Erro na conexão."; }
         }
  
-        // --- FUNÇÕES CORRIGIDAS DO FLUXO DE CANCELAMENTO ---
         function solicitarCancelamento(id) {
-            // Guarda o ID no input oculto do modal de confirmação
+            fecharTodosModais();
             document.getElementById('cancelarAgendamentoId').value = id;
-            // Abre o modal estilizado na tela
             document.getElementById('confirmarCancelamentoModal').style.display = 'flex';
         }
 
-        async function executarCancelamentoConfirmado() {
-            // Resgata o ID guardado anteriormente
+        async function ejecutarCancelamentoConfirmado() {
             const id = document.getElementById('cancelarAgendamentoId').value;
-            fecharModal('confirmarCancelamentoModal');
+            console.log(`[SPA DIAGNÓSTICO] Iniciando cancelamento para o ID: ${id}`);
  
             try {
-                const response = await fetch(`/api/agendamentos/${id}`, { 
-                    method: 'DELETE' 
+                const url = `/api/agendamentos/${id}`;
+                console.log(`[SPA DIAGNÓSTICO] Disparando FETCH DELETE para: ${url}`);
+
+                const response = await fetch(url, { 
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' }
                 });
                 
+                console.log(`[SPA DIAGNÓSTICO] Resposta do back-end recebida. Status HTTP: ${response.status}`);
+                
                 if(response.ok) {
+                    console.log("[SPA DIAGNÓSTICO] Sucesso! Status retornado na faixa 200 (OK).");
+                    fecharModal('confirmarCancelamentoModal'); 
+                    
                     exibirNotificacaoSpa(
                         'Reserva Cancelada', 
-                        'Seu agendamento foi cancelado. Sentiremos sua falta, mas lembre-se que as portas do templo Zenith estarão sempre abertas para quando seu espírito precisar de paz.', 
+                        'Seu agendamento foi cancelado. Sentiremos sua falta, mas lembre-se que as portas do templo Spa Panaceia estarão sempre abertas para quando seu espírito precisar de paz.', 
                         '🌅'
                     );
-                    // Atualiza a lista na tela imediatamente
                     carregarMeusAgendamentos();
                 } else { 
-                    const erroServidor = await response.json();
-                    exibirNotificacaoSpa('Ops!', `Não foi possível processar o cancelamento: ${erroServidor.error || 'Erro desconhecido'}`, '🍃'); 
+                    const erroServidor = await response.json().catch(() => ({ error: 'Resposta não é um JSON válido.' }));
+                    console.error("[SPA DIAGNÓSTICO] O Back-end barrou a requisição:", erroServidor);
+                    
+                    fecharModal('confirmarCancelamentoModal');
+                    exibirNotificacaoSpa(
+                        'Não foi possível processar', 
+                        `O servidor rejeitou a ação. Motivo: ${erroServidor.error || 'Erro interno no servidor.'}`, 
+                        '🍃'
+                    ); 
                 }
             } catch(e) { 
-                exibirNotificacaoSpa('Erro de Conexão', 'Falha na comunicação com o servidor central.', '📴'); 
+                console.error("[SPA DIAGNÓSTICO] Falha crítica de rede ao tentar fazer o Fetch:", e);
+                fecharModal('confirmarCancelamentoModal');
+                exibirNotificacaoSpa('Erro de Conexão', 'Não foi possível estabelecer contato com o servidor central.', '📴'); 
             }
         }
  
