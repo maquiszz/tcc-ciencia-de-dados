@@ -15,7 +15,6 @@ diretorio_do_script = os.path.dirname(os.path.abspath(__file__))
 raiz_do_projeto = os.path.dirname(diretorio_do_script)
 caminho_env = os.path.join(raiz_do_projeto, "database.env")
 
-# Se o arquivo existir (local), carrega ele. Se não existir (Render), usa as variáveis do sistema.
 if os.path.exists(caminho_env):
     load_dotenv(dotenv_path=caminho_env)
     print(f"👉 Chaves carregadas localmente de: {caminho_env}")
@@ -60,7 +59,6 @@ def cadastrar():
     if not nome or not email or not senha_limpa:
         return jsonify({"error": "Nome, e-mail e senha são obrigatórios."}), 400
 
-    # 🔒 CRIPTOGRAFIA ATUALIZADA: Especifica o método explicitamente para garantir compatibilidade entre ambientes
     senha_criptografada = generate_password_hash(senha_limpa, method='pbkdf2:sha256')
 
     try:
@@ -93,11 +91,10 @@ def login():
         user_db = usuario.data[0]
         senha_banco = user_db.get('senha')
         
-        # 🔒 VERIFICAÇÃO: Compara a senha digitada com o hash criptografado salvo no banco
         if not check_password_hash(senha_banco, senha_digitada):
             return jsonify({"error": "Senha incorreta. Tente novamente."}), 401
         
-        # Remove a senha hash do objeto antes de enviar ao frontend por boas práticas de segurança
+        # Remove a senha hash do objeto, mantendo o campo 'is_admin' intacto para o frontend
         user_db.pop('senha', None)
         
         return jsonify({"message": "Login realizado com sucesso!", "usuario": user_db}), 200
@@ -120,13 +117,12 @@ def criar_agendamento():
     dados = request.json
     email = dados.get('email')
     servico_id = dados.get('servico_id')
-    data_atendimento_str = dados.get('data') # Recebe o formato "YYYY-MM-DDTHH:MM"
+    data_atendimento_str = dados.get('data')
 
     if not email or not servico_id or not data_atendimento_str:
         return jsonify({"error": "Todos os campos são obrigatórios."}), 400
 
     try:
-        # 1️⃣ VALIDAÇÃO: Impede agendamentos no passado e minutos quebrados
         data_selecionada = datetime.fromisoformat(data_atendimento_str)
         if data_selecionada < datetime.now():
             return jsonify({"error": "Não é possível agendar numa data ou horário que já passou."}), 400
@@ -134,24 +130,20 @@ def criar_agendamento():
         if data_selecionada.minute != 0:
             return jsonify({"error": "Os agendamentos devem ser feitos em horários cheios (ex: 09:00, 10:00)."}), 400
 
-        # 2️⃣ VERIFICAÇÃO: Se o usuário existe
         usuario_existe = supabase.table("usuarios").select("email").eq("email", email).execute()
         if not usuario_existe.data:
             return jsonify({"error": "Usuário Inexistente. Crie uma conta antes de agendar."}), 404
 
-        # 3️⃣ VERIFICAÇÃO DE CONFLITO: Garante que o horário está livre na tabela
         conflito = supabase.table("agendamentos").select("id").eq("data_atendimento", data_atendimento_str).execute()
         if conflito.data:
             return jsonify({"error": "Este horário já está reservado por outro cliente. Por favor, escolha outra opção."}), 409
 
-        # Insere o agendamento após passar em todos os filtros
         supabase.table("agendamentos").insert({
             "email_cliente": email,
             "servico_id": servico_id,
             "data_atendimento": data_atendimento_str
         }).execute()
 
-        # Atualiza a contagem de contratos do serviço
         servico_atual = supabase.table("servico").select("contratos").eq("id", servico_id).execute()
         if servico_atual.data:
             contratos_atuais = servico_atual.data[0].get('contratos', 0)
@@ -170,7 +162,8 @@ def meus_agendamentos():
         return jsonify({"error": "E-mail do usuário não informado."}), 400
 
     try:
-        resposta = supabase.table("agendamentos").select("id, data_atendimento, servico_id, servico(tipo, valor)").eq("email_cliente", email).execute()
+        # Busca apenas agendamentos do usuário correspondente
+        resposta = supabase.table("agendamentos").select("id, data_atendimento, status, servico_id, servico(tipo, valor)").eq("email_cliente", email).execute()
         return jsonify(resposta.data), 200
     except Exception as e:
         print(f"❌ Erro ao buscar agendamentos: {e}")
@@ -186,7 +179,6 @@ def alterar_horario(id):
         return jsonify({"error": "Nova data/hora é obrigatória."}), 400
 
     try:
-        # 1️⃣ VALIDAÇÃO: Impede remarcações no passado e minutos quebrados
         data_selecionada = datetime.fromisoformat(nova_data_str)
         if data_selecionada < datetime.now():
             return jsonify({"error": "Não é possível remarcar para uma data no passado."}), 400
@@ -194,21 +186,17 @@ def alterar_horario(id):
         if data_selecionada.minute != 0:
             return jsonify({"error": "Os agendamentos devem ser feitos em horários cheios (ex: 09:00, 10:00)."}), 400
 
-        # 2️⃣ VERIFICAÇÃO DE CONFLITO: Ignora o ID do próprio agendamento atual que está a mudar
         conflito = supabase.table("agendamentos").select("id").eq("data_atendimento", nova_data_str).neq("id", id).execute()
         if conflito.data:
             return jsonify({"error": "Este horário já está reservado. Escolha outro momento para a sua sessão."}), 409
 
         supabase.table("agendamentos").update({"data_atendimento": nova_data_str}).eq("id", id).execute()
-        return jsonify({"message": "Horário atualizado com sucesso!"}), 200
+        return jsonify({"message": "Horário updated com sucesso!"}), 200
     except Exception as e:
         print(f"❌ Erro ao atualizar horário: {e}")
         return jsonify({"error": "Erro ao atualizar horário no banco."}), 500
 
 
-# ==============================================================================
-# --- 🌅 ROTA DE CANCELAMENTO ATUALIZADA E BLINDADA ---
-# ==============================================================================
 @app.route('/api/agendamentos/<int:id>', methods=['DELETE'])
 def cancelar_agendamento(id):
     try:
@@ -246,6 +234,53 @@ def cancelar_agendamento(id):
     except Exception as e:
         print(f"❌ Erro crítico ao processar exclusão do agendamento: {e}")
         return jsonify({"error": "Erro interno ao processar o cancelamento no servidor."}), 500
+
+
+# ==============================================================================
+# --- 👑 ROTAS EXCLUSIVAS DO PAINEL ADMINISTRATIVO (PROTEGIDAS) ---
+# ==============================================================================
+
+@app.route('/api/admin/agendamentos', methods=['GET'])
+def admin_listar_todos_agendamentos():
+    admin_email = request.args.get('admin_email')
+    
+    if not admin_email:
+        return jsonify({"error": "Identificação administrativa ausente."}), 400
+        
+    try:
+        # Validação de segurança direto na base de dados
+        checagem = supabase.table("usuarios").select("is_admin").eq("email", admin_email).execute()
+        if not checagem.data or not checagem.data[0].get('is_admin'):
+            return jsonify({"error": "Acesso negado. Rota exclusiva para administradores."}), 403
+            
+        # Busca TODOS os registros da tabela de agendamentos juntando os dados do serviço
+        resposta = supabase.table("agendamentos").select("id, data_atendimento, email_cliente, status, servico_id, servico(tipo, valor)").execute()
+        return jsonify(resposta.data), 200
+    except Exception as e:
+        print(f"❌ Erro na consulta de administração: {e}")
+        return jsonify({"error": "Erro ao listar agendamentos do sistema."}), 500
+
+
+@app.route('/api/admin/agendamentos/<int:id>/concluir', methods=['POST'])
+def admin_concluir_agendamento(id):
+    dados = request.json
+    admin_email = dados.get('admin_email')
+    
+    if not admin_email:
+        return jsonify({"error": "Identificação administrativa ausente."}), 400
+        
+    try:
+        # Validação de segurança direto na base de dados
+        checagem = supabase.table("usuarios").select("is_admin").eq("email", admin_email).execute()
+        if not checagem.data or not checagem.data[0].get('is_admin'):
+            return jsonify({"error": "Acesso negado. Rota exclusiva para administradores."}), 403
+            
+        # Atualiza o status do agendamento alvo para 'Concluido'
+        supabase.table("agendamentos").update({"status": "Concluido"}).eq("id", id).execute()
+        return jsonify({"message": "Agendamento concluído e registrado com sucesso!"}), 200
+    except Exception as e:
+        print(f"❌ Erro ao concluir agendamento: {e}")
+        return jsonify({"error": "Erro ao atualizar status do agendamento."}), 500
 
 
 @app.after_request

@@ -189,6 +189,50 @@
             font-size: 14px; color: #666; line-height: 1.5; background: #f8fafc; padding: 12px;
             border-radius: 8px; margin-top: -5px; margin-bottom: 15px; text-align: left; border-left: 3px solid #6a11cb;
         }
+
+        /* 👑 ESTILOS EXCLUSIVOS DO PAINEL ADMIN */
+        .admin-container {
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+            overflow-x: auto;
+            width: 100%;
+        }
+        .tabela-admin {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            margin-top: 20px;
+            min-width: 700px;
+        }
+        .tabela-admin th, .tabela-admin td {
+            padding: 14px 18px;
+            border-bottom: 1px solid #e2e8f0;
+            font-size: 14px;
+        }
+        .tabela-admin th {
+            background-color: #f8fafc;
+            color: #4a5568;
+            font-weight: 700;
+        }
+        .tabela-admin tr:hover {
+            background-color: #f8fafc;
+        }
+        .badge-status {
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+            display: inline-block;
+        }
+        .badge-pendente { background: #fef3c7; color: #d97706; }
+        .badge-concluido { background: #d1fae5; color: #059669; }
+        .btn-concluir {
+            background: #10b981; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 13px; transition: background 0.2s;
+        }
+        .btn-concluir:hover { background: #059669; }
+        .btn-concluir:disabled { background: #cbd5e1; cursor: not-allowed; }
     </style>
 </head>
 <body>
@@ -203,6 +247,7 @@
             <div class="dropdown-menu-spa" id="menuDropdownSpa">
                 <button class="dropdown-item" onclick="alternarAbas('catalogo')">🌸 Catálogo</button>
                 <button class="dropdown-item" id="drop-meu-perfil" onclick="alternarAbas('agendamentos')" style="display: none;">📅 Meu Perfil</button>
+                <button class="dropdown-item" id="drop-admin-painel" onclick="alternarAbas('admin')" style="display: none; color: #6a11cb; font-weight: bold;">👑 Painel Admin</button>
                 <button class="dropdown-item btn-sair" id="drop-deslogar" onclick="deslogar()" style="display: none;">🚪 Sair</button>
             </div>
         </div>
@@ -212,8 +257,9 @@
         <h3 id="authTitulo">Fazer Login</h3>
         <input type="text" id="authNome" placeholder="Seu Nome Completo (apenas para cadastro)" style="display: none;">
         <input type="email" id="authEmail" placeholder="seuemail@gmail.com">
-        <div class="wrapper-senha">
-            <input type="password" id="authSenha" placeholder="Sua Senha">
+        <div class="wrapper-senha" style="position: relative; display: flex; align-items: center; width: 100%;">
+            <input type="password" id="authSenha" placeholder="Sua Senha" style="padding-right: 40px; width: 100%; margin: 5px 0;">
+            <button type="button" onclick="toggleVisibilidadeSenha()" style="position: absolute; right: 10px; background: none; border: none; cursor: pointer; width: auto; margin: 0; padding: 5px; color: #666; font-size: 16px;">👁️</button>
         </div>
         <button id="btnAuth" onclick="processarAutenticacao()">Entrar</button>
         <span id="authToggle" class="auth-toggle" onclick="alternarModoAuth()">Não tem conta? Cadastre-se</span>
@@ -236,6 +282,32 @@
         </header>
         <div class="lista-agendamentos" id="container-meus-agendamentos">
             <p style="text-align: center;">Por favor, faça login para ver seus agendamentos.</p>
+        </div>
+    </div>
+
+    <div id="secao-admin" class="secao-conteudo">
+        <header>
+            <h1>👑 Painel Gerencial de Administração</h1>
+            <p>Monitore os agendamentos globais e valide a realização das sessões</p>
+        </header>
+        <div class="admin-container">
+            <table class="tabela-admin">
+                <thead>
+                    <tr>
+                        <th>Cliente</th>
+                        <th>Serviço</th>
+                        <th>Data/Hora</th>
+                        <th>Valor</th>
+                        <th>Status</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody id="container-admin-agendamentos">
+                    <tr>
+                        <td colspan="6" style="text-align: center;">⏳ Carregando controle global...</td>
+                    </tr>
+                </tbody>
+            </table>
         </div>
     </div>
  
@@ -292,19 +364,15 @@
         let modoAuth = 'login';
         let usuarioLogado = JSON.parse(localStorage.getItem('usuario_spa')) || null;
  
-        // Controla o abre/fecha do Menu Dropdown do usuário
         function toggleDropdownMenu(event) {
             event.stopPropagation();
-            
             if (!usuarioLogado) {
                 alternarAbas('login_tela');
                 return;
             }
-
             document.getElementById('menuDropdownSpa').classList.toggle('ativo');
         }
 
-        // Fecha o dropdown se clicar em qualquer lugar fora dele
         window.addEventListener('click', function() {
             const dropdown = document.getElementById('menuDropdownSpa');
             if (dropdown) dropdown.classList.remove('ativo');
@@ -330,6 +398,7 @@
             modoAbas = aba;
             document.getElementById('secao-catalogo').classList.remove('ativa');
             document.getElementById('secao-agendamentos').classList.remove('ativa');
+            document.getElementById('secao-admin').classList.remove('ativa');
             document.getElementById('authBox').classList.remove('ativa');
  
             if(aba === 'catalogo') {
@@ -338,6 +407,9 @@
             } else if(aba === 'agendamentos') {
                 document.getElementById('secao-agendamentos').classList.add('ativa');
                 carregarMeusAgendamentos();
+            } else if(aba === 'admin') {
+                document.getElementById('secao-admin').classList.add('ativa');
+                carregarAgendamentosAdmin();
             } else if(aba === 'login_tela') {
                 document.getElementById('authBox').classList.add('ativa');
             }
@@ -370,15 +442,25 @@
         function atualizarPainelUsuario() {
             const btnGatilho = document.getElementById('btnDropdownGatilho');
             const itemPerfil = document.getElementById('drop-meu-perfil');
+            const itemAdmin = document.getElementById('drop-admin-painel');
             const itemSair = document.getElementById('drop-deslogar');
  
             if (usuarioLogado) {
                 btnGatilho.innerHTML = `👤 ${usuarioLogado.nome.split(' ')[0]}`;
-                itemPerfil.style.display = 'block';
                 itemSair.style.display = 'block';
+                
+                // Exibe as opções baseadas no tipo de perfil
+                if(usuarioLogado.is_admin) {
+                    itemPerfil.style.display = 'none'; // Admin não precisa ver o painel do cliente comum
+                    itemAdmin.style.display = 'block';
+                } else {
+                    itemPerfil.style.display = 'block';
+                    itemAdmin.style.display = 'none';
+                }
             } else {
                 btnGatilho.innerHTML = `👤 Acessar Conta`;
                 itemPerfil.style.display = 'none';
+                itemAdmin.style.display = 'none';
                 itemSair.style.display = 'none';
             }
         }
@@ -429,7 +511,13 @@
                     usuarioLogado = data.usuario;
                     localStorage.setItem('usuario_spa', JSON.stringify(usuarioLogado));
                     atualizarPainelUsuario();
-                    alternarAbas('catalogo');
+                    
+                    // Se for Admin, redireciona direto para o painel de gerenciamento geral
+                    if(usuarioLogado.is_admin) {
+                        alternarAbas('admin');
+                    } else {
+                        alternarAbas('catalogo');
+                    }
                 }
             } catch (err) {
                 exibirNotificacaoSpa('Ops!', `Falta de sintonia: ${err.message}`, '🍃');
@@ -475,7 +563,6 @@
             }
         }
  
-        // 📅 AJUSTADO: Bloqueia o calendário visual no passado
         function abrirModalAgendamento(id, tipo, descricao) {
             if(!usuarioLogado) {
                 exibirNotificacaoSpa('Identificação Necessária', 'Para reservar uma experiência relaxante, por favor faça seu login no menu superior.', '🔒');
@@ -490,7 +577,6 @@
                 campoDescricao.innerText = descricao;
             }
             
-            // Define o limite mínimo dinâmico com a data/hora atual
             const campoData = document.getElementById('modalData');
             const agora = new Date();
             const ano = agora.getFullYear();
@@ -563,17 +649,20 @@
                     const dataFormatada = new Date(agend.data_atendimento).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
                     const servicoNome = agend.servico ? agend.servico.tipo : "Serviço";
                     const servicoValor = agend.servico ? `R$ ${parseFloat(agend.servico.valor).toFixed(2).replace('.', ',')}` : "Consultar";
- 
+                    const agendStatus = agend.status || 'Pendente';
+                    
                     const itemHtml = `
                         <div class="item-agendamento">
                             <div class="item-agendamento-info">
-                                <h4>${servicoNome}</h4>
+                                <h4>${servicoNome} <span class="badge-status ${agendStatus === 'Concluido' ? 'badge-concluido' : 'badge-pendente'}">${agendStatus}</span></h4>
                                 <p>🗓️ <strong>Data:</strong> ${dataFormatada}</p>
                                 <p>💰 <strong>Valor:</strong> ${servicoValor}</p>
                             </div>
                             <div class="item-agendamento-acoes">
-                                <button type="button" class="btn-remarcar" onclick="abrirModalRemarcar(${agend.id})">Remarcar</button>
-                                <button type="button" class="btn-cancelar" onclick="solicitarCancelamento(${agend.id})">Cancelar</button>
+                                ${agendStatus === 'Pendente' ? `
+                                    <button type="button" class="btn-remarcar" onclick="abrirModalRemarcar(${agend.id})">Remarcar</button>
+                                    <button type="button" class="btn-cancelar" onclick="solicitarCancelamento(${agend.id})">Cancelar</button>
+                                ` : `<p style="color: #10b981; font-weight: bold; font-size: 14px; align-self: center;">Aproveitado! ✨</p>`}
                             </div>
                         </div>
                     `;
@@ -584,7 +673,6 @@
             }
         }
  
-        // 📅 AJUSTADO: Bloqueia o calendário no passado ao remarcar horários
         function abrirModalRemarcar(id) {
             fecharTodosModais();
             document.getElementById('reagendarId').value = id;
@@ -658,7 +746,7 @@
                     fecharModal('confirmarCancelamentoModal');
                     exibirNotificacaoSpa(
                         'Não foi possível processar', 
-                        `O servidor rejeitou a ação. Motivo: ${erroServidor.error || 'Erro interno no servidor.'}`, 
+                        `O servidor recebeu e rejeitou a ação. Motivo: ${erroServidor.error || 'Erro interno no servidor.'}`, 
                         '🍃'
                     ); 
                 }
@@ -667,10 +755,96 @@
                 exibirNotificacaoSpa('Erro de Conexão', 'Não foi possível estabelecer contato com o servidor central.', '📴'); 
             }
         }
- 
+
+        /* 👑 CORPO LÓGICO EXCLUSIVO DO ADMINISTRADOR (CONEXÃO BACKEND) */
+        async function carregarAgendamentosAdmin() {
+            const container = document.getElementById('container-admin-agendamentos');
+            if(!usuarioLogado || !usuarioLogado.is_admin) {
+                container.innerHTML = '<tr><td colspan="6" style="text-align: center; color: red;">Acesso restrito.</td></tr>';
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/admin/agendamentos?admin_email=${usuarioLogado.email}`);
+                const dados = await response.json();
+
+                if(!response.ok) throw new Error(dados.error || "Falha ao ler dados.");
+
+                container.innerHTML = '';
+                if(dados.length === 0) {
+                    container.innerHTML = '<tr><td colspan="6" style="text-align: center;">Nenhum agendamento global registrado no sistema.</td></tr>';
+                    return;
+                }
+
+                dados.forEach(agend => {
+                    const dataFormatada = new Date(agend.data_atendimento).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
+                    const servicoNome = agend.servico ? agend.servico.tipo : "Não identificado";
+                    const servicoValor = agend.servico ? `R$ ${parseFloat(agend.servico.valor).toFixed(2).replace('.', ',')}` : "R$ 0,00";
+                    const statusAtual = agend.status || "Pendente";
+
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td><strong>${agend.email_cliente}</strong></td>
+                        <td>${servicoNome}</td>
+                        <td>${dataFormatada}</td>
+                        <td>${servicoValor}</td>
+                        <td>
+                            <span class="badge-status ${statusAtual === 'Concluido' ? 'badge-concluido' : 'badge-pendente'}">
+                                ${statusAtual}
+                            </span>
+                        </td>
+                        <td>
+                            <button class="btn-concluir" 
+                                    ${statusAtual === 'Concluido' ? 'disabled' : ''} 
+                                    onclick="confirmarAgendamentoPeloAdmin(${agend.id})">
+                                ${statusAtual === 'Concluido' ? '✓ Realizado' : 'Marcar Concluído'}
+                            </button>
+                        </td>
+                    `;
+                    container.appendChild(tr);
+                });
+
+            } catch (error) {
+                container.innerHTML = `<tr><td colspan="6" style="text-align: center; color: red;">❌ Erro: ${error.message}</td></tr>`;
+            }
+        }
+
+        async function confirmarAgendamentoPeloAdmin(id) {
+            try {
+                const response = await fetch(`/api/admin/agendamentos/${id}/concluir`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ admin_email: usuarioLogado.email })
+                });
+
+                const resultado = await response.json();
+                if(response.ok) {
+                    exibirNotificacaoSpa('Sucesso Gerencial', 'O status da sessão foi alterado para Concluído com sucesso!', '👑');
+                    carregarAgendamentosAdmin();
+                } else {
+                    exibirNotificacaoSpa('Erro Operacional', resultado.error || 'Não foi possível atualizar.', '❌');
+                }
+            } catch (e) {
+                exibirNotificacaoSpa('Erro', 'Falha na conexão de dados.', '📴');
+            }
+        }
+        function toggleVisibilidadeSenha() {
+    const campoSenha = document.getElementById('authSenha');
+    if (campoSenha.type === 'password') {
+        campoSenha.type = 'text';
+    } else {
+        campoSenha.type = 'password';
+    }
+}
         window.onload = () => {
             atualizarPainelUsuario();
-            carregarServicos();
+            
+            // Tratamento inteligente na inicialização para direcionar o Admin
+            if(usuarioLogado && usuarioLogado.is_admin) {
+                alternarAbas('admin');
+            } else {
+                carregarServicos();
+            }
         };
     </script>
 </body>
