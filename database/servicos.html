@@ -233,6 +233,25 @@
         }
         .btn-concluir:hover { background: #059669; }
         .btn-concluir:disabled { background: #cbd5e1; cursor: not-allowed; }
+        /* 🌟 NOVOS ESTILOS DE AVALIAÇÃO */
+        .badge-bom { background: #d1fae5; color: #069669; }
+        .badge-medio { background: #fef3c7; color: #d97706; }
+        .badge-ruim { background: #fce8e6; color: #c5221f; }
+        
+        .btn-avaliar {
+            border-radius: 20px;
+            padding: 6px 14px;
+            font-size: 13px;
+            cursor: pointer;
+            font-weight: bold;
+            border: 1px solid;
+            background: transparent;
+            transition: all 0.2s;
+        }
+        .btn-avaliar:hover {
+            transform: scale(1.05);
+        }
+
     </style>
 </head>
 <body>
@@ -292,14 +311,14 @@
         </header>
         <div class="admin-container">
             <table class="tabela-admin">
-                <thead>
+               <thead>
                     <tr>
                         <th>Cliente</th>
                         <th>Serviço</th>
                         <th>Data/Hora</th>
                         <th>Valor</th>
                         <th>Status</th>
-                        <th>Ações</th>
+                        <th>Avaliação</th> <th>Ações</th>
                     </tr>
                 </thead>
                 <tbody id="container-admin-agendamentos">
@@ -464,7 +483,103 @@
                 itemSair.style.display = 'none';
             }
         }
+        
+        async function carregarMeusAgendamentos() {
+            const container = document.getElementById('container-meus-agendamentos');
+            if(!usuarioLogado) {
+                container.innerHTML = '<p style="text-align: center; color: #777;">Faça login acima para visualizar suas reservas ativas.</p>';
+                return;
+            }
  
+            container.innerHTML = '<p style="text-align: center;">⏳ Buscando suas marcações...</p>';
+ 
+            try {
+                const response = await fetch(`/api/meus-agendamentos?email=${usuarioLogado.email}`);
+                const dados = await response.json();
+ 
+                if(!dados || dados.length === 0) {
+                    container.innerHTML = '<p style="text-align: center; color: #555;">Você ainda não possui nenhum agendamento registrado.</p>';
+                    return;
+                }
+ 
+                container.innerHTML = '';
+                dados.forEach(agend => {
+                    const dataFormatada = new Date(agend.data_atendimento).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
+                    const servicoNome = agend.servico ? agend.servico.tipo : "Serviço";
+                    const servicoValor = agend.servico ? `R$ ${parseFloat(agend.servico.valor).toFixed(2).replace('.', ',')}` : "Consultar";
+                    const agendStatus = agend.status || 'Pendente';
+                    
+                    let blocoAvaliacao = '';
+                    if (agendStatus === "Concluido") {
+                        if (!agend.avaliacao) {
+                            blocoAvaliacao = `
+                                <div style="margin-top: 15px; padding: 15px; background: #f8fafc; border-radius: 10px; border: 1px dashed #6a11cb; width: 100%;">
+                                    <p style="margin: 0 0 10px 0; font-size: 13px; font-weight: bold; color: #4a5568;">Como foi sua experiência de bem-estar?</p>
+                                    <div style="display: flex; gap: 8px;">
+                                        <button class="btn-avaliar" onclick="avaliarServico(${agend.id}, 'Bom')" style="color: #069669; border-color: #069669;">😊 Bom</button>
+                                        <button class="btn-avaliar" onclick="avaliarServico(${agend.id}, 'Médio')" style="color: #d97706; border-color: #d97706;">😐 Médio</button>
+                                        <button class="btn-avaliar" onclick="avaliarServico(${agend.id}, 'Ruim')" style="color: #c5221f; border-color: #c5221f;">🙁 Ruim</button>
+                                    </div>
+                                </div>
+                            `;
+                        } else {
+                            let emoji = agend.avaliacao === 'Bom' ? '😊' : agend.avaliacao === 'Médio' ? '😐' : '🙁';
+                            blocoAvaliacao = `<p style="margin-top: 10px; font-size: 13px; color: #4a5568;">Sua avaliação: <strong class="badge-status badge-${agend.avaliacao.toLowerCase()}">${emoji} ${agend.avaliacao}</strong></p>`;
+                        }
+                    }
+ 
+                    const itemHtml = `
+                        <div class="item-agendamento" style="flex-direction: column; align-items: flex-start; gap: 10px; width: 100%;">
+                            <div style="display: flex; justify-content: space-between; width: 100%; align-items: center;">
+                                <div class="item-agendamento-info">
+                                    <h4>${servicoNome} <span class="badge-status ${agendStatus === 'Concluido' ? 'badge-concluido' : 'badge-pendente'}">${agendStatus}</span></h4>
+                                    <p>🗓️ <strong>Data:</strong> ${dataFormatada}</p>
+                                    <p>💰 <strong>Valor:</strong> ${servicoValor}</p>
+                                </div>
+                                <div class="item-agendamento-acoes">
+                                    ${agendStatus === 'Pendente' ? `
+                                        <button type="button" class="btn-remarcar" onclick="abrirModalRemarcar(${agend.id})">Remarcar</button>
+                                        <button type="button" class="btn-cancelar" onclick="solicitarCancelamento(${agend.id})">Cancelar</button>
+                                    ` : `<p style="color: #10b981; font-weight: bold; font-size: 14px; align-self: center;">Aproveitado! ✨</p>`}
+                                </div>
+                            </div>
+                            ${blocoAvaliacao}
+                        </div>
+                    `;
+                    container.innerHTML += itemHtml;
+                });
+            } catch (error) {
+                container.innerHTML = '<p style="text-align: center; color: red;">❌ Erro crítico ao carregar agendamentos.</p>';
+            }
+        }
+
+        async function avaliarServico(id, nota) {
+            try {
+                const response = await fetch(`/api/agendamentos/${id}/avaliar`, { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json' }, 
+                    body: JSON.stringify({ avaliacao: nota }) 
+                });
+                
+                if (response.ok) {
+                    // Se a função exibirNotificacaoSpa existir no seu código, usamos ela:
+                    if (typeof exibirNotificacaoSpa === 'function') {
+                        exibirNotificacaoSpa('Obrigado!', 'Sua avaliação foi registrada com sucesso. ✨', '🌸');
+                    } else {
+                        alert('Obrigado! Sua avaliação foi registrada. ✨');
+                    }
+                    // Recarrega a listagem para sumir com os botões e mostrar o badge fixo
+                    carregarMeusAgendamentos(); 
+                } else {
+                    const erroDados = await response.json();
+                    alert(`Erro ao salvar: ${erroDados.error || 'Erro desconhecido'}`);
+                }
+            } catch (e) {
+                console.error(e);
+                alert('❌ Falha na comunicação com o servidor ao enviar avaliação.');
+            }
+        }
+
         function deslogar() {
             localStorage.removeItem('usuario_spa');
             usuarioLogado = null;
@@ -626,50 +741,81 @@
             }
         }
  
-        async function carregarMeusAgendamentos() {
-            const container = document.getElementById('container-meus-agendamentos');
-            if(!usuarioLogado) {
-                container.innerHTML = '<p style="text-align: center; color: #777;">Faça login acima para visualizar suas reservas ativas.</p>';
-                return;
-            }
- 
-            container.innerHTML = '<p style="text-align: center;">⏳ Buscando suas marcações...</p>';
- 
+        async function carregarAgendamentosAdmin() {
+            const container = document.getElementById('container-admin-agendamentos');
+            if (!usuarioLogado || !usuarioLogado.is_admin) return;
+
             try {
-                const response = await fetch(`/api/meus-agendamentos?email=${usuarioLogado.email}`);
-                const dados = await response.json();
- 
-                if(!dados || dados.length === 0) {
-                    container.innerHTML = '<p style="text-align: center; color: #555;">Você ainda não possui nenhum agendamento registrado.</p>';
+                const response = await fetch(`/api/admin/agendamentos?admin_email=${usuarioLogado.email}`);
+                const agendamentos = await response.json();
+                container.innerHTML = '';
+
+                if (agendamentos.length === 0) {
+                    container.innerHTML = '<tr><td colspan="7" style="text-align: center;">Nenhum agendamento global encontrado.</td></tr>';
                     return;
                 }
- 
-                container.innerHTML = '';
-                dados.forEach(agend => {
-                    const dataFormatada = new Date(agend.data_atendimento).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
-                    const servicoNome = agend.servico ? agend.servico.tipo : "Serviço";
-                    const servicoValor = agend.servico ? `R$ ${parseFloat(agend.servico.valor).toFixed(2).replace('.', ',')}` : "Consultar";
-                    const agendStatus = agend.status || 'Pendente';
+
+                agendamentos.forEach(ag => {
+                    const dataFormatada = new Date(ag.data_atendimento).toLocaleString('pt-BR');
+                    const servicoNome = ag.servico ? ag.servico.tipo : 'N/A';
+                    const servicoValor = ag.servico ? `R$ ${parseFloat(ag.servico.valor).toFixed(2).replace('.', ',')}` : 'N/A';
+                    const agendStatus = ag.status || 'Pendente';
                     
-                    const itemHtml = `
-                        <div class="item-agendamento">
-                            <div class="item-agendamento-info">
-                                <h4>${servicoNome} <span class="badge-status ${agendStatus === 'Concluido' ? 'badge-concluido' : 'badge-pendente'}">${agendStatus}</span></h4>
-                                <p>🗓️ <strong>Data:</strong> ${dataFormatada}</p>
-                                <p>💰 <strong>Valor:</strong> ${servicoValor}</p>
-                            </div>
-                            <div class="item-agendamento-acoes">
-                                ${agendStatus === 'Pendente' ? `
-                                    <button type="button" class="btn-remarcar" onclick="abrirModalRemarcar(${agend.id})">Remarcar</button>
-                                    <button type="button" class="btn-cancelar" onclick="solicitarCancelamento(${agend.id})">Cancelar</button>
-                                ` : `<p style="color: #10b981; font-weight: bold; font-size: 14px; align-self: center;">Aproveitado! ✨</p>`}
-                            </div>
-                        </div>
+                    // Configuração visual da avaliação recebida
+                    let badgeAvaliacao = "<i style='color: #aaa;'>Sem avaliação</i>";
+                    if (ag.avaliacao) {
+                        if (ag.avaliacao === "Bom") badgeAvaliacao = `<span class="badge-status badge-bom">😊 Bom</span>`;
+                        else if (ag.avaliacao === "Médio") badgeAvaliacao = `<span class="badge-status badge-medio">😐 Médio</span>`;
+                        else if (ag.avaliacao === "Ruim") badgeAvaliacao = `<span class="badge-status badge-ruim">🙁 Ruim</span>`;
+                    }
+
+                    let botaoAcao = '';
+                    if (agendStatus !== 'Concluido') {
+                        botaoAcao = `<button class="btn-concluir" onclick="concluirAgendamentoAdmin(${ag.id})">Concluir</button>`;
+                    } else {
+                        botaoAcao = `<span style="color: #10b981; font-weight: bold;">✓ Finalizado</span>`;
+                    }
+
+                    container.innerHTML += `
+                        <tr>
+                            <td>${ag.email_cliente}</td>
+                            <td>${servicoNome}</td>
+                            <td>${dataFormatada}</td>
+                            <td>${servicoValor}</td>
+                            <td><span class="badge-status ${agendStatus === 'Concluido' ? 'badge-concluido' : 'badge-pendente'}">${agendStatus}</span></td>
+                            <td>${badgeAvaliacao}</td>
+                            <td>${botaoAcao}</td>
+                        </tr>
                     `;
-                    container.innerHTML += itemHtml;
                 });
             } catch (error) {
-                container.innerHTML = '<p style="text-align: center; color: red;">❌ Erro crítico ao carregar agendamentos.</p>';
+                container.innerHTML = '<tr><td colspan="7" style="text-align: center; color: red;">❌ Erro ao buscar controle gerencial.</td></tr>';
+            }
+        } // <--- CHAVE INCLUÍDA AQUI PARA FECHAR A FUNÇÃO CORRETAMENTE!
+        
+        async function concluirAgendamentoAdmin(id) {
+            try {
+                const response = await fetch(`/api/admin/agendamentos/${id}/concluir`, { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json' }, 
+                    body: JSON.stringify({ admin_email: usuarioLogado.email }) 
+                });
+                
+                if (response.ok) {
+                    if (typeof exibirNotificacaoSpa === 'function') {
+                        exibirNotificacaoSpa('Sucesso!', 'O agendamento foi marcado como concluído. ✨', '🌿');
+                    } else {
+                        alert('Agendamento concluído com sucesso! ✨');
+                    }
+                    // Recarrega a tabela do admin para atualizar o status e exibir o badge correto
+                    carregarAgendamentosAdmin(); 
+                } else {
+                    const erroDados = await response.json();
+                    alert(`Erro ao concluir: ${erroDados.error || 'Erro desconhecido'}`);
+                }
+            } catch (e) {
+                console.error(e);
+                alert('❌ Falha na comunicação com o servidor ao concluir o agendamento.');
             }
         }
  
@@ -758,54 +904,54 @@
 
         /* 👑 CORPO LÓGICO EXCLUSIVO DO ADMINISTRADOR (CONEXÃO BACKEND) */
         async function carregarAgendamentosAdmin() {
-            const container = document.getElementById('container-admin-agendamentos');
-            if(!usuarioLogado || !usuarioLogado.is_admin) {
-                container.innerHTML = '<tr><td colspan="6" style="text-align: center; color: red;">Acesso restrito.</td></tr>';
-                return;
-            }
+            const container = document.getElementById('container-admin-agendamentos'); 
+            if (!usuarioLogado || !usuarioLogado.is_admin) return;
 
             try {
                 const response = await fetch(`/api/admin/agendamentos?admin_email=${usuarioLogado.email}`);
-                const dados = await response.json();
-
-                if(!response.ok) throw new Error(dados.error || "Falha ao ler dados.");
-
+                const agendamentos = await response.json(); 
                 container.innerHTML = '';
-                if(dados.length === 0) {
-                    container.innerHTML = '<tr><td colspan="6" style="text-align: center;">Nenhum agendamento global registrado no sistema.</td></tr>';
+
+                if (agendamentos.length === 0) {
+                    container.innerHTML = '<tr><td colspan="7" style="text-align: center;">Nenhum agendamento global encontrado.</td></tr>';
                     return;
                 }
 
-                dados.forEach(agend => {
-                    const dataFormatada = new Date(agend.data_atendimento).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
-                    const servicoNome = agend.servico ? agend.servico.tipo : "Não identificado";
-                    const servicoValor = agend.servico ? `R$ ${parseFloat(agend.servico.valor).toFixed(2).replace('.', ',')}` : "R$ 0,00";
-                    const statusAtual = agend.status || "Pendente";
+                agendamentos.forEach(ag => {
+                    const dataFormatada = new Date(ag.data_atendimento).toLocaleString('pt-BR');
+                    const servicoNome = ag.servico ? ag.servico.tipo : 'N/A';
+                    const servicoValor = ag.servico ? `R$ ${parseFloat(ag.servico.valor).toFixed(2).replace('.', ',')}` : 'N/A';
+                    const agendStatus = ag.status || 'Pendente';
+                    
+                    // Configuração visual da avaliação recebida
+                    let badgeAvaliacao = "<i style='color: #aaa;'>Sem avaliação</i>";
+                    if (ag.avaliacao) {
+                        if (ag.avaliacao === "Bom") badgeAvaliacao = `<span class="badge-status badge-bom">😊 Bom</span>`;
+                        else if (ag.avaliacao === "Médio") badgeAvaliacao = `<span class="badge-status badge-medio">😐 Médio</span>`;
+                        else if (ag.avaliacao === "Ruim") badgeAvaliacao = `<span class="badge-status badge-ruim">🙁 Ruim</span>`;
+                    }
 
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = `
-                        <td><strong>${agend.email_cliente}</strong></td>
-                        <td>${servicoNome}</td>
-                        <td>${dataFormatada}</td>
-                        <td>${servicoValor}</td>
-                        <td>
-                            <span class="badge-status ${statusAtual === 'Concluido' ? 'badge-concluido' : 'badge-pendente'}">
-                                ${statusAtual}
-                            </span>
-                        </td>
-                        <td>
-                            <button class="btn-concluir" 
-                                    ${statusAtual === 'Concluido' ? 'disabled' : ''} 
-                                    onclick="confirmarAgendamentoPeloAdmin(${agend.id})">
-                                ${statusAtual === 'Concluido' ? '✓ Realizado' : 'Marcar Concluído'}
-                            </button>
-                        </td>
+                    let botaoAcao = '';
+                    if (agendStatus !== 'Concluido') {
+                        botaoAcao = `<button class="btn-concluir" onclick="concluirAgendamentoAdmin(${ag.id})">Concluir</button>`;
+                    } else {
+                        botaoAcao = `<span style="color: #10b981; font-weight: bold;">✓ Finalizado</span>`;
+                    }
+
+                    container.innerHTML += `
+                        <tr>
+                            <td>${ag.email_cliente}</td>
+                            <td>${servicoNome}</td>
+                            <td>${dataFormatada}</td>
+                            <td>${servicoValor}</td>
+                            <td><span class="badge-status ${agendStatus === 'Concluido' ? 'badge-concluido' : 'badge-pendente'}">${agendStatus}</span></td>
+                            <td>${badgeAvaliacao}</td>
+                            <td>${botaoAcao}</td>
+                        </tr>
                     `;
-                    container.appendChild(tr);
                 });
-
             } catch (error) {
-                container.innerHTML = `<tr><td colspan="6" style="text-align: center; color: red;">❌ Erro: ${error.message}</td></tr>`;
+                container.innerHTML = '<tr><td colspan="7" style="text-align: center; color: red;">❌ Erro ao buscar controle gerencial.</td></tr>';
             }
         }
 

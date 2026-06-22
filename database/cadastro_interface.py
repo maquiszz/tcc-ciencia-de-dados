@@ -162,8 +162,8 @@ def meus_agendamentos():
         return jsonify({"error": "E-mail do usuário não informado."}), 400
 
     try:
-        # Busca apenas agendamentos do usuário correspondente
-        resposta = supabase.table("agendamentos").select("id, data_atendimento, status, servico_id, servico(tipo, valor)").eq("email_cliente", email).execute()
+        # Puxa os dados incluindo a nova coluna 'avaliacao'
+        resposta = supabase.table("agendamentos").select("id, data_atendimento, status, avaliacao, servico_id, servico(tipo, valor)").eq("email_cliente", email).execute()
         return jsonify(resposta.data), 200
     except Exception as e:
         print(f"❌ Erro ao buscar agendamentos: {e}")
@@ -236,6 +236,26 @@ def cancelar_agendamento(id):
         return jsonify({"error": "Erro interno ao processar o cancelamento no servidor."}), 500
 
 
+@app.route('/api/agendamentos/<int:id>/avaliar', methods=['POST'])
+def avaliar_agendamento(id):
+    dados = request.json
+    nota = dados.get('avaliacao')
+
+    if nota not in ["Bom", "Médio", "Ruim"]:
+        return jsonify({"error": "Avaliação inválida. Use apenas Bom, Médio ou Ruim."}), 400
+
+    try:
+        busca = supabase.table("agendamentos").select("status").eq("id", id).execute()
+        if not busca.data or busca.data[0].get('status') != 'Concluido':
+            return jsonify({"error": "Você só pode avaliar serviços já finalizados."}), 400
+
+        supabase.table("agendamentos").update({"avaliacao": nota}).eq("id", id).execute()
+        return jsonify({"message": "Obrigado pela sua avaliação!"}), 200
+    except Exception as e:
+        print(f"❌ Erro ao salvar avaliação: {e}")
+        return jsonify({"error": "Erro interno ao salvar avaliação."}), 500
+
+
 # ==============================================================================
 # --- 👑 ROTAS EXCLUSIVAS DO PAINEL ADMINISTRATIVO (PROTEGIDAS) ---
 # ==============================================================================
@@ -253,8 +273,8 @@ def admin_listar_todos_agendamentos():
         if not checagem.data or not checagem.data[0].get('is_admin'):
             return jsonify({"error": "Acesso negado. Rota exclusiva para administradores."}), 403
             
-        # Busca TODOS os registros da tabela de agendamentos juntando os dados do serviço
-        resposta = supabase.table("agendamentos").select("id, data_atendimento, email_cliente, status, servico_id, servico(tipo, valor)").execute()
+        # Busca adicionando a coluna 'avaliacao' no retorno da tabela
+        resposta = supabase.table("agendamentos").select("id, data_atendimento, email_cliente, status, avaliacao, servico_id, servico(tipo, valor)").execute()
         return jsonify(resposta.data), 200
     except Exception as e:
         print(f"❌ Erro na consulta de administração: {e}")
