@@ -423,6 +423,7 @@
         let modoAbas = 'catalogo';
         let modoAuth = 'login';
         let usuarioLogado = JSON.parse(localStorage.getItem('usuario_spa')) || null;
+        const BACKEND_URL = "https://spa-panaceia.onrender.com/";
         let chartContratos = null;
         let chartAvaliacoes = null;
  
@@ -850,30 +851,25 @@
         
         async function concluirAgendamentoAdmin(id) {
             try {
-                const response = await fetch(`/api/admin/agendamentos/${id}/concluir`, { 
+                // Adaptado para usar a URL dinâmica do servidor hospedado
+                const response = await fetch(`${BACKEND_URL}/api/admin/agendamentos/${id}/concluir`, { 
                     method: 'POST', 
                     headers: { 'Content-Type': 'application/json' }, 
                     body: JSON.stringify({ admin_email: usuarioLogado.email }) 
                 });
-                
+
+                const resultado = await response.json();
                 if (response.ok) {
-                    if (typeof exibirNotificacaoSpa === 'function') {
-                        exibirNotificacaoSpa('Sucesso!', 'O agendamento foi marcado como concluído. ✨', '🌿');
-                    } else {
-                        alert('Agendamento concluído com sucesso! ✨');
-                    }
-                    // Recarrega a tabela do admin para atualizar o status e exibir o badge correto
-                    carregarAgendamentosAdmin(); 
+                    exibirNotificacaoSpa('Sucesso', 'Agendamento concluído com sucesso!', '✨');
+                    carregarAgendamentosAdmin(); // Recarrega os dados e atualiza os gráficos
                 } else {
-                    const erroDados = await response.json();
-                    alert(`Erro ao concluir: ${erroDados.error || 'Erro desconhecido'}`);
+                    exibirNotificacaoSpa('Erro', resultado.error || 'Erro ao concluir.', '⚠️');
                 }
-            } catch (e) {
-                console.error(e);
-                alert('❌ Falha na comunicação com o servidor ao concluir o agendamento.');
+            } catch (err) {
+                console.error("Erro ao concluir agendamento:", err);
+                exibirNotificacaoSpa('Ops!', 'Não foi possível conectar ao servidor remoto.', '🍃');
             }
         }
- 
         function abrirModalRemarcar(id) {
             fecharTodosModais();
             document.getElementById('reagendarId').value = id;
@@ -956,18 +952,18 @@
                 exibirNotificacaoSpa('Erro de Conexão', 'Não foi possível estabelecer contato com o servidor central.', '📴'); 
             }
         }
-           /* 👑 CORPO LÓGICO EXCLUSIVO DO ADMINISTRADOR */
+          /* 👑 CORPO LÓGICO EXCLUSIVO DO ADMINISTRADOR */
         async function carregarAgendamentosAdmin() {
             const container = document.getElementById('container-admin-agendamentos'); 
-            if (!container) return; // Proteção caso o elemento não exista na tela
+            if (!container) return; 
             if (!usuarioLogado || !usuarioLogado.is_admin) return;
 
             try {
-                const response = await fetch(`http://10.251.107.31:5000/api/admin/agendamentos?admin_email=${usuarioLogado.email}`);
+                // Adaptado para usar a URL do servidor hospedado
+                const response = await fetch(`${BACKEND_URL}/api/admin/agendamentos?admin_email=${usuarioLogado.email}`);
                 const agendamentos = await response.json(); 
                 container.innerHTML = '';
 
-                // Variáveis do Dashboard Financeiro e Estatísticas
                 let faturamento = 0;
                 let totalContratos = agendamentos.length;
                 let pendentes = 0;
@@ -987,7 +983,6 @@
                     const servicoValor = ag.servico ? `R$ ${parseFloat(ag.servico.valor).toFixed(2).replace('.', ',')}` : 'N/A';
                     const agendStatus = ag.status || 'Pendente';
                     
-                    // Acumuladores para o painel financeiro
                     if (agendStatus === 'Concluido') {
                         concluidos++;
                         faturamento += parseFloat(ag.servico?.valor || 0);
@@ -995,12 +990,10 @@
                         pendentes++;
                     }
 
-                    // Acumuladores de métricas para o gráfico de satisfação
                     if (ag.avaliacao === 'Bom') avalBom++;
                     else if (ag.avaliacao === 'Médio') avalMedio++;
                     else if (ag.avaliacao === 'Ruim') avalRuim++;
 
-                    // Renderização da tabela operacional do admin
                     let badgeAvaliacao = "<i style='color: #aaa;'>Sem avaliação</i>";
                     if (ag.avaliacao) {
                         if (ag.avaliacao === "Bom") badgeAvaliacao = `<span class="badge-status badge-bom">😊 Bom</span>`;
@@ -1010,7 +1003,7 @@
 
                     let botaoAcao = '';
                     if (agendStatus !== 'Concluido') {
-                        botaoAcao = `<button class="btn-concluir" onclick="confirmarAgendamentoPeloAdmin(${ag.id})">Concluir</button>`;
+                        botaoAcao = `<button class="btn-concluir" onclick="concluirAgendamentoAdmin(${ag.id})">Concluir</button>`;
                     } else {
                         botaoAcao = `<span style="color: #10b981; font-weight: bold;">✓ Finalizado</span>`;
                     }
@@ -1028,7 +1021,6 @@
                     `;
                 });
 
-                // Atualiza os cards numéricos da aba financeira
                 const cardFaturamento = document.getElementById('fin-faturamento');
                 if (cardFaturamento) {
                     cardFaturamento.innerText = `R$ ${faturamento.toFixed(2).replace('.', ',')}`;
@@ -1037,55 +1029,30 @@
                     document.getElementById('fin-concluidos').innerText = concluidos;
                 }
 
-                // === 📊 RENDERIZAÇÃO DOS MINI GRÁFICOS (CHART.JS) ===
-                
-                // 1. Gráfico de Rosca: Fluxo de Contratos
+                // === 📊 RENDERIZAÇÃO DOS MINI GRÁFICOS ===
                 const ctxContratos = document.getElementById('graficoContratos');
                 if (ctxContratos) {
-                    if (typeof chartContratos !== 'undefined' && chartContratos) {
-                        chartContratos.destroy();
-                    }
+                    if (typeof chartContratos !== 'undefined' && chartContratos) chartContratos.destroy();
                     chartContratos = new Chart(ctxContratos, {
                         type: 'doughnut',
                         data: {
                             labels: ['Pendentes', 'Concluídos'],
-                            datasets: [{
-                                data: [pendentes, concluidos],
-                                backgroundColor: ['#d97706', '#059669'],
-                                borderWidth: 1
-                            }]
+                            datasets: [{ data: [pendentes, concluidos], backgroundColor: ['#d97706', '#059669'], borderWidth: 1 }]
                         },
-                        options: { 
-                            responsive: true, 
-                            maintainAspectRatio: false,
-                            plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } } } 
-                        }
+                        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } } } }
                     });
                 }
 
-                // 2. Gráfico de Barras: Índice de Satisfação
                 const ctxAvaliacoes = document.getElementById('graficoAvaliacoes');
                 if (ctxAvaliacoes) {
-                    if (typeof chartAvaliacoes !== 'undefined' && chartAvaliacoes) {
-                        chartAvaliacoes.destroy();
-                    }
+                    if (typeof chartAvaliacoes !== 'undefined' && chartAvaliacoes) chartAvaliacoes.destroy();
                     chartAvaliacoes = new Chart(ctxAvaliacoes, {
                         type: 'bar',
                         data: {
                             labels: ['😊 Bom', '😐 Médio', '🙁 Ruim'],
-                            datasets: [{
-                                data: [avalBom, avalMedio, avalRuim],
-                                backgroundColor: ['#10b981', '#f59e0b', '#ef4444'],
-                                borderRadius: 4
-                            }]
+                            datasets: [{ data: [avalBom, avalMedio, avalRuim], backgroundColor: ['#10b981', '#f59e0b', '#ef4444'], borderRadius: 4 }]
                         },
-                        options: { 
-                            indexAxis: 'y',
-                            responsive: true, 
-                            maintainAspectRatio: false,
-                            plugins: { legend: { display: false } },
-                            scales: { x: { ticks: { stepSize: 1 } } }
-                        }
+                        options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { ticks: { stepSize: 1 } } } }
                     });
                 }
 
@@ -1094,7 +1061,6 @@
                 container.innerHTML = '<tr><td colspan="7" style="text-align: center; color: red;">❌ Erro ao buscar controle gerencial.</td></tr>';
             }
         }
-        
         async function confirmarAgendamentoPeloAdmin(id) {
             try {
                 const response = await fetch(`/api/admin/agendamentos/${id}/concluir`, {
