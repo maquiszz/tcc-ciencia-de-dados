@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
+    
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Spa Panaceia - Serviços</title>
@@ -309,6 +310,33 @@
             <h1>👑 Painel Gerencial de Administração</h1>
             <p>Monitore os agendamentos globais e valide a realização das sessões</p>
         </header>
+
+        <div class="dashboard-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 30px; width: 100%;">
+            
+            <div style="background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border-left: 5px solid #10b981;">
+                <p style="font-size: 13px; color: #718096; font-weight: bold; text-transform: uppercase; margin-bottom: 5px;">Faturamento Realizado</p>
+                <h2 id="dash-faturamento" style="color: #10b981; font-size: 24px; font-weight: bold;">R$ 0,00</h2>
+            </div>
+
+            <div style="background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border-left: 5px solid #6a11cb;">
+                <p style="font-size: 13px; color: #718096; font-weight: bold; text-transform: uppercase; margin-bottom: 5px;">Contratos (Total | Pend | Concl)</p>
+                <h2 style="color: #333; font-size: 20px; font-weight: bold;">
+                    <span id="dash-total">0</span> | 
+                    <span id="dash-pendentes" style="color: #d97706;">0</span> | 
+                    <span id="dash-concluidos" style="color: #059669;">0</span>
+                </h2>
+            </div>
+
+            <div style="background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border-left: 5px solid #2575fc;">
+                <p style="font-size: 13px; color: #718096; font-weight: bold; text-transform: uppercase; margin-bottom: 5px;">Avaliações Totais</p>
+                <div style="display: flex; gap: 12px; font-size: 14px; font-weight: bold; margin-top: 8px;">
+                    <span title="Bom">😊 <span id="dash-bom">0</span></span>
+                    <span title="Médio">😐 <span id="dash-medio">0</span></span>
+                    <span title="Ruim">🙁 <span id="dash-ruim">0</span></span>
+                </div>
+            </div>
+
+        </div>
         <div class="admin-container">
             <table class="tabela-admin">
                <thead>
@@ -589,8 +617,8 @@
  
         async function processarAutenticacao() {
             const nome = document.getElementById('authNome').value;
-            const email = document.getElementById('authEmail').value;
-            const senha = document.getElementById('authSenha').value;
+            const email = document.getElementById('authEmail').value.trim();
+            const senha = document.getElementById('authSenha').value.trim();
  
             if (!email || !senha || (modoAuth === 'cadastro' && !nome)) {
                 exibirNotificacaoSpa('Atenção', '⚠️ Por favor, preencha todos os campos necessários para prosseguir.', '✨');
@@ -902,8 +930,8 @@
             }
         }
 
-        /* 👑 CORPO LÓGICO EXCLUSIVO DO ADMINISTRADOR (CONEXÃO BACKEND) */
-        async function carregarAgendamentosAdmin() {
+       /* 👑 CORPO LÓGICO EXCLUSIVO DO ADMINISTRADOR (CONEXÃO BACKEND) */
+       async function carregarAgendamentosAdmin() {
             const container = document.getElementById('container-admin-agendamentos'); 
             if (!usuarioLogado || !usuarioLogado.is_admin) return;
 
@@ -912,8 +940,23 @@
                 const agendamentos = await response.json(); 
                 container.innerHTML = '';
 
+                // Variáveis acumuladoras do Painel Financeiro/Gerencial
+                let faturamento = 0;
+                let totalContratos = agendamentos.length;
+                let pendentes = 0;
+                let concluidos = 0;
+                let avalBom = 0, avalMedio = 0, avalRuim = 0;
+
                 if (agendamentos.length === 0) {
                     container.innerHTML = '<tr><td colspan="7" style="text-align: center;">Nenhum agendamento global encontrado.</td></tr>';
+                    // Zera os indicadores nos cards caso não haja nada registrado
+                    document.getElementById('dash-faturamento').innerText = "R$ 0,00";
+                    document.getElementById('dash-total').innerText = "0";
+                    document.getElementById('dash-pendentes').innerText = "0";
+                    document.getElementById('dash-concluidos').innerText = "0";
+                    document.getElementById('dash-bom').innerText = "0";
+                    document.getElementById('dash-medio').innerText = "0";
+                    document.getElementById('dash-ruim').innerText = "0";
                     return;
                 }
 
@@ -923,6 +966,18 @@
                     const servicoValor = ag.servico ? `R$ ${parseFloat(ag.servico.valor).toFixed(2).replace('.', ',')}` : 'N/A';
                     const agendStatus = ag.status || 'Pendente';
                     
+                    // 📈 PROCESSAMENTO DOS DADOS DO DASHBOARD FINANCEIRO/GERENCIAL
+                    if (agendStatus === 'Concluido') {
+                        concluidos++;
+                        faturamento += parseFloat(ag.servico?.valor || 0);
+                    } else {
+                        pendentes++;
+                    }
+
+                    if (ag.avaliacao === 'Bom') avalBom++;
+                    else if (ag.avaliacao === 'Médio') avalMedio++;
+                    else if (ag.avaliacao === 'Ruim') avalRuim++;
+
                     // Configuração visual da avaliação recebida
                     let badgeAvaliacao = "<i style='color: #aaa;'>Sem avaliação</i>";
                     if (ag.avaliacao) {
@@ -931,9 +986,10 @@
                         else if (ag.avaliacao === "Ruim") badgeAvaliacao = `<span class="badge-status badge-ruim">🙁 Ruim</span>`;
                     }
 
+                    // Ajustado o onclick para chamar a função correta abaixo (confirmarAgendamentoPeloAdmin)
                     let botaoAcao = '';
                     if (agendStatus !== 'Concluido') {
-                        botaoAcao = `<button class="btn-concluir" onclick="concluirAgendamentoAdmin(${ag.id})">Concluir</button>`;
+                        botaoAcao = `<button class="btn-concluir" onclick="confirmarAgendamentoPeloAdmin(${ag.id})">Concluir</button>`;
                     } else {
                         botaoAcao = `<span style="color: #10b981; font-weight: bold;">✓ Finalizado</span>`;
                     }
@@ -950,6 +1006,16 @@
                         </tr>
                     `;
                 });
+
+                // 📊 INJEÇÃO DOS VALORES CALCULADOS NOS CARDS DO PAINEL FINANCEIRO
+                document.getElementById('dash-faturamento').innerText = `R$ ${faturamento.toFixed(2).replace('.', ',')}`;
+                document.getElementById('dash-total').innerText = totalContratos;
+                document.getElementById('dash-pendentes').innerText = pendentes;
+                document.getElementById('dash-concluidos').innerText = concluidos;
+                document.getElementById('dash-bom').innerText = avalBom;
+                document.getElementById('dash-medio').innerText = avalMedio;
+                document.getElementById('dash-ruim').innerText = avalRuim;
+
             } catch (error) {
                 container.innerHTML = '<tr><td colspan="7" style="text-align: center; color: red;">❌ Erro ao buscar controle gerencial.</td></tr>';
             }
@@ -972,7 +1038,7 @@
                 }
             } catch (e) {
                 exibirNotificacaoSpa('Erro', 'Falha na conexão de dados.', '📴');
-            }
+            }                 
         }
         function toggleVisibilidadeSenha() {
     const campoSenha = document.getElementById('authSenha');
