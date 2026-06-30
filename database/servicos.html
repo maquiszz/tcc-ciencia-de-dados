@@ -269,7 +269,8 @@
                 <button class="dropdown-item" id="drop-meu-perfil" onclick="alternarAbas('agendamentos')" style="display: none;">📅 Meu Perfil</button>
                 <button class="dropdown-item" id="drop-admin-painel" onclick="alternarAbas('admin')" style="display: none; color: #6a11cb; font-weight: bold;">👑 Painel Admin</button>
                 <button class="dropdown-item" id="drop-admin-financeiro" onclick="alternarAbas('financeiro')" style="display: none; color: #10b981; font-weight: bold;">📊 Painel Financeiro</button>
-                <button class="dropdown-item btn-sair" id="drop-deslogar" onclick="deslogar()" style="display: none;">🚪 Sair</button>
+                <button class="dropdown-item" id="drop-admin-usuarios" onclick="alternarAbas('usuarios')" style="display: none; color: #2575fc; font-weight: bold;">👥 Gerenciar Usuários</button>
+                <button class="dropdown-item btn-sair" id="drop-deslogar" onclick="deslogar()" style="display: none;">🚪 Sair</button>                
             </div>
         </div>
     </div>
@@ -370,6 +371,31 @@
         </div>
     </div> 
 
+    <div id="secao-usuarios" class="secao-conteudo">
+        <header style="margin-bottom: 25px;">
+            <h1>👥 Gerenciamento de Clientes da Base</h1>
+            <p>Visualize o perfil de consumo, histórico de contratos e gastos totais de cada cliente.</p>
+        </header>
+
+        <div class="admin-container">
+            <table class="tabela-admin">
+               <thead>
+                    <tr>
+                        <th>Nome do Usuário</th>
+                        <th>Gmail de Cadastro</th>
+                        <th style="text-align: center;">Histórico (Total | Pend | Concl)</th>
+                        <th>Total Investido (Gastos)</th>
+                    </tr>
+                </thead>
+                <tbody id="container-admin-usuarios">
+                    <tr>
+                        <td colspan="4" style="text-align: center;">⏳ Carregando base de clientes...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
 
     <div class="modal-overlay" id="agendamentoModal">
         <div class="modal-box">
@@ -423,7 +449,7 @@
         let modoAbas = 'catalogo';
         let modoAuth = 'login';
         let usuarioLogado = JSON.parse(localStorage.getItem('usuario_spa')) || null;
-        const BACKEND_URL = "https://spa-panaceia.onrender.com/";
+        const BACKEND_URL = "https://spa-panaceia.onrender.com";
         let chartContratos = null;
         let chartAvaliacoes = null;
  
@@ -462,7 +488,8 @@
             document.getElementById('secao-catalogo').classList.remove('ativa');
             document.getElementById('secao-agendamentos').classList.remove('ativa');
             document.getElementById('secao-admin').classList.remove('ativa');
-            document.getElementById('secao-financeiro').classList.remove('ativa'); // <-- Adicionado
+            document.getElementById('secao-financeiro').classList.remove('ativa');
+            document.getElementById('secao-usuarios').classList.remove('ativa'); 
             document.getElementById('authBox').classList.remove('ativa');
 
             if(aba === 'catalogo') {
@@ -474,9 +501,12 @@
             } else if(aba === 'admin') {
                 document.getElementById('secao-admin').classList.add('ativa');
                 carregarAgendamentosAdmin();
-            } else if(aba === 'financeiro') { // <-- Adicionado
+            } else if(aba === 'financeiro') {
                 document.getElementById('secao-financeiro').classList.add('ativa');
-                carregarAgendamentosAdmin(); // Reaproveita a busca para preencher os gráficos depois
+                carregarAgendamentosAdmin();
+            } else if(aba === 'usuarios') { 
+                document.getElementById('secao-usuarios').classList.add('ativa');
+                carregarAgendamentosAdmin(); 
             } else if(aba === 'login_tela') {
                 document.getElementById('authBox').classList.add('ativa');
             }
@@ -508,11 +538,12 @@
  
        // Dentro da sua função atualizarPainelUsuario():
     function atualizarPainelUsuario() {
-        const btnGatilho = document.getElementById('btnDropdownGatilho');
-        const dropPerfil = document.getElementById('drop-meu-perfil');
-        const dropAdmin = document.getElementById('drop-admin-painel');
-        const dropFinanceiro = document.getElementById('drop-admin-financeiro');
-        const dropDeslogar = document.getElementById('drop-deslogar');
+    const btnGatilho = document.getElementById('btnDropdownGatilho');
+    const dropPerfil = document.getElementById('drop-meu-perfil');
+    const dropAdmin = document.getElementById('drop-admin-painel');
+    const dropFinanceiro = document.getElementById('drop-admin-financeiro');
+    const dropUsuarios = document.getElementById('drop-admin-usuarios');
+    const dropDeslogar = document.getElementById('drop-deslogar');
 
     // Se NÃO houver usuário logado, esconde TUDO e bota o texto padrão
     if (!usuarioLogado) {
@@ -520,8 +551,9 @@
         if(dropPerfil) dropPerfil.style.display = 'none';
         if(dropAdmin) dropAdmin.style.display = 'none';
         if(dropFinanceiro) dropFinanceiro.style.display = 'none';
+        if(dropUsuarios) dropUsuarios.style.display = 'none';
         if(dropDeslogar) dropDeslogar.style.display = 'none';
-        return; // Para a execução aqui
+        return;
     }
 
     // Se houver usuário logado, muda o texto do botão para o primeiro nome dele
@@ -530,16 +562,19 @@
     if(dropDeslogar) dropDeslogar.style.display = 'block';
 
     // Governança de níveis de acesso
-    if (usuarioLogado.is_admin) {
+  if (usuarioLogado.is_admin) {
         if(dropAdmin) dropAdmin.style.display = 'block';
         if(dropFinanceiro) dropFinanceiro.style.display = 'block';
+        if(dropUsuarios) dropUsuarios.style.display = 'block'; 
         if(dropPerfil) dropPerfil.style.display = 'none';
     } else {
         if(dropPerfil) dropPerfil.style.display = 'block';
         if(dropAdmin) dropAdmin.style.display = 'none';
         if(dropFinanceiro) dropFinanceiro.style.display = 'none';
-    }
+        if(dropUsuarios) dropUsuarios.style.display = 'none'; 
 }
+    }
+
         async function carregarMeusAgendamentos() {
             const container = document.getElementById('container-meus-agendamentos');
             if(!usuarioLogado) {
@@ -698,7 +733,8 @@
         async function carregarServicos() {
             const container = document.getElementById('container-servicos');
             try {
-                const response = await fetch('/api/servicos');
+                // Alterado para apontar explicitamente para o seu backend em Python
+                const response = await fetch(`${BACKEND_URL}/api/servicos`);
                 if (!response.ok) throw new Error("Erro na requisição");
                 
                 servicosDados = await response.json();
@@ -952,17 +988,24 @@
                 exibirNotificacaoSpa('Erro de Conexão', 'Não foi possível estabelecer contato com o servidor central.', '📴'); 
             }
         }
-          /* 👑 CORPO LÓGICO EXCLUSIVO DO ADMINISTRADOR */
+         /* 👑 CORPO LÓGICO EXCLUSIVO DO ADMINISTRADOR (UNIFICADO) */
         async function carregarAgendamentosAdmin() {
             const container = document.getElementById('container-admin-agendamentos'); 
+            const containerUsuarios = document.getElementById('container-admin-usuarios'); // Elemento da aba de usuários
+            
             if (!container) return; 
             if (!usuarioLogado || !usuarioLogado.is_admin) return;
 
             try {
-                // Adaptado para usar a URL do servidor hospedado
+                // 🔍 RASTREADOR DE CONEXÃO (Remover após testar)
+                console.log("Tentando conectar em:", `${BACKEND_URL}/api/admin/agendamentos?admin_email=${usuarioLogado?.email}`);
+                console.log("Estado do container de usuários:", containerUsuarios);
+
+                // Utiliza a URL do servidor hospedado na nuvem
                 const response = await fetch(`${BACKEND_URL}/api/admin/agendamentos?admin_email=${usuarioLogado.email}`);
                 const agendamentos = await response.json(); 
                 container.innerHTML = '';
+                if (containerUsuarios) containerUsuarios.innerHTML = '';
 
                 let faturamento = 0;
                 let totalContratos = agendamentos.length;
@@ -972,20 +1015,28 @@
                 let avalMedio = 0;
                 let avalRuim = 0;
 
+                // Objeto para consolidar os dados dos usuários em tempo real
+                const mapaUsuarios = {};
+
                 if (agendamentos.length === 0) {
                     container.innerHTML = '<tr><td colspan="7" style="text-align: center;">Nenhum agendamento global encontrado.</td></tr>';
+                    if (containerUsuarios) {
+                        containerUsuarios.innerHTML = '<tr><td colspan="4" style="text-align: center;">Nenhum usuário encontrado na base.</td></tr>';
+                    }
                     return;
                 }
 
                 agendamentos.forEach(ag => {
                     const dataFormatada = new Date(ag.data_atendimento).toLocaleString('pt-BR');
                     const servicoNome = ag.servico ? ag.servico.tipo : 'N/A';
-                    const servicoValor = ag.servico ? `R$ ${parseFloat(ag.servico.valor).toFixed(2).replace('.', ',')}` : 'N/A';
+                    const valorNumerico = parseFloat(ag.servico?.valor || 0);
+                    const servicoValor = ag.servico ? `R$ ${valorNumerico.toFixed(2).replace('.', ',')}` : 'N/A';
                     const agendStatus = ag.status || 'Pendente';
                     
+                    // 1. Processamento Financeiro Global & Estatísticas
                     if (agendStatus === 'Concluido') {
                         concluidos++;
-                        faturamento += parseFloat(ag.servico?.valor || 0);
+                        faturamento += valorNumerico;
                     } else {
                         pendentes++;
                     }
@@ -994,6 +1045,30 @@
                     else if (ag.avaliacao === 'Médio') avalMedio++;
                     else if (ag.avaliacao === 'Ruim') avalRuim++;
 
+                    // 2. Consolidação de Dados do Usuário (Mapeamento Dinâmico)
+                    const email = ag.email_cliente;
+                    const nomeExibicao = ag.nome_cliente || email.split('@')[0];
+
+                    if (!mapaUsuarios[email]) {
+                        mapaUsuarios[email] = {
+                            nome: nomeExibicao,
+                            gmail: email,
+                            total: 0,
+                            pendentes: 0,
+                            concluidos: 0,
+                            gastos: 0
+                        };
+                    }
+
+                    mapaUsuarios[email].total++;
+                    if (agendStatus === 'Concluido') {
+                        mapaUsuarios[email].concluidos++;
+                        mapaUsuarios[email].gastos += valorNumerico;
+                    } else {
+                        mapaUsuarios[email].pendentes++;
+                    }
+
+                    // 3. Renderização da Tabela Operacional de Agendamentos
                     let badgeAvaliacao = "<i style='color: #aaa;'>Sem avaliação</i>";
                     if (ag.avaliacao) {
                         if (ag.avaliacao === "Bom") badgeAvaliacao = `<span class="badge-status badge-bom">😊 Bom</span>`;
@@ -1021,6 +1096,26 @@
                     `;
                 });
 
+                // 4. Renderização da Tabela de Gerenciamento de Usuários
+                if (containerUsuarios) {
+                    Object.values(mapaUsuarios).forEach(user => {
+                        const gastosFormatados = `R$ ${user.gastos.toFixed(2).replace('.', ',')}`;
+                        containerUsuarios.innerHTML += `
+                            <tr>
+                                <td style="font-weight: 500; color: #2d3748;">👤 ${user.nome}</td>
+                                <td style="color: #4a5568;">${user.gmail}</td>
+                                <td style="text-align: center; font-weight: bold;">
+                                    <span style="color: #4a5568;">${user.total}</span> | 
+                                    <span style="color: #d97706;">${user.pendentes}</span> | 
+                                    <span style="color: #059669;">${user.concluidos}</span>
+                                </td>
+                                <td style="font-weight: bold; color: #2575fc;">${gastosFormatados}</td>
+                            </tr>
+                        `;
+                    });
+                }
+
+                // 5. Atualização dos Cards Numéricos Financeiros
                 const cardFaturamento = document.getElementById('fin-faturamento');
                 if (cardFaturamento) {
                     cardFaturamento.innerText = `R$ ${faturamento.toFixed(2).replace('.', ',')}`;
@@ -1029,7 +1124,7 @@
                     document.getElementById('fin-concluidos').innerText = concluidos;
                 }
 
-                // === 📊 RENDERIZAÇÃO DOS MINI GRÁFICOS ===
+                // === 📊 RENDERIZAÇÃO DOS MINI GRÁFICOS (CHART.JS) ===
                 const ctxContratos = document.getElementById('graficoContratos');
                 if (ctxContratos) {
                     if (typeof chartContratos !== 'undefined' && chartContratos) chartContratos.destroy();
@@ -1057,8 +1152,13 @@
                 }
 
             } catch (error) {
-                console.error("Erro detalhado:", error);
+                // 🔍 EXIBE O ERRO COMPLETO COM DETALHES DO NAVEGADOR
+                console.error("ERRO COMPLETO DO DESENVOLVEDOR:", error.name, error.message, error.stack);
+                
                 container.innerHTML = '<tr><td colspan="7" style="text-align: center; color: red;">❌ Erro ao buscar controle gerencial.</td></tr>';
+                if (containerUsuarios) {
+                    containerUsuarios.innerHTML = '<tr><td colspan="4" style="text-align: center; color: red;">❌ Erro ao carregar mapa de clientes.</td></tr>';
+                }
             }
         }
         async function confirmarAgendamentoPeloAdmin(id) {
@@ -1088,16 +1188,16 @@
         campoSenha.type = 'password';
     }
 }
-        window.onload = () => {
-            atualizarPainelUsuario();
-            
-            // Tratamento inteligente na inicialização para direcionar o Admin
-            if(usuarioLogado && usuarioLogado.is_admin) {
-                alternarAbas('admin');
-            } else {
-                carregarServicos();
-            }
-        };
+window.onload = function() {
+    // Restaura o usuário se houver sessão salva
+    const usuarioSalvo = localStorage.getItem('usuarioLogado');
+    if (usuarioSalvo) {
+        usuarioLogado = JSON.parse(usuarioSalvo);
+    }
+    
+    atualizarPainelUsuario();
+    alternarAbas('catalogo'); // Começa sempre no catálogo, seguro e sem fetches proibidos
+};
     </script>
 </body>
 </html>

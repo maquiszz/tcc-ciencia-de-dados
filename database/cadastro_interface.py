@@ -4,8 +4,10 @@ from flask import Flask, request, jsonify, send_from_directory
 from dotenv import load_dotenv
 from supabase import create_client, Client
 from werkzeug.security import generate_password_hash, check_password_hash
+from flask_cors import CORS  # 1. Importe o CORS
 
 app = Flask(__name__)
+CORS(app)  # 2. Ative o CORS para todas as rotas de forma global
 
 # ==============================================================================
 # --- 🔑 CONFIGURAÇÃO INTELIGENTE DO BANCO (LOCAL VS PRODUÇÃO) ---
