@@ -270,36 +270,53 @@ def admin_listar_todos_agendamentos():
         return jsonify({"error": "Identificação administrativa ausente."}), 400
         
     try:
-        # 1. Validação de segurança
+        # 1. Validação de segurança (Igual à de usuários que já funciona)
         checagem = supabase.table("usuarios").select("is_admin").eq("email", admin_email).execute()
         if not checagem.data or not checagem.data[0].get('is_admin'):
             return jsonify({"error": "Acesso negado. Rota exclusiva para administradores."}), 403
             
-        # 2. Busca os agendamentos ativos/concluídos
-        resposta_ativos = supabase.table("agendamentos").select("id, data_atendimento, email_cliente, status, avaliacao, servico_id, servico(tipo, valor)").execute()
+        # 2. Busca os serviços do sistema para sabermos os preços e nomes na memória
+        servicos_req = supabase.table("servicos").select("id, tipo, valor").execute()
+        lista_servicos = servicos_req.data or []
+        # Transforma em um dicionário para busca rápida: { id_do_servico: {tipo, valor} }
+        mapa_servicos = {s['id']: s for s in lista_servicos}
+            
+        # 3. Busca os agendamentos ativos (Apenas colunas puras, sem cruzar tabelas no Supabase)
+        resposta_ativos = supabase.table("agendamentos").select("id, data_atendimento, email_cliente, status, avaliacao, servico_id").execute()
         agendamentos_ativos = resposta_ativos.data or []
         
-        # 3. Busca os cancelados de forma segura (Apenas colunas essenciais para evitar o Erro 500)
-        # Removemos o relacionamento 'servico(tipo, valor)' temporariamente para testar se é ele quem está quebrando
-        resposta_cancelados = supabase.table("agendamentos_cancelados").select("id, data_atendimento, email_cliente").execute()
+        # Vincula o serviço correspondente manualmente nos ativos
+        for ag in agendamentos_ativos:
+            s_id = ag.get('servico_id')
+            if s_id and s_id in mapa_servicos:
+                ag['servico'] = {"tipo": mapa_servicos[s_id]['tipo'], "valor": mapa_servicos[s_id]['valor']}
+            else:
+                ag['servico'] = {"tipo": "N/A", "valor": 0}
+        
+        # 4. Busca os cancelados de forma limpa
+        resposta_cancelados = supabase.table("agendamentos_cancelados").select("id, data_atendimento, email_cliente, servico_id").execute()
         agendamentos_cancelados = resposta_cancelados.data or []
         
-        # Injeta manualmente as propriedades nos cancelados para o JS não quebrar
+        # Vincula o serviço correspondente manualmente nos cancelados
         for ag in agendamentos_cancelados:
             ag['status'] = 'Cancelado'
-            ag['avaliacao'] = None  # Cancelados geralmente não possuem avaliação
-            ag['servico'] = {"tipo": "Cancelado", "valor": 0} # Define valor zero para não afetar finanças
+            ag['avaliacao'] = None
             
-        # 4. Une as listas
+            s_id = ag.get('servico_id')
+            if s_id and s_id in mapa_servicos:
+                ag['servico'] = {"tipo": mapa_servicos[s_id]['tipo'], "valor": mapa_servicos[s_id]['valor']}
+            else:
+                ag['servico'] = {"tipo": "Cancelado", "valor": 0}
+            
+        # 5. Une as listas com sucesso
         lista_completa = agendamentos_ativos + agendamentos_cancelados
         
         return jsonify(lista_completa), 200
         
     except Exception as e:
-        # Esse print vai cuspir o erro exato no terminal do seu Python/Render
-        print(f"❌ Erro crítico na consulta do Supabase: {e}")
+        print(f"❌ Erro crítico mapeado: {e}")
         return jsonify({"error": f"Erro interno: {str(e)}"}), 500
-    
+
 
 @app.route('/api/admin/usuarios', methods=['GET'])
 def admin_listar_todos_usuarios():
