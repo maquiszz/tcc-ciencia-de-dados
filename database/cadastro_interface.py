@@ -279,22 +279,27 @@ def admin_listar_todos_agendamentos():
         resposta_ativos = supabase.table("agendamentos").select("id, data_atendimento, email_cliente, status, avaliacao, servico_id, servico(tipo, valor)").execute()
         agendamentos_ativos = resposta_ativos.data or []
         
-        # 3. Busca os agendamentos da tabela de cancelados
-        resposta_cancelados = supabase.table("agendamentos_cancelados").select("id, data_atendimento, email_cliente, avaliacao, servico_id, servico(tipo, valor)").execute()
+        # 3. Busca os cancelados de forma segura (Apenas colunas essenciais para evitar o Erro 500)
+        # Removemos o relacionamento 'servico(tipo, valor)' temporariamente para testar se é ele quem está quebrando
+        resposta_cancelados = supabase.table("agendamentos_cancelados").select("id, data_atendimento, email_cliente").execute()
         agendamentos_cancelados = resposta_cancelados.data or []
         
-        # Força o status "Cancelado" em cada um deles, já que vêm da tabela de cancelamentos
+        # Injeta manualmente as propriedades nos cancelados para o JS não quebrar
         for ag in agendamentos_cancelados:
             ag['status'] = 'Cancelado'
+            ag['avaliacao'] = None  # Cancelados geralmente não possuem avaliação
+            ag['servico'] = {"tipo": "Cancelado", "valor": 0} # Define valor zero para não afetar finanças
             
-        # 4. Junta as duas tabelas em uma única resposta para o Frontend
+        # 4. Une as listas
         lista_completa = agendamentos_ativos + agendamentos_cancelados
         
         return jsonify(lista_completa), 200
         
     except Exception as e:
-        print(f"❌ Erro na consulta de administração: {e}")
-        return jsonify({"error": "Erro ao listar agendamentos do sistema."}), 500
+        # Esse print vai cuspir o erro exato no terminal do seu Python/Render
+        print(f"❌ Erro crítico na consulta do Supabase: {e}")
+        return jsonify({"error": f"Erro interno: {str(e)}"}), 500
+    
 
 @app.route('/api/admin/usuarios', methods=['GET'])
 def admin_listar_todos_usuarios():
