@@ -988,23 +988,21 @@
                 exibirNotificacaoSpa('Erro de Conexão', 'Não foi possível estabelecer contato com o servidor central.', '📴'); 
             }
         }
-         /* 👑 CORPO LÓGICO EXCLUSIVO DO ADMINISTRADOR (UNIFICADO) */
+         /* 👑 CORPO LÓGICO EXCLUSIVO DO ADMINISTRADOR (BLINDADO) */
         async function carregarAgendamentosAdmin() {
             const container = document.getElementById('container-admin-agendamentos'); 
             const containerUsuarios = document.getElementById('container-admin-usuarios'); // Elemento da aba de usuários
             
-            if (!container) return; 
+            // REMOVIDA a trava rígida que quebrava a função se um dos containers não estivesse visível
             if (!usuarioLogado || !usuarioLogado.is_admin) return;
 
             try {
-                // 🔍 RASTREADOR DE CONEXÃO (Remover após testar)
-                console.log("Tentando conectar em:", `${BACKEND_URL}/api/admin/agendamentos?admin_email=${usuarioLogado?.email}`);
-                console.log("Estado do container de usuários:", containerUsuarios);
-
                 // Utiliza a URL do servidor hospedado na nuvem
                 const response = await fetch(`${BACKEND_URL}/api/admin/agendamentos?admin_email=${usuarioLogado.email}`);
                 const agendamentos = await response.json(); 
-                container.innerHTML = '';
+                
+                // Limpa os containers apenas se eles existirem na página atual
+                if (container) container.innerHTML = '';
                 if (containerUsuarios) containerUsuarios.innerHTML = '';
 
                 let faturamento = 0;
@@ -1019,10 +1017,8 @@
                 const mapaUsuarios = {};
 
                 if (agendamentos.length === 0) {
-                    container.innerHTML = '<tr><td colspan="7" style="text-align: center;">Nenhum agendamento global encontrado.</td></tr>';
-                    if (containerUsuarios) {
-                        containerUsuarios.innerHTML = '<tr><td colspan="4" style="text-align: center;">Nenhum usuário encontrado na base.</td></tr>';
-                    }
+                    if (container) container.innerHTML = '<tr><td colspan="7" style="text-align: center;">Nenhum agendamento global encontrado.</td></tr>';
+                    if (containerUsuarios) containerUsuarios.innerHTML = '<tr><td colspan="4" style="text-align: center;">Nenhum usuário encontrado na base.</td></tr>';
                     return;
                 }
 
@@ -1068,35 +1064,37 @@
                         mapaUsuarios[email].pendentes++;
                     }
 
-                    // 3. Renderização da Tabela Operacional de Agendamentos
-                    let badgeAvaliacao = "<i style='color: #aaa;'>Sem avaliação</i>";
-                    if (ag.avaliacao) {
-                        if (ag.avaliacao === "Bom") badgeAvaliacao = `<span class="badge-status badge-bom">😊 Bom</span>`;
-                        else if (ag.avaliacao === "Médio") badgeAvaliacao = `<span class="badge-status badge-medio">😐 Médio</span>`;
-                        else if (ag.avaliacao === "Ruim") badgeAvaliacao = `<span class="badge-status badge-ruim">🙁 Ruim</span>`;
-                    }
+                    // 3. Renderização da Tabela Operacional de Agendamentos (Se o container existir)
+                    if (container) {
+                        let badgeAvaliacao = "<i style='color: #aaa;'>Sem avaliação</i>";
+                        if (ag.avaliacao) {
+                            if (ag.avaliacao === "Bom") badgeAvaliacao = `<span class="badge-status badge-bom">😊 Bom</span>`;
+                            else if (ag.avaliacao === "Médio") badgeAvaliacao = `<span class="badge-status badge-medio">😐 Médio</span>`;
+                            else if (ag.avaliacao === "Ruim") badgeAvaliacao = `<span class="badge-status badge-ruim">🙁 Ruim</span>`;
+                        }
 
-                    let botaoAcao = '';
-                    if (agendStatus !== 'Concluido') {
-                        botaoAcao = `<button class="btn-concluir" onclick="concluirAgendamentoAdmin(${ag.id})">Concluir</button>`;
-                    } else {
-                        botaoAcao = `<span style="color: #10b981; font-weight: bold;">✓ Finalizado</span>`;
-                    }
+                        let botaoAcao = '';
+                        if (agendStatus !== 'Concluido') {
+                            botaoAcao = `<button class="btn-concluir" onclick="concluirAgendamentoAdmin(${ag.id})">Concluir</button>`;
+                        } else {
+                            botaoAcao = `<span style="color: #10b981; font-weight: bold;">✓ Finalizado</span>`;
+                        }
 
-                    container.innerHTML += `
-                        <tr>
-                            <td>${ag.email_cliente}</td>
-                            <td>${servicoNome}</td>
-                            <td>${dataFormatada}</td>
-                            <td>${servicoValor}</td>
-                            <td><span class="badge-status ${agendStatus === 'Concluido' ? 'badge-concluido' : 'badge-pendente'}">${agendStatus}</span></td>
-                            <td>${badgeAvaliacao}</td>
-                            <td>${botaoAcao}</td>
-                        </tr>
-                    `;
+                        container.innerHTML += `
+                            <tr>
+                                <td>${ag.email_cliente}</td>
+                                <td>${servicoNome}</td>
+                                <td>${dataFormatada}</td>
+                                <td>${servicoValor}</td>
+                                <td><span class="badge-status ${agendStatus === 'Concluido' ? 'badge-concluido' : 'badge-pendente'}">${agendStatus}</span></td>
+                                <td>${badgeAvaliacao}</td>
+                                <td>${botaoAcao}</td>
+                            </tr>
+                        `;
+                    }
                 });
 
-                // 4. Renderização da Tabela de Gerenciamento de Usuários
+                // 4. Renderização da Tabela de Gerenciamento de Usuários (Se o container existir)
                 if (containerUsuarios) {
                     Object.values(mapaUsuarios).forEach(user => {
                         const gastosFormatados = `R$ ${user.gastos.toFixed(2).replace('.', ',')}`;
@@ -1152,13 +1150,9 @@
                 }
 
             } catch (error) {
-                // 🔍 EXIBE O ERRO COMPLETO COM DETALHES DO NAVEGADOR
-                console.error("ERRO COMPLETO DO DESENVOLVEDOR:", error.name, error.message, error.stack);
-                
-                container.innerHTML = '<tr><td colspan="7" style="text-align: center; color: red;">❌ Erro ao buscar controle gerencial.</td></tr>';
-                if (containerUsuarios) {
-                    containerUsuarios.innerHTML = '<tr><td colspan="4" style="text-align: center; color: red;">❌ Erro ao carregar mapa de clientes.</td></tr>';
-                }
+                console.error("Erro detalhado:", error);
+                if (container) container.innerHTML = '<tr><td colspan="7" style="text-align: center; color: red;">❌ Erro ao buscar controle gerencial.</td></tr>';
+                if (containerUsuarios) containerUsuarios.innerHTML = '<tr><td colspan="4" style="text-align: center; color: red;">❌ Erro ao carregar mapa de clientes.</td></tr>';
             }
         }
         async function confirmarAgendamentoPeloAdmin(id) {
