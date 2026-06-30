@@ -505,8 +505,8 @@
                 document.getElementById('secao-financeiro').classList.add('ativa');
                 carregarAgendamentosAdmin();
             } else if(aba === 'usuarios') { 
-                document.getElementById('secao-usuarios').classList.add('ativa');
-                carregarAgendamentosAdmin(); 
+                document.getElementById('secao-usuarios').classList.add('ativa'); 
+                carregarUsuariosCadastrados();
             } else if(aba === 'login_tela') {
                 document.getElementById('authBox').classList.add('ativa');
             }
@@ -1155,6 +1155,45 @@
                 if (containerUsuarios) containerUsuarios.innerHTML = '<tr><td colspan="4" style="text-align: center; color: red;">❌ Erro ao carregar mapa de clientes.</td></tr>';
             }
         }
+
+        async function carregarUsuariosCadastrados() {
+    const containerUsuarios = document.getElementById('container-admin-usuarios');
+    if (!containerUsuarios) return;
+    if (!usuarioLogado || !usuarioLogado.is_admin) return;
+
+    try {
+        const response = await fetch(`${BACKEND_URL}/api/admin/usuarios?admin_email=${usuarioLogado.email}`);
+        const listaUsuarios = await response.json();
+        containerUsuarios.innerHTML = '';
+
+        if (listaUsuarios.length === 0) {
+            containerUsuarios.innerHTML = '<tr><td colspan="4" style="text-align: center;">Nenhum usuário cadastrado.</td></tr>';
+            return;
+        }
+
+        listaUsuarios.forEach(user => {
+            const gastosFormatados = `R$ ${parseFloat(user.gastos || 0).toFixed(2).replace('.', ',')}`;
+            containerUsuarios.innerHTML += `
+                <tr>
+                    <td style="font-weight: 500; color: #2d3748;">👤 ${user.nome}</td>
+                    <td style="color: #4a5568;">${user.email}</td>
+                    <td style="text-align: center; font-weight: bold;">
+                        <span title="Total" style="color: #4a5568;">${user.total}</span> | 
+                        <span title="Pendentes" style="color: #d97706;">${user.pendentes}</span> | 
+                        <span title="Concluídos" style="color: #059669;">${user.concluidos}</span> |
+                        <span title="Cancelados" style="color: #ef4444;">${user.cancelados}</span>
+                    </td>
+                    <td style="font-weight: bold; color: #2575fc;">${gastosFormatados}</td>
+                </tr>
+            `;
+        });
+
+    } catch (error) {
+        console.error("Erro ao carregar usuários do banco:", error);
+        containerUsuarios.innerHTML = '<tr><td colspan="4" style="text-align: center; color: red;">❌ Erro ao conectar com a base de dados.</td></tr>';
+    }
+} // <-- AQUI FECHA A NOVA FUNÇÃO DE USUÁRIOS
+
         async function confirmarAgendamentoPeloAdmin(id) {
             try {
                 const response = await fetch(`/api/admin/agendamentos/${id}/concluir`, {

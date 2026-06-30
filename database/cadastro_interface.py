@@ -282,6 +282,66 @@ def admin_listar_todos_agendamentos():
         print(f"❌ Erro na consulta de administração: {e}")
         return jsonify({"error": "Erro ao listar agendamentos do sistema."}), 500
 
+@app.route('/api/admin/usuarios', methods=['GET'])
+def admin_listar_todos_usuarios():
+    admin_email = request.args.get('admin_email')
+    
+    if not admin_email:
+        return jsonify({"error": "Identificação administrativa ausente."}), 400
+        
+    try:
+        # 1. Validação de segurança direto na base de dados (Igual à sua outra rota)
+        checagem = supabase.table("usuarios").select("is_admin").eq("email", admin_email).execute()
+        if not checagem.data or not checagem.data[0].get('is_admin'):
+            return jsonify({"error": "Acesso negado. Rota exclusiva para administradores."}), 403
+            
+        # 2. Busca todos os usuários do banco de dados
+        usuarios_req = supabase.table("usuarios").select("nome, email, is_admin").execute()
+        usuarios_banco = usuarios_req.data or []
+        
+        # 3. Busca todos os agendamentos com os valores dos serviços para fazermos o cruzamento
+        agendamentos_req = supabase.table("agendamentos").select("email_cliente, status, servico(valor)").execute()
+        agendamentos_todos = agendamentos_req.data or []
+        
+        lista_resposta = []
+        
+        # 4. Processamento dos dados para cruzar Usuários com seus respectivos Agendamentos
+        for usuario in usuarios_banco:
+            # Pula os administradores da listagem de clientes
+            if usuario.get('is_admin'):
+                continue
+                
+            email_user = usuario.get('email')
+            
+            # Filtra os agendamentos pertencentes a este usuário específico
+            agendamentos_user = [ag for ag in agendamentos_todos if ag.get('email_cliente') == email_user]
+            
+            total_contratos = len(agendamentos_user)
+            pendentes = sum(1 for ag in agendamentos_user if ag.get('status') != 'Concluido' and ag.get('status') != 'Cancelado')
+            concluidos = sum(1 for ag in agendamentos_user if ag.get('status') == 'Concluido')
+            cancelados = sum(1 for ag in agendamentos_user if ag.get('status') == 'Cancelado')
+            
+            # Calcula o gasto total baseado nos serviços concluídos
+            total_gasto = 0.0
+            for ag in agendamentos_user:
+                if ag.get('status') == 'Concluido' and ag.get('servico'):
+                    total_gasto += float(ag.get('servico', {}).get('valor', 0))
+            
+            lista_resposta.append({
+                "nome": usuario.get('nome') or email_user.split('@')[0],
+                "email": email_user,
+                "total": total_contratos,
+                "pendentes": pendentes,
+                "concluidos": concluidos,
+                "cancelados": cancelados,
+                "gastos": total_gasto
+            })
+            
+        return jsonify(lista_resposta), 200
+
+    except Exception as e:
+        print(f"❌ Erro na consulta de administração de usuários: {e}")
+        return jsonify({"error": "Erro ao listar usuários do sistema."}), 500
 
 @app.route('/api/admin/agendamentos/<int:id>/concluir', methods=['POST'])
 def admin_concluir_agendamento(id):
