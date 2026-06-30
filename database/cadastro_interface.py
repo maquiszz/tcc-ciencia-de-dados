@@ -269,23 +269,43 @@ def admin_listar_todos_agendamentos():
     if not admin_email:
         return jsonify({"error": "Identificação administrativa ausente."}), 400
         
+    # 1. Validação de segurança (Sabemos que funciona)
     try:
-        # 1. Validação de segurança (Igual à de usuários que já funciona)
+  
         checagem = supabase.table("usuarios").select("is_admin").eq("email", admin_email).execute()
         if not checagem.data or not checagem.data[0].get('is_admin'):
             return jsonify({"error": "Acesso negado. Rota exclusiva para administradores."}), 403
-            
-        # 2. Busca os serviços do sistema para sabermos os preços e nomes na memória
+    except Exception as e:
+        return jsonify({"error": f"Erro na checagem de admin: {str(e)}"}), 500
+
+    # 2. Teste da tabela de Serviços
+    try:
         servicos_req = supabase.table("servicos").select("id, tipo, valor").execute()
         lista_servicos = servicos_req.data or []
-        # Transforma em um dicionário para busca rápida: { id_do_servico: {tipo, valor} }
+  
         mapa_servicos = {s['id']: s for s in lista_servicos}
-            
-        # 3. Busca os agendamentos ativos (Apenas colunas puras, sem cruzar tabelas no Supabase)
+    except Exception as e:
+        # Se o erro for aqui, o nome da tabela 'servicos' ou colunas está incorreto
+        return jsonify({"error": f"Erro ao ler tabela 'servicos'. Verifique o nome dela ou das colunas (id, tipo, valor). Detalhes: {str(e)}"}), 500
+
+    # 3. Teste da tabela de Agendamentos Ativos
+    try:
         resposta_ativos = supabase.table("agendamentos").select("id, data_atendimento, email_cliente, status, avaliacao, servico_id").execute()
         agendamentos_ativos = resposta_ativos.data or []
-        
-        # Vincula o serviço correspondente manualmente nos ativos
+    except Exception as e:
+        # Se o erro for aqui, verifique se existe 'servico_id' ou se o nome da tabela mudou
+        return jsonify({"error": f"Erro ao ler tabela 'agendamentos'. Verifique se a coluna 'servico_id' existe com esse nome exato. Detalhes: {str(e)}"}), 500
+
+    # 4. Teste da tabela de Agendamentos Cancelados
+    try:
+        resposta_cancelados = supabase.table("agendamentos_cancelados").select("id, data_atendimento, email_cliente, servico_id").execute()
+        agendamentos_cancelados = resposta_cancelados.data or []
+    except Exception as e:
+        # Se o erro for aqui, verifique se a tabela 'agendamentos_cancelados' tem a coluna 'servico_id'
+        return jsonify({"error": f"Erro ao ler tabela 'agendamentos_cancelados'. Verifique se a coluna 'servico_id' existe nela. Detalhes: {str(e)}"}), 500
+
+    # 5. Montagem do resultado final (Processamento em memória)
+    try:
         for ag in agendamentos_ativos:
             s_id = ag.get('servico_id')
             if s_id and s_id in mapa_servicos:
@@ -293,30 +313,23 @@ def admin_listar_todos_agendamentos():
             else:
                 ag['servico'] = {"tipo": "N/A", "valor": 0}
         
-        # 4. Busca os cancelados de forma limpa
-        resposta_cancelados = supabase.table("agendamentos_cancelados").select("id, data_atendimento, email_cliente, servico_id").execute()
-        agendamentos_cancelados = resposta_cancelados.data or []
-        
-        # Vincula o serviço correspondente manualmente nos cancelados
+  
         for ag in agendamentos_cancelados:
             ag['status'] = 'Cancelado'
             ag['avaliacao'] = None
-            
+  
             s_id = ag.get('servico_id')
             if s_id and s_id in mapa_servicos:
                 ag['servico'] = {"tipo": mapa_servicos[s_id]['tipo'], "valor": mapa_servicos[s_id]['valor']}
             else:
                 ag['servico'] = {"tipo": "Cancelado", "valor": 0}
-            
-        # 5. Une as listas com sucesso
+                
         lista_completa = agendamentos_ativos + agendamentos_cancelados
-        
+  
         return jsonify(lista_completa), 200
-        
-    except Exception as e:
-        print(f"❌ Erro crítico mapeado: {e}")
-        return jsonify({"error": f"Erro interno: {str(e)}"}), 500
 
+    except Exception as e:
+        return jsonify({"error": f"Erro ao processar mapeamento dos dados: {str(e)}"}), 500
 
 @app.route('/api/admin/usuarios', methods=['GET'])
 def admin_listar_todos_usuarios():
