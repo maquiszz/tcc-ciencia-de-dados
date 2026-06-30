@@ -7,7 +7,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from flask_cors import CORS  # 1. Importe o CORS
 
 app = Flask(__name__)
-CORS(app)  # 2. Ative o CORS para todas as rotas de forma global
+CORS(app, resources={r"/api/*": {"origins": ["http://127.0.0.1:5500", "http://localhost:5500", "https://seu-site-hospedado.com"]}})
 
 # ==============================================================================
 # --- 🔑 CONFIGURAÇÃO INTELIGENTE DO BANCO (LOCAL VS PRODUÇÃO) ---
