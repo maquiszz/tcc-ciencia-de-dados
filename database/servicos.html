@@ -988,175 +988,139 @@
                 exibirNotificacaoSpa('Erro de Conexão', 'Não foi possível estabelecer contato com o servidor central.', '📴'); 
             }
         }
-         /* 👑 CORPO LÓGICO EXCLUSIVO DO ADMINISTRADOR (BLINDADO) */
-        async function carregarAgendamentosAdmin() {
-            const container = document.getElementById('container-admin-agendamentos'); 
-            const containerUsuarios = document.getElementById('container-admin-usuarios'); // Elemento da aba de usuários
-            
-            // REMOVIDA a trava rígida que quebrava a função se um dos containers não estivesse visível
-            if (!usuarioLogado || !usuarioLogado.is_admin) return;
+        // 👑 DASHBOARD FINANCEIRO, OPERACIONAL E GRÁFICOS
+ 
+async function carregarAgendamentosAdmin() {
+    const container = document.getElementById('container-admin-agendamentos'); 
+    if (!usuarioLogado || !usuarioLogado.is_admin) return;
 
-            try {
-                // Utiliza a URL do servidor hospedado na nuvem
-                const response = await fetch(`${BACKEND_URL}/api/admin/agendamentos?admin_email=${usuarioLogado.email}`);
-                const agendamentos = await response.json(); 
-                
-                // Limpa os containers apenas se eles existirem na página atual
-                if (container) container.innerHTML = '';
-                if (containerUsuarios) containerUsuarios.innerHTML = '';
+    try {
+        // Busca a lista unificada (Ativos + Cancelados) gerada pelo Backend
+        const response = await fetch(`${BACKEND_URL}/api/admin/agendamentos?admin_email=${usuarioLogado.email}`);
+        const agendamentos = await response.json(); 
+        
+        if (container) container.innerHTML = '';
 
-                let faturamento = 0;
-                let totalContratos = agendamentos.length;
-                let pendentes = 0;
-                let concluidos = 0;
-                let avalBom = 0;
-                let avalMedio = 0;
-                let avalRuim = 0;
+        let faturamento = 0;
+        let totalContratos = agendamentos.length;
+        let pendentes = 0;
+        let concluidos = 0;
+        let cancelados = 0; 
+        let avalBom = 0;
+        let avalMedio = 0;
+        let avalRuim = 0;
 
-                // Objeto para consolidar os dados dos usuários em tempo real
-                const mapaUsuarios = {};
-
-                if (agendamentos.length === 0) {
-                    if (container) container.innerHTML = '<tr><td colspan="7" style="text-align: center;">Nenhum agendamento global encontrado.</td></tr>';
-                    if (containerUsuarios) containerUsuarios.innerHTML = '<tr><td colspan="4" style="text-align: center;">Nenhum usuário encontrado na base.</td></tr>';
-                    return;
-                }
-
-                agendamentos.forEach(ag => {
-                    const dataFormatada = new Date(ag.data_atendimento).toLocaleString('pt-BR');
-                    const servicoNome = ag.servico ? ag.servico.tipo : 'N/A';
-                    const valorNumerico = parseFloat(ag.servico?.valor || 0);
-                    const servicoValor = ag.servico ? `R$ ${valorNumerico.toFixed(2).replace('.', ',')}` : 'N/A';
-                    const agendStatus = ag.status || 'Pendente';
-                    
-                    // 1. Processamento Financeiro Global & Estatísticas
-                    if (agendStatus === 'Concluido') {
-                        concluidos++;
-                        faturamento += valorNumerico;
-                    } else {
-                        pendentes++;
-                    }
-
-                    if (ag.avaliacao === 'Bom') avalBom++;
-                    else if (ag.avaliacao === 'Médio') avalMedio++;
-                    else if (ag.avaliacao === 'Ruim') avalRuim++;
-
-                    // 2. Consolidação de Dados do Usuário (Mapeamento Dinâmico)
-                    const email = ag.email_cliente;
-                    const nomeExibicao = ag.nome_cliente || email.split('@')[0];
-
-                    if (!mapaUsuarios[email]) {
-                        mapaUsuarios[email] = {
-                            nome: nomeExibicao,
-                            gmail: email,
-                            total: 0,
-                            pendentes: 0,
-                            concluidos: 0,
-                            gastos: 0
-                        };
-                    }
-
-                    mapaUsuarios[email].total++;
-                    if (agendStatus === 'Concluido') {
-                        mapaUsuarios[email].concluidos++;
-                        mapaUsuarios[email].gastos += valorNumerico;
-                    } else {
-                        mapaUsuarios[email].pendentes++;
-                    }
-
-                    // 3. Renderização da Tabela Operacional de Agendamentos (Se o container existir)
-                    if (container) {
-                        let badgeAvaliacao = "<i style='color: #aaa;'>Sem avaliação</i>";
-                        if (ag.avaliacao) {
-                            if (ag.avaliacao === "Bom") badgeAvaliacao = `<span class="badge-status badge-bom">😊 Bom</span>`;
-                            else if (ag.avaliacao === "Médio") badgeAvaliacao = `<span class="badge-status badge-medio">😐 Médio</span>`;
-                            else if (ag.avaliacao === "Ruim") badgeAvaliacao = `<span class="badge-status badge-ruim">🙁 Ruim</span>`;
-                        }
-
-                        let botaoAcao = '';
-                        if (agendStatus !== 'Concluido') {
-                            botaoAcao = `<button class="btn-concluir" onclick="concluirAgendamentoAdmin(${ag.id})">Concluir</button>`;
-                        } else {
-                            botaoAcao = `<span style="color: #10b981; font-weight: bold;">✓ Finalizado</span>`;
-                        }
-
-                        container.innerHTML += `
-                            <tr>
-                                <td>${ag.email_cliente}</td>
-                                <td>${servicoNome}</td>
-                                <td>${dataFormatada}</td>
-                                <td>${servicoValor}</td>
-                                <td><span class="badge-status ${agendStatus === 'Concluido' ? 'badge-concluido' : 'badge-pendente'}">${agendStatus}</span></td>
-                                <td>${badgeAvaliacao}</td>
-                                <td>${botaoAcao}</td>
-                            </tr>
-                        `;
-                    }
-                });
-
-                // 4. Renderização da Tabela de Gerenciamento de Usuários (Se o container existir)
-                if (containerUsuarios) {
-                    Object.values(mapaUsuarios).forEach(user => {
-                        const gastosFormatados = `R$ ${user.gastos.toFixed(2).replace('.', ',')}`;
-                        containerUsuarios.innerHTML += `
-                            <tr>
-                                <td style="font-weight: 500; color: #2d3748;">👤 ${user.nome}</td>
-                                <td style="color: #4a5568;">${user.gmail}</td>
-                                <td style="text-align: center; font-weight: bold;">
-                                    <span style="color: #4a5568;">${user.total}</span> | 
-                                    <span style="color: #d97706;">${user.pendentes}</span> | 
-                                    <span style="color: #059669;">${user.concluidos}</span>
-                                </td>
-                                <td style="font-weight: bold; color: #2575fc;">${gastosFormatados}</td>
-                            </tr>
-                        `;
-                    });
-                }
-
-                // 5. Atualização dos Cards Numéricos Financeiros
-                const cardFaturamento = document.getElementById('fin-faturamento');
-                if (cardFaturamento) {
-                    cardFaturamento.innerText = `R$ ${faturamento.toFixed(2).replace('.', ',')}`;
-                    document.getElementById('fin-total').innerText = totalContratos;
-                    document.getElementById('fin-pendentes').innerText = pendentes;
-                    document.getElementById('fin-concluidos').innerText = concluidos;
-                }
-
-                // === 📊 RENDERIZAÇÃO DOS MINI GRÁFICOS (CHART.JS) ===
-                const ctxContratos = document.getElementById('graficoContratos');
-                if (ctxContratos) {
-                    if (typeof chartContratos !== 'undefined' && chartContratos) chartContratos.destroy();
-                    chartContratos = new Chart(ctxContratos, {
-                        type: 'doughnut',
-                        data: {
-                            labels: ['Pendentes', 'Concluídos'],
-                            datasets: [{ data: [pendentes, concluidos], backgroundColor: ['#d97706', '#059669'], borderWidth: 1 }]
-                        },
-                        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } } } }
-                    });
-                }
-
-                const ctxAvaliacoes = document.getElementById('graficoAvaliacoes');
-                if (ctxAvaliacoes) {
-                    if (typeof chartAvaliacoes !== 'undefined' && chartAvaliacoes) chartAvaliacoes.destroy();
-                    chartAvaliacoes = new Chart(ctxAvaliacoes, {
-                        type: 'bar',
-                        data: {
-                            labels: ['😊 Bom', '😐 Médio', '🙁 Ruim'],
-                            datasets: [{ data: [avalBom, avalMedio, avalRuim], backgroundColor: ['#10b981', '#f59e0b', '#ef4444'], borderRadius: 4 }]
-                        },
-                        options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { ticks: { stepSize: 1 } } } }
-                    });
-                }
-
-            } catch (error) {
-                console.error("Erro detalhado:", error);
-                if (container) container.innerHTML = '<tr><td colspan="7" style="text-align: center; color: red;">❌ Erro ao buscar controle gerencial.</td></tr>';
-                if (containerUsuarios) containerUsuarios.innerHTML = '<tr><td colspan="4" style="text-align: center; color: red;">❌ Erro ao carregar mapa de clientes.</td></tr>';
-            }
+        if (agendamentos.length === 0) {
+            if (container) container.innerHTML = '<tr><td colspan="7" style="text-align: center;">Nenhum agendamento global encontrado.</td></tr>';
+            return;
         }
 
-        async function carregarUsuariosCadastrados() {
+        agendamentos.forEach(ag => {
+            const dataFormatada = new Date(ag.data_atendimento).toLocaleString('pt-BR');
+            const servicoNome = ag.servico ? ag.servico.tipo : 'N/A';
+            const valorNumerico = parseFloat(ag.servico?.valor || 0);
+            const servicoValor = ag.servico ? `R$ ${valorNumerico.toFixed(2).replace('.', ',')}` : 'N/A';
+            const agendStatus = ag.status || 'Pendente';
+            
+            // Contabilidade dos Status Globais
+            if (agendStatus === 'Concluido') {
+                concluidos++;
+                faturamento += valorNumerico; 
+            } else if (agendStatus === 'Cancelado') {
+                cancelados++; 
+            } else {
+                pendentes++; 
+            }
+
+            // Contabilidade das Avaliações
+            if (ag.avaliacao === 'Bom') avalBom++;
+            else if (ag.avaliacao === 'Médio') avalMedio++;
+            else if (ag.avaliacao === 'Ruim') avalRuim++;
+
+            // Renderização da Tabela Operacional Geral
+            if (container) {
+                let badgeAvaliacao = "<i style='color: #aaa;'>Sem avaliação</i>";
+                if (ag.avaliacao) {
+                    if (ag.avaliacao === "Bom") badgeAvaliacao = `<span class="badge-status badge-bom">😊 Bom</span>`;
+                    else if (ag.avaliacao === "Médio") badgeAvaliacao = `<span class="badge-status badge-medio">😐 Médio</span>`;
+                    else if (ag.avaliacao === "Ruim") badgeAvaliacao = `<span class="badge-status badge-ruim">🙁 Ruim</span>`;
+                }
+
+                let botaoAcao = '';
+                if (agendStatus === 'Concluido') {
+                    botaoAcao = `<span style="color: #10b981; font-weight: bold;">✓ Finalizado</span>`;
+                } else if (agendStatus === 'Cancelado') {
+                    botaoAcao = `<span style="color: #ef4444; font-weight: bold;">✕ Cancelado</span>`;
+                } else {
+                    botaoAcao = `<button class="btn-concluir" onclick="concluirAgendamentoAdmin(${ag.id})">Concluir</button>`;
+                }
+
+                container.innerHTML += `
+                    <tr>
+                        <td>${ag.email_cliente}</td>
+                        <td>${servicoNome}</td>
+                        <td>${dataFormatada}</td>
+                        <td>${servicoValor}</td>
+                        <td><span class="badge-status ${agendStatus === 'Concluido' ? 'badge-concluido' : agendStatus === 'Cancelado' ? 'badge-cancelado' : 'badge-pendente'}">${agendStatus}</span></td>
+                        <td>${badgeAvaliacao}</td>
+                        <td>${botaoAcao}</td>
+                    </tr>
+                `;
+            }
+        });
+
+        // Atualização dos Cards Estatísticos na Tela
+        const cardFaturamento = document.getElementById('fin-faturamento');
+        if (cardFaturamento) {
+            cardFaturamento.innerText = `R$ ${faturamento.toFixed(2).replace('.', ',')}`;
+            document.getElementById('fin-total').innerText = totalContratos;
+            document.getElementById('fin-pendentes').innerText = pendentes;
+            document.getElementById('fin-concluidos').innerText = concluidos;
+            
+            const cardCancelados = document.getElementById('fin-cancelados');
+            if (cardCancelados) cardCancelados.innerText = cancelados;
+        }
+
+        // 📊 GRÁFICO 1: Distribuição de Contratos (Doughnut - 3 Fatias)
+        const ctxContratos = document.getElementById('graficoContratos');
+        if (ctxContratos) {
+            if (chartContratos) chartContratos.destroy(); // Reseta o gráfico anterior para não duplicar
+            chartContratos = new Chart(ctxContratos, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Pendentes', 'Concluídos', 'Cancelados'],
+                    datasets: [{ 
+                        data: [pendentes, concluidos, cancelados], 
+                        backgroundColor: ['#d97706', '#059669', '#ef4444'], 
+                        borderWidth: 1 
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } } } }
+            });
+        }
+
+        // 📊 GRÁFICO 2: Avaliações dos Clientes (Barra Horizontal)
+        const ctxAvaliacoes = document.getElementById('graficoAvaliacoes');
+        if (ctxAvaliacoes) {
+            if (chartAvaliacoes) chartAvaliacoes.destroy();
+            chartAvaliacoes = new Chart(ctxAvaliacoes, {
+                type: 'bar',
+                data: {
+                    labels: ['😊 Bom', '😐 Médio', '🙁 Ruim'],
+                    datasets: [{ data: [avalBom, avalMedio, avalRuim], backgroundColor: ['#10b981', '#f59e0b', '#ef4444'], borderRadius: 4 }]
+                },
+                options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { ticks: { stepSize: 1 } } } }
+            });
+        }
+
+    } catch (error) {
+        console.error("Erro detalhado no dashboard financeiro:", error);
+    }
+}
+
+ // 👥 LISTAGEM REAL DE CONTAS CADASTRADAS NO BANCO DE DADOS
+ 
+async function carregarUsuariosCadastrados() {
     const containerUsuarios = document.getElementById('container-admin-usuarios');
     if (!containerUsuarios) return;
     if (!usuarioLogado || !usuarioLogado.is_admin) return;
@@ -1167,21 +1131,22 @@
         containerUsuarios.innerHTML = '';
 
         if (listaUsuarios.length === 0) {
-            containerUsuarios.innerHTML = '<tr><td colspan="4" style="text-align: center;">Nenhum usuário cadastrado.</td></tr>';
+            containerUsuarios.innerHTML = '<tr><td colspan="4" style="text-align: center;">Nenhum usuário cadastrado no sistema.</td></tr>';
             return;
         }
 
         listaUsuarios.forEach(user => {
             const gastosFormatados = `R$ ${parseFloat(user.gastos || 0).toFixed(2).replace('.', ',')}`;
+            
             containerUsuarios.innerHTML += `
                 <tr>
                     <td style="font-weight: 500; color: #2d3748;">👤 ${user.nome}</td>
                     <td style="color: #4a5568;">${user.email}</td>
                     <td style="text-align: center; font-weight: bold;">
-                        <span title="Total" style="color: #4a5568;">${user.total}</span> | 
-                        <span title="Pendentes" style="color: #d97706;">${user.pendentes}</span> | 
-                        <span title="Concluídos" style="color: #059669;">${user.concluidos}</span> |
-                        <span title="Cancelados" style="color: #ef4444;">${user.cancelados}</span>
+                        <span title="Total Histórico (Ativos + Cancelados)" style="color: #4a5568;">${user.total}</span> | 
+                        <span title="Agendamentos Pendentes/Confirmados" style="color: #d97706;">${user.pendentes}</span> | 
+                        <span title="Agendamentos Concluídos com sucesso" style="color: #059669;">${user.concluidos}</span> |
+                        <span title="Agendamentos Cancelados (Tabela dedicada)" style="color: #ef4444; background: #fee2e2; padding: 2px 6px; border-radius: 4px;">${user.cancelados}</span>
                     </td>
                     <td style="font-weight: bold; color: #2575fc;">${gastosFormatados}</td>
                 </tr>
@@ -1189,11 +1154,15 @@
         });
 
     } catch (error) {
-        console.error("Erro ao carregar usuários do banco:", error);
-        containerUsuarios.innerHTML = '<tr><td colspan="4" style="text-align: center; color: red;">❌ Erro ao conectar com a base de dados.</td></tr>';
+        console.error("Erro ao carregar usuários cadastrados:", error);
+        containerUsuarios.innerHTML = '<tr><td colspan="4" style="text-align: center; color: red;">❌ Erro ao conectar com a base de dados de usuários.</td></tr>';
     }
-} // <-- AQUI FECHA A NOVA FUNÇÃO DE USUÁRIOS
+}
 
+// Executa o dashboard automaticamente assim que a página carrega
+document.addEventListener("DOMContentLoaded", () => {
+    carregarAgendamentosAdmin();
+});
         async function confirmarAgendamentoPeloAdmin(id) {
             try {
                 const response = await fetch(`/api/admin/agendamentos/${id}/concluir`, {

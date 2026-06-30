@@ -270,14 +270,28 @@ def admin_listar_todos_agendamentos():
         return jsonify({"error": "Identificação administrativa ausente."}), 400
         
     try:
-        # Validação de segurança direto na base de dados
+        # 1. Validação de segurança
         checagem = supabase.table("usuarios").select("is_admin").eq("email", admin_email).execute()
         if not checagem.data or not checagem.data[0].get('is_admin'):
             return jsonify({"error": "Acesso negado. Rota exclusiva para administradores."}), 403
             
-        # Busca adicionando a coluna 'avaliacao' no retorno da tabela
-        resposta = supabase.table("agendamentos").select("id, data_atendimento, email_cliente, status, avaliacao, servico_id, servico(tipo, valor)").execute()
-        return jsonify(resposta.data), 200
+        # 2. Busca os agendamentos ativos/concluídos
+        resposta_ativos = supabase.table("agendamentos").select("id, data_atendimento, email_cliente, status, avaliacao, servico_id, servico(tipo, valor)").execute()
+        agendamentos_ativos = resposta_ativos.data or []
+        
+        # 3. Busca os agendamentos da tabela de cancelados
+        resposta_cancelados = supabase.table("agendamentos_cancelados").select("id, data_atendimento, email_cliente, avaliacao, servico_id, servico(tipo, valor)").execute()
+        agendamentos_cancelados = resposta_cancelados.data or []
+        
+        # Força o status "Cancelado" em cada um deles, já que vêm da tabela de cancelamentos
+        for ag in agendamentos_cancelados:
+            ag['status'] = 'Cancelado'
+            
+        # 4. Junta as duas tabelas em uma única resposta para o Frontend
+        lista_completa = agendamentos_ativos + agendamentos_cancelados
+        
+        return jsonify(lista_completa), 200
+        
     except Exception as e:
         print(f"❌ Erro na consulta de administração: {e}")
         return jsonify({"error": "Erro ao listar agendamentos do sistema."}), 500
@@ -290,50 +304,55 @@ def admin_listar_todos_usuarios():
         return jsonify({"error": "Identificação administrativa ausente."}), 400
         
     try:
-        # 1. Validação de segurança direto na base de dados (Igual à sua outra rota)
+        # 1. Validação de segurança
         checagem = supabase.table("usuarios").select("is_admin").eq("email", admin_email).execute()
         if not checagem.data or not checagem.data[0].get('is_admin'):
             return jsonify({"error": "Acesso negado. Rota exclusiva para administradores."}), 403
             
-        # 2. Busca todos os usuários do banco de dados
+        # 2. Busca todos os usuários do banco
         usuarios_req = supabase.table("usuarios").select("nome, email, is_admin").execute()
         usuarios_banco = usuarios_req.data or []
         
-        # 3. Busca todos os agendamentos com os valores dos serviços para fazermos o cruzamento
-        agendamentos_req = supabase.table("agendamentos").select("email_cliente, status, servico(valor)").execute()
-        agendamentos_todos = agendamentos_req.data or []
+        # 3. Busca agendamentos ativos e cancelados de forma global
+        ativos_req = supabase.table("agendamentos").select("email_cliente, status, servico(valor)").execute()
+        agendamentos_ativos = ativos_req.data or []
+        
+        cancelados_req = supabase.table("agendamentos_cancelados").select("email_cliente").execute()
+        agendamentos_cancelados = cancelados_req.data or []
         
         lista_resposta = []
         
-        # 4. Processamento dos dados para cruzar Usuários com seus respectivos Agendamentos
+        # 4. Processamento cruzando o usuário com as duas tabelas
         for usuario in usuarios_banco:
-            # Pula os administradores da listagem de clientes
             if usuario.get('is_admin'):
                 continue
                 
             email_user = usuario.get('email')
             
-            # Filtra os agendamentos pertencentes a este usuário específico
-            agendamentos_user = [ag for ag in agendamentos_todos if ag.get('email_cliente') == email_user]
+            # Filtra os contratos ativos e cancelados deste usuário específico
+            user_ativos = [ag for ag in agendamentos_ativos if ag.get('email_cliente') == email_user]
+            user_cancelados = [ag for ag in agendamentos_cancelados if ag.get('email_cliente') == email_user]
             
-            total_contratos = len(agendamentos_user)
-            pendentes = sum(1 for ag in agendamentos_user if ag.get('status') != 'Concluido' and ag.get('status') != 'Cancelado')
-            concluidos = sum(1 for ag in agendamentos_user if ag.get('status') == 'Concluido')
-            cancelados = sum(1 for ag in agendamentos_user if ag.get('status') == 'Cancelado')
+            # Contadores
+            total_cancelados = len(user_cancelados)
+            total_ativos = len(user_ativos)
             
-            # Calcula o gasto total baseado nos serviços concluídos
+            pendentes = sum(1 for ag in user_ativos if ag.get('status') != 'Concluido')
+            concluidos = sum(1 for ag in user_ativos if ag.get('status') == 'Concluido')
+            
+            # Gasto total (Apenas serviços concluídos da tabela ativa)
             total_gasto = 0.0
-            for ag in agendamentos_user:
+            for ag in user_ativos:
                 if ag.get('status') == 'Concluido' and ag.get('servico'):
                     total_gasto += float(ag.get('servico', {}).get('valor', 0))
             
             lista_resposta.append({
                 "nome": usuario.get('nome') or email_user.split('@')[0],
                 "email": email_user,
-                "total": total_contratos,
+                "total": total_ativos + total_cancelados, # Soma de tudo que ele já interagiu
                 "pendentes": pendentes,
                 "concluidos": concluidos,
-                "cancelados": cancelados,
+                "cancelados": total_cancelados, # 🌟 Puxado direto da tabela correta
                 "gastos": total_gasto
             })
             
