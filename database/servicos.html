@@ -1,0 +1,1306 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spa Panaceia - Serviços</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        /* 🗺️ BARRA DE NAVEGAÇÃO SUPERIOR */
+        .navbar-topo {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            max-width: 1200px;
+            background: white;
+            padding: 15px 30px;
+            border-radius: 30px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            margin-bottom: 40px;
+            position: relative;
+        }
+        .logo-spa {
+            font-size: 18px;
+            font-weight: bold;
+            color: #6a11cb;
+            cursor: pointer;
+        }
+
+        /* 👤 MENU SUSPENSO (DROPDOWN) */
+        .menu-usuario-container {
+            position: relative;
+        }
+        .btn-perfil-gatilho {
+            background: #6a11cb;
+            color: white;
+            border: none;
+            padding: 8px 18px;
+            border-radius: 20px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            transition: background 0.3s;
+        }
+        .btn-perfil-gatilho:hover {
+            background: #2575fc;
+        }
+        .dropdown-menu-spa {
+            position: absolute;
+            top: calc(100% + 10px);
+            right: 0;
+            background: white;
+            min-width: 200px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+            display: none;
+            flex-direction: column;
+            overflow: hidden;
+            z-index: 10000;
+            border: 1px solid #eee;
+        }
+        .dropdown-menu-spa.ativo {
+            display: flex;
+        }
+        .dropdown-item {
+            padding: 12px 20px;
+            font-size: 14px;
+            color: #555;
+            text-decoration: none;
+            cursor: pointer;
+            text-align: left;
+            border: none;
+            background: none;
+            width: 100%;
+            font-weight: 500;
+            transition: background 0.2s, color 0.2s;
+        }
+        .dropdown-item:hover {
+            background: #f4f6f9;
+            color: #6a11cb;
+        }
+        .dropdown-item.btn-sair {
+            color: #e74c3c;
+            border-top: 1px solid #eee;
+        }
+        .dropdown-item.btn-sair:hover {
+            background: #fff5f5;
+            color: #c0392b;
+        }
+        
+        header { text-align: center; margin-bottom: 40px; }
+        header h1 { color: #333; font-size: 32px; margin-bottom: 10px; }
+        header p { color: #666; font-size: 16px; }
+ 
+        /* 🔐 ÁREA DE AUTENTICAÇÃO */
+        .auth-container {
+            background: white; padding: 25px; border-radius: 15px; margin: 40px auto;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05); width: 100%; max-width: 400px; text-align: center;
+            display: none;
+        }
+        .auth-container.ativa {
+            display: block;
+        }
+        .auth-container input { width: 100%; padding: 10px; margin: 5px 0; border: 1px solid #ccc; border-radius: 6px; }
+        .auth-container button { width: 100%; padding: 10px; background: #6a11cb; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 5px; }
+        .auth-toggle { font-size: 13px; color: #2575fc; cursor: pointer; margin-top: 10px; display: inline-block; }
+ 
+        /* 📦 SEÇÕES VISUAIS */
+        .secao-conteudo { width: 100%; max-width: 1200px; display: none; }
+        .secao-conteudo.ativa { display: block; }
+        
+        .grid-servicos { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 30px; }
+        .card {
+            background: white; border-radius: 15px; overflow: hidden;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.05); transition: transform 0.3s;
+            display: flex; flex-direction: column;
+        }
+        .card:hover { transform: translateY(-5px); }
+        .card img { width: 100%; height: 200px; object-fit: cover; }
+        .card-conteudo { padding: 20px; display: flex; flex-direction: column; flex-grow: 1; justify-content: space-between; }
+        .card-titulo { font-size: 20px; color: #333; margin-bottom: 10px; font-weight: 600; }
+        .card-preco { font-size: 22px; color: #2b6cb0; font-weight: bold; margin-bottom: 15px; }
+        .card-contratos { font-size: 12px; color: #718096; margin-bottom: 15px; font-style: italic; }
+        
+        .btn-contratar {
+            width: 100%; padding: 12px; background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+            color: white; border: none; border-radius: 8px; font-size: 15px; font-weight: bold; cursor: pointer;
+        }
+        
+        /* 📅 LISTA DE AGENDAMENTOS DO USUÁRIO */
+        .lista-agendamentos { display: flex; flex-direction: column; gap: 15px; max-width: 600px; margin: 0 auto; }
+        .item-agendamento { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center; }
+        .item-agendamento-info h4 { color: #333; font-size: 18px; }
+        .item-agendamento-info p { color: #666; font-size: 14px; margin-top: 4px; }
+        .item-agendamento-acoes { display: flex; gap: 10px; }
+        .btn-remarcar { background: #f39c12; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        .btn-cancelar { background: #e74c3c; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+ 
+        /* 🗓️ ESTILOS DOS MODAIS */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.55);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(6px);
+            z-index: 99999 !important;
+        }
+        .modal-box {
+            background: rgba(255, 255, 255, 1);
+            padding: 30px;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 420px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+            text-align: center;
+            position: relative;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .modal-box h3 { margin-bottom: 15px; color: #333; font-size: 22px; }
+        .modal-box label { display: block; text-align: left; margin: 12px 0 5px; font-size: 14px; font-weight: 600; color: #555; }
+        .modal-box input { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 8px; font-size: 14px; }
+        .btn-confirmar { width: 100%; padding: 12px; background: #2ecc71; color: white; border: none; border-radius: 8px; font-size: 15px; font-weight: bold; cursor: pointer; margin-top: 20px; }
+        .btn-fechar { position: absolute; top: 12px; right: 15px; background: none; border: none; font-size: 24px; cursor: pointer; color: #aaa; }
+        .btn-fechar:hover { color: #333; }
+
+        .modal-mensagem { color: #555; font-size: 15px; line-height: 1.6; margin-bottom: 10px; }
+        .btn-modal-neutro { background: #6a11cb; color: white; padding: 12px 25px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 15px; width: 100%; }
+        .btn-modal-cancelar-sim { background: #e74c3c; color: white; padding: 12px 20px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; flex: 1; }
+        .btn-modal-cancelar-nao { background: #95a5a6; color: white; padding: 12px 20px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; flex: 1; }
+        .flex-botoes { display: flex; gap: 12px; margin-top: 20px; }
+        .modal-servico-descricao {
+            font-size: 14px; color: #666; line-height: 1.5; background: #f8fafc; padding: 12px;
+            border-radius: 8px; margin-top: -5px; margin-bottom: 15px; text-align: left; border-left: 3px solid #6a11cb;
+        }
+
+        /* 👑 ESTILOS EXCLUSIVOS DO PAINEL ADMIN */
+        .admin-container {
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+            overflow-x: auto;
+            width: 100%;
+        }
+        .tabela-admin {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            margin-top: 20px;
+            min-width: 700px;
+        }
+        .tabela-admin th, .tabela-admin td {
+            padding: 14px 18px;
+            border-bottom: 1px solid #e2e8f0;
+            font-size: 14px;
+        }
+        .tabela-admin th {
+            background-color: #f8fafc;
+            color: #4a5568;
+            font-weight: 700;
+        }
+        .tabela-admin tr:hover {
+            background-color: #f8fafc;
+        }
+        .badge-status {
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+            display: inline-block;
+        }
+        .badge-pendente { background: #fef3c7; color: #d97706; }
+        .badge-concluido { background: #d1fae5; color: #059669; }
+        .btn-concluir {
+            background: #10b981; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 13px; transition: background 0.2s;
+        }
+        .btn-concluir:hover { background: #059669; }
+        .btn-concluir:disabled { background: #cbd5e1; cursor: not-allowed; }
+        /* 🌟 NOVOS ESTILOS DE AVALIAÇÃO */
+        .badge-bom { background: #d1fae5; color: #069669; }
+        .badge-medio { background: #fef3c7; color: #d97706; }
+        .badge-ruim { background: #fce8e6; color: #c5221f; }
+        
+        .btn-avaliar {
+            border-radius: 20px;
+            padding: 6px 14px;
+            font-size: 13px;
+            cursor: pointer;
+            font-weight: bold;
+            border: 1px solid;
+            background: transparent;
+            transition: all 0.2s;
+        }
+        .btn-avaliar:hover {
+            transform: scale(1.05);
+        }
+
+    </style>
+</head>
+<body>
+ 
+    <div class="navbar-topo">
+        <div class="logo-spa" onclick="alternarAbas('catalogo')">✨ Spa Panaceia</div>
+        
+        <div class="menu-usuario-container">
+            <button class="btn-perfil-gatilho" onclick="toggleDropdownMenu(event)" id="btnDropdownGatilho">
+                👤 Acessar Conta
+            </button>
+            <div class="dropdown-menu-spa" id="menuDropdownSpa">
+                <button class="dropdown-item" onclick="alternarAbas('catalogo')">🌸 Catálogo</button>
+                <button class="dropdown-item" id="drop-meu-perfil" onclick="alternarAbas('agendamentos')" style="display: none;">📅 Meu Perfil</button>
+                <button class="dropdown-item" id="drop-admin-painel" onclick="alternarAbas('admin')" style="display: none; color: #6a11cb; font-weight: bold;">👑 Painel Admin</button>
+                <button class="dropdown-item" id="drop-admin-financeiro" onclick="alternarAbas('financeiro')" style="display: none; color: #10b981; font-weight: bold;">📊 Painel Financeiro</button>
+                <button class="dropdown-item" id="drop-admin-usuarios" onclick="alternarAbas('usuarios')" style="display: none; color: #2575fc; font-weight: bold;">👥 Gerenciar Usuários</button>
+                <button class="dropdown-item btn-sair" id="drop-deslogar" onclick="deslogar()" style="display: none;">🚪 Sair</button>                
+            </div>
+        </div>
+    </div>
+ 
+    <div id="authBox" class="auth-container">
+        <h3 id="authTitulo">Fazer Login</h3>
+        <input type="text" id="authNome" placeholder="Seu Nome Completo (apenas para cadastro)" style="display: none;">
+        <input type="email" id="authEmail" placeholder="seuemail@gmail.com">
+        <div class="wrapper-senha" style="position: relative; display: flex; align-items: center; width: 100%;">
+            <input type="password" id="authSenha" placeholder="Sua Senha" style="padding-right: 40px; width: 100%; margin: 5px 0;">
+            <button type="button" onclick="toggleVisibilidadeSenha()" style="position: absolute; right: 10px; background: none; border: none; cursor: pointer; width: auto; margin: 0; padding: 5px; color: #666; font-size: 16px;">👁️</button>
+        </div>
+        <button id="btnAuth" onclick="processarAutenticacao()">Entrar</button>
+        
+        <!-- 🔑 BOTÃO DE ESQUECI MINHA SENHA -->
+        <span style="font-size: 13px; color: #e74c3c; cursor: pointer; margin-top: 10px; display: block;" onclick="abrirModalEsqueciSenha()">Esqueceu sua senha?</span>
+        
+        <span id="authToggle" class="auth-toggle" onclick="alternarModoAuth()">Não tem conta? Cadastre-se</span>
+    </div>
+ 
+    <div id="secao-catalogo" class="secao-conteudo ativa">
+        <header>
+            <h1>✨ Nossos Serviços ✨</h1>
+            <p>Escolha a melhor experiência para o seu dia de bem-estar</p>
+        </header>
+        <main class="grid-servicos" id="container-servicos">
+            <p style="text-align: center; grid-column: 1/-1;">⏳ Carregando catálogo de bem-estar...</p>
+        </main>
+    </div>
+ 
+    <div id="secao-agendamentos" class="secao-conteudo">
+        <header>
+            <h1>📅 Seus Agendamentos</h1>
+            <p>Gerencie seus horários reservados no Spa Panaceia</p>
+        </header>
+        <div class="lista-agendamentos" id="container-meus-agendamentos">
+            <p style="text-align: center;">Por favor, faça login para ver seus agendamentos.</p>
+        </div>
+        <!-- 🌟 CARD DE FIDELIDADE DO CLIENTE -->
+    <div id="cardFidelidade" style="background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%); color: white; padding: 20px; border-radius: 15px; max-width: 600px; margin: 0 auto 20px auto; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 15px rgba(106,17,203,0.3);">
+        <div>
+            <h4 style="font-size: 18px; margin-bottom: 5px;">🌸 Clube de Fidelidade Panaceia</h4>
+            <p style="font-size: 14px; opacity: 0.9;">Acumule pontos concluindo sessões e troque por benefícios!</p>
+        </div>
+        <div style="text-align: right; background: rgba(255,255,255,0.2); padding: 10px 15px; border-radius: 10px;">
+            <span style="font-size: 12px; display: block; text-transform: uppercase; font-weight: bold;">Seus Pontos</span>
+            <strong id="contadorPontos" style="font-size: 22px;">0 pts</strong>
+        </div>
+    </div>
+    </div>
+
+    <div id="secao-admin" class="secao-conteudo">
+        <header>
+            <h1>👑 Painel Gerencial de Administração</h1>
+            <p>Monitore os agendamentos globais e valide a realização das sessões</p>
+        </header>
+
+
+        <div class="admin-container">
+            <table class="tabela-admin">
+               <thead>
+                    <tr>
+                        <th>Cliente</th>
+                        <th>Serviço</th>
+                        <th>Data/Hora</th>
+                        <th>Valor</th>
+                        <th>Status</th>
+                        <th>Avaliação</th> 
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody id="container-admin-agendamentos">
+                    <tr>
+                        <td colspan="7" style="text-align: center;">⏳ Carregando controle global...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div> <div id="secao-financeiro" class="secao-conteudo">
+        <header style="margin-bottom: 25px;">
+            <h1>📊 Mini Dashboard Financeiro & Estatísticas</h1>
+            <p>Visão diária do faturamento, contratos e índice de satisfação do Spa.</p>
+        </header>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 25px;">
+            <div style="background: white; padding: 15px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.04); border-left: 4px solid #10b981;">
+                <p style="font-size: 11px; color: #718096; font-weight: bold; text-transform: uppercase; margin: 0;">Faturamento Realizado</p>
+                <h3 id="fin-faturamento" style="color: #10b981; font-size: 20px; margin: 5px 0 0 0; font-weight: bold;">R$ 0,00</h3>
+            </div>
+            <div style="background: white; padding: 15px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.04); border-left: 4px solid #6a11cb;">
+                <p style="font-size: 11px; color: #718096; font-weight: bold; text-transform: uppercase; margin: 0;">Total de Contratos</p>
+                <h3 id="fin-total" style="color: #333; font-size: 20px; margin: 5px 0 0 0; font-weight: bold;">0</h3>
+            </div>
+            <div style="background: white; padding: 15px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.04); border-left: 4px solid #d97706;">
+                <p style="font-size: 11px; color: #718096; font-weight: bold; text-transform: uppercase; margin: 0;">Contratos Pendentes</p>
+                <h3 id="fin-pendentes" style="color: #d97706; font-size: 20px; margin: 5px 0 0 0; font-weight: bold;">0</h3>
+            </div>
+            <div style="background: white; padding: 15px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.04); border-left: 4px solid #059669;">
+                <p style="font-size: 11px; color: #718096; font-weight: bold; text-transform: uppercase; margin: 0;">Contratos Concluídos</p>
+                <h3 id="fin-concluidos" style="color: #059669; font-size: 20px; margin: 5px 0 0 0; font-weight: bold;">0</h3>
+            </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+            <div style="background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.04); min-height: 240px; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                <h4 style="margin: 0 0 15px 0; color: #4a5568; font-size: 14px;">Fluxo de Contratos</h4>
+                <div style="width: 100%; max-width: 180px;"><canvas id="graficoContratos"></canvas></div>
+            </div>
+            <div style="background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.04); min-height: 240px; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                <h4 style="margin: 0 0 15px 0; color: #4a5568; font-size: 14px;">Índice de Satisfação</h4>
+                <div style="width: 100%; max-width: 180px;"><canvas id="graficoAvaliacoes"></canvas></div>
+            </div>
+        </div>
+    </div> 
+
+    <div id="secao-usuarios" class="secao-conteudo">
+        <header style="margin-bottom: 25px;">
+            <h1>👥 Gerenciamento de Clientes da Base</h1>
+            <p>Visualize o perfil de consumo, histórico de contratos e gastos totais de cada cliente.</p>
+        </header>
+
+        <div class="admin-container">
+            <table class="tabela-admin">
+               <thead>
+                    <tr>
+                        <th>Nome do Usuário</th>
+                        <th>Gmail de Cadastro</th>
+                        <th style="text-align: center;">Histórico (Total | Pend | Concl)</th>
+                        <th>Total Investido (Gastos)</th>
+                    </tr>
+                </thead>
+                <tbody id="container-admin-usuarios">
+                    <tr>
+                        <td colspan="4" style="text-align: center;">⏳ Carregando base de clientes...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+
+    <div class="modal-overlay" id="agendamentoModal">
+        <div class="modal-box">
+            <button class="btn-fechar" onclick="fecharModal('agendamentoModal')">&times;</button>
+            <h3 id="modalTitulo">Agendar Serviço</h3>
+            <div id="modalServicoDescricao" class="modal-servico-descricao"></div>
+            <input type="hidden" id="modalServicoId">
+            <label for="modalData">Escolha a Data e Horário:</label>
+            <input type="datetime-local" id="modalData" step="3600" required>
+            <button class="btn-confirmar" style="background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);" onclick="enviarAgendamento()">Confirmar Agendamento</button>
+            <p id="modalStatus" style="margin-top: 15px; font-size: 14px; font-weight: 500;"></p>
+        </div>
+    </div>
+ 
+    <div class="modal-overlay" id="reagendamentoModal">
+        <div class="modal-box">
+            <button class="btn-fechar" onclick="fecharModal('reagendamentoModal')">&times;</button>
+            <h3>Alterar Horário</h3>
+            <input type="hidden" id="reagendarId">
+            <label for="novaData">Escolha a Nova Data e Horário:</label>
+            <input type="datetime-local" id="novaData" step="3600" required>
+            <button class="btn-confirmar" style="background: #f39c12;" onclick="salvarRemarcacao()">Atualizar Horário</button>
+            <p id="reagendarStatus" style="margin-top: 15px; font-size: 14px; font-weight: 500;"></p>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="notificacaoModal">
+        <div class="modal-box">
+            <div id="notificacaoIcone" style="font-size: 45px; margin-bottom: 15px;">🌿</div>
+            <h3 id="notificacaoTitulo">Mensagem</h3>
+            <p id="notificacaoTexto" class="modal-mensagem"></p>
+            <button class="btn-modal-neutro" onclick="fecharModal('notificacaoModal')">Compreendido</button>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="confirmarCancelamentoModal">
+        <div class="modal-box">
+            <div style="font-size: 45px; margin-bottom: 15px;">🌅</div>
+            <h3>Reavaliar Momento</h3>
+            <p class="modal-mensagem">Você está prestes a remover permanentemente esta reserva do seu histórico de autocuidado. Deseja prosseguir?</p>
+            <input type="hidden" id="cancelarAgendamentoId">
+            <div class="flex-botoes">
+                <button type="button" class="btn-modal-cancelar-nao" onclick="fecharModal('confirmarCancelamentoModal')">Manter Reserva</button>
+                <button type="button" class="btn-modal-cancelar-sim" onclick="ejecutarCancelamentoConfirmado()">Sim, Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 🔑 MODAL DE RECUPERAÇÃO DE SENHA -->
+    <div class="modal-overlay" id="recuperarSenhaModal">
+        <div class="modal-box">
+            <button class="btn-fechar" onclick="fecharModal('recuperarSenhaModal')">&times;</button>
+            <h3>Recuperar Senha</h3>
+            <p class="modal-mensagem">Digite seu e-mail para receber um código de validação[cite: 2].</p>
+            
+            <div id="etapaEmailRecup">
+                <label for="recupEmail">E-mail Cadastrado:</label>
+                <input type="email" id="recupEmail" placeholder="seuemail@gmail.com">
+                <button class="btn-confirmar" style="background: #6a11cb;" onclick="solicitarCodigoRecuperacao()">Enviar Código</button>
+            </div>
+
+            <div id="etapaCodigoRecup" style="display: none; margin-top: 15px;">
+                <label for="recupCodigo">Código de 6 dígitos:</label>
+                <input type="text" id="recupCodigo" placeholder="123456" maxlength="6">
+                <label for="recupNovaSenha">Nova Senha:</label>
+                <input type="password" id="recupNovaSenha" placeholder="Sua nova senha forte">
+                <button class="btn-confirmar" style="background: #10b981;" onclick="salvarNovaSenha()">Redefinir Senha</button>
+            </div>
+            <p id="recupStatus" style="margin-top: 15px; font-size: 14px; font-weight: 500;"></p>
+        </div>
+    </div>
+ 
+    <script>
+        let servicosDados = [];
+        let modoAbas = 'catalogo';
+        let modoAuth = 'login';
+        let usuarioLogado = JSON.parse(localStorage.getItem('usuario_spa')) || null;
+        const BACKEND_URL = "";
+        let chartContratos = null;
+        let chartAvaliacoes = null;
+ 
+        function toggleDropdownMenu(event) {
+            event.stopPropagation();
+            if (!usuarioLogado) {
+                alternarAbas('login_tela');
+                return;
+            }
+            document.getElementById('menuDropdownSpa').classList.toggle('ativo');
+        }
+
+        window.addEventListener('click', function() {
+            const dropdown = document.getElementById('menuDropdownSpa');
+            if (dropdown) dropdown.classList.remove('ativo');
+        });
+
+        function exibirNotificacaoSpa(titulo, texto, icone = '🌿') {
+            fecharTodosModais();
+            document.getElementById('notificacaoIcone').innerText = icone;
+            document.getElementById('notificacaoTitulo').innerText = titulo;
+            document.getElementById('notificacaoTexto').innerText = texto;
+            document.getElementById('notificacaoModal').style.display = 'flex';
+        }
+
+        function fecharTodosModais() {
+            const modais = ['agendamentoModal', 'reagendamentoModal', 'notificacaoModal', 'confirmarCancelamentoModal', 'recuperarSenhaModal'];
+            modais.forEach(id => {
+                const el = document.getElementById(id);
+                if(el) el.style.display = 'none';
+            });
+        }
+
+        function alternarAbas(aba) {
+            modoAbas = aba;
+            document.getElementById('secao-catalogo').classList.remove('ativa');
+            document.getElementById('secao-agendamentos').classList.remove('ativa');
+            document.getElementById('secao-admin').classList.remove('ativa');
+            document.getElementById('secao-financeiro').classList.remove('ativa');
+            document.getElementById('secao-usuarios').classList.remove('ativa'); 
+            document.getElementById('authBox').classList.remove('ativa');
+
+            if(aba === 'catalogo') {
+                document.getElementById('secao-catalogo').classList.add('ativa');
+                carregarServicos();
+            } else if(aba === 'agendamentos') {
+                document.getElementById('secao-agendamentos').classList.add('ativa');
+                carregarMeusAgendamentos();
+            } else if(aba === 'admin') {
+                document.getElementById('secao-admin').classList.add('ativa');
+                carregarAgendamentosAdmin();
+            } else if(aba === 'financeiro') {
+                document.getElementById('secao-financeiro').classList.add('ativa');
+                carregarAgendamentosAdmin();
+            } else if(aba === 'usuarios') { 
+                document.getElementById('secao-usuarios').classList.add('ativa'); 
+                carregarUsuariosCadastrados();
+            } else if(aba === 'login_tela') {
+                document.getElementById('authBox').classList.add('ativa');
+            }
+        }
+ 
+        function alternarModoAuth() {
+            const nomeInput = document.getElementById('authNome');
+            const titulo = document.getElementById('authTitulo');
+            const btn = document.getElementById('btnAuth');
+            const toggle = document.getElementById('authToggle');
+            const campoSenha = document.getElementById('authSenha');
+            
+            campoSenha.type = 'password';
+ 
+            if (modoAuth === 'login') {
+                modoAuth = 'cadastro';
+                titulo.innerText = 'Criar uma Conta';
+                nomeInput.style.display = 'block';
+                btn.innerText = 'Cadastrar';
+                toggle.innerText = 'Já tem conta? Faça Login';
+            } else {
+                modoAuth = 'login';
+                titulo.innerText = 'Fazer Login';
+                nomeInput.style.display = 'none';
+                btn.innerText = 'Entrar';
+                toggle.innerText = 'Não tem conta? Cadastre-se';
+            }
+        }
+ 
+       // Dentro da sua função atualizarPainelUsuario():
+    function atualizarPainelUsuario() {
+    const btnGatilho = document.getElementById('btnDropdownGatilho');
+    const dropPerfil = document.getElementById('drop-meu-perfil');
+    const dropAdmin = document.getElementById('drop-admin-painel');
+    const dropFinanceiro = document.getElementById('drop-admin-financeiro');
+    const dropUsuarios = document.getElementById('drop-admin-usuarios');
+    const dropDeslogar = document.getElementById('drop-deslogar');
+
+    // Se NÃO houver usuário logado, esconde TUDO e bota o texto padrão
+    if (!usuarioLogado) {
+        if(btnGatilho) btnGatilho.innerText = "👤 Acessar Conta";
+        if(dropPerfil) dropPerfil.style.display = 'none';
+        if(dropAdmin) dropAdmin.style.display = 'none';
+        if(dropFinanceiro) dropFinanceiro.style.display = 'none';
+        if(dropUsuarios) dropUsuarios.style.display = 'none';
+        if(dropDeslogar) dropDeslogar.style.display = 'none';
+        return;
+    }
+
+    // Se houver usuário logado, muda o texto do botão para o primeiro nome dele
+    const primeiroNome = usuarioLogado.nome ? usuarioLogado.nome.split(' ')[0] : 'Usuário';
+    if(btnGatilho) btnGatilho.innerText = `👤 ${primeiroNome}`;
+    if(dropDeslogar) dropDeslogar.style.display = 'block';
+
+    // Governança de níveis de acesso
+  if (usuarioLogado.is_admin) {
+        if(dropAdmin) dropAdmin.style.display = 'block';
+        if(dropFinanceiro) dropFinanceiro.style.display = 'block';
+        if(dropUsuarios) dropUsuarios.style.display = 'block'; 
+        if(dropPerfil) dropPerfil.style.display = 'none';
+    } else {
+        if(dropPerfil) dropPerfil.style.display = 'block';
+        if(dropAdmin) dropAdmin.style.display = 'none';
+        if(dropFinanceiro) dropFinanceiro.style.display = 'none';
+        if(dropUsuarios) dropUsuarios.style.display = 'none'; 
+}
+    }
+
+        async function carregarMeusAgendamentos() {
+            const container = document.getElementById('container-meus-agendamentos');
+            if(!usuarioLogado) {
+                container.innerHTML = '<p style="text-align: center; color: #777;">Faça login acima para visualizar suas reservas ativas.</p>';
+                return;
+document.getElementById('contadorPontos').innerText = `${usuarioLogado.pontos || 0} pts`;
+
+            container.innerHTML = '<p style="text-align: center;">⏳ Buscando suas marcações...</p>';
+            // ... restante da função
+
+            }
+ 
+            container.innerHTML = '<p style="text-align: center;">⏳ Buscando suas marcações...</p>';
+ 
+            try {
+                const response = await fetch(`/api/meus-agendamentos?email=${usuarioLogado.email}`);
+                const dados = await response.json();
+ 
+                if(!dados || dados.length === 0) {
+                    container.innerHTML = '<p style="text-align: center; color: #555;">Você ainda não possui nenhum agendamento registrado.</p>';
+                    return;
+                }
+ 
+                container.innerHTML = '';
+                dados.forEach(agend => {
+                    const dataFormatada = new Date(agend.data_atendimento).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
+                    const servicoNome = agend.servico ? agend.servico.tipo : "Serviço";
+                    const servicoValor = agend.servico ? `R$ ${parseFloat(agend.servico.valor).toFixed(2).replace('.', ',')}` : "Consultar";
+                    const agendStatus = agend.status || 'Pendente';
+                    
+                    let blocoAvaliacao = '';
+                    if (agendStatus === "Concluido") {
+                        if (!agend.avaliacao) {
+                            blocoAvaliacao = `
+                                <div style="margin-top: 15px; padding: 15px; background: #f8fafc; border-radius: 10px; border: 1px dashed #6a11cb; width: 100%;">
+                                    <p style="margin: 0 0 10px 0; font-size: 13px; font-weight: bold; color: #4a5568;">Como foi sua experiência de bem-estar?</p>
+                                    <div style="display: flex; gap: 8px;">
+                                        <button class="btn-avaliar" onclick="avaliarServico(${agend.id}, 'Bom')" style="color: #069669; border-color: #069669;">😊 Bom</button>
+                                        <button class="btn-avaliar" onclick="avaliarServico(${agend.id}, 'Médio')" style="color: #d97706; border-color: #d97706;">😐 Médio</button>
+                                        <button class="btn-avaliar" onclick="avaliarServico(${agend.id}, 'Ruim')" style="color: #c5221f; border-color: #c5221f;">🙁 Ruim</button>
+                                    </div>
+                                </div>
+                            `;
+                        } else {
+                            let emoji = agend.avaliacao === 'Bom' ? '😊' : agend.avaliacao === 'Médio' ? '😐' : '🙁';
+                            blocoAvaliacao = `<p style="margin-top: 10px; font-size: 13px; color: #4a5568;">Sua avaliação: <strong class="badge-status badge-${agend.avaliacao.toLowerCase()}">${emoji} ${agend.avaliacao}</strong></p>`;
+                        }
+                    }
+ 
+                    const itemHtml = `
+                        <div class="item-agendamento" style="flex-direction: column; align-items: flex-start; gap: 10px; width: 100%;">
+                            <div style="display: flex; justify-content: space-between; width: 100%; align-items: center;">
+                                <div class="item-agendamento-info">
+                                    <h4>${servicoNome} <span class="badge-status ${agendStatus === 'Concluido' ? 'badge-concluido' : 'badge-pendente'}">${agendStatus}</span></h4>
+                                    <p>🗓️ <strong>Data:</strong> ${dataFormatada}</p>
+                                    <p>💰 <strong>Valor:</strong> ${servicoValor}</p>
+                                </div>
+                                <div class="item-agendamento-acoes">
+                                    ${agendStatus === 'Pendente' ? `
+                                        <button type="button" class="btn-remarcar" onclick="abrirModalRemarcar(${agend.id})">Remarcar</button>
+                                        <button type="button" class="btn-cancelar" onclick="solicitarCancelamento(${agend.id})">Cancelar</button>
+                                    ` : `<p style="color: #10b981; font-weight: bold; font-size: 14px; align-self: center;">Aproveitado! ✨</p>`}
+                                </div>
+                            </div>
+                            ${blocoAvaliacao}
+                        </div>
+                    `;
+                    container.innerHTML += itemHtml;
+                });
+            } catch (error) {
+                container.innerHTML = '<p style="text-align: center; color: red;">❌ Erro crítico ao carregar agendamentos.</p>';
+            }
+        }
+
+        async function avaliarServico(id, nota) {
+            try {
+                const response = await fetch(`/api/agendamentos/${id}/avaliar`, { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json' }, 
+                    body: JSON.stringify({ avaliacao: nota }) 
+                });
+                
+                if (response.ok) {
+                    if (typeof exibirNotificacaoSpa === 'function') {
+                        exibirNotificacaoSpa('Obrigado!', 'Sua avaliação foi registrada com sucesso. ✨', '🌸');
+                    } else {
+                        alert('Obrigado! Sua avaliação foi registrada. ✨');
+                    }
+                    carregarMeusAgendamentos(); 
+                } else {
+                    const erroDados = await response.json();
+                    alert(`Erro ao salvar: ${erroDados.error || 'Erro desconhecido'}`);
+                }
+            } catch (e) {
+                console.error(e);
+                alert('❌ Falha na comunicação com o servidor ao enviar avaliação.');
+            }
+        }
+
+        function deslogar() {
+            localStorage.removeItem('usuario_spa');
+            usuarioLogado = null;
+            atualizarPainelUsuario();
+            alternarAbas('catalogo');
+        }
+ 
+        async function processarAutenticacao() {
+            const nome = document.getElementById('authNome').value;
+            const email = document.getElementById('authEmail').value.trim();
+            const senha = document.getElementById('authSenha').value;
+ 
+            if (!email || !senha || (modoAuth === 'cadastro' && !nome)) {
+                exibirNotificacaoSpa('Atenção', '⚠️ Por favor, preencha todos os campos necessários para prosseguir.', '✨');
+                return;
+            }
+
+            if (modoAuth === 'cadastro') {
+                const regexSenha = /^(?=.*[a-z])(?=.*[A-Z])(?=.*[@$!%*?&#,.]).{8,}$/;
+                if (!regexSenha.test(senha)) {
+                    exibirNotificacaoSpa('Senha Fraca', '⚠️ Sua senha precisa ter no mínimo 8 caracteres, incluindo pelo menos uma letra maiúscula, uma letra minúscula e um caractere especial.', '🔒');
+                    return;
+                }
+            }
+ 
+            const urlApi = modoAuth === 'cadastro' ? '/cadastrar' : '/api/login';
+            const payload = modoAuth === 'cadastro' ? { nome, email, senha } : { email, senha };
+ 
+            try {
+                const response = await fetch(urlApi, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await response.json();
+ 
+                if (!response.ok) throw new Error(data.error || "Erro na operação");
+ 
+                if (modoAuth === 'cadastro') {
+                    exibirNotificacaoSpa('Conta Criada', '🎉 Conta criada com sucesso! Enviamos um e-mail de confirmação para você ativar sua conta.', '✉️');
+                    alternarModoAuth();
+                    document.getElementById('authSenha').value = ''; 
+                } else {
+                    usuarioLogado = data.usuario;
+                    localStorage.setItem('usuario_spa', JSON.stringify(usuarioLogado));
+                    atualizarPainelUsuario();
+                    
+                    if(usuarioLogado.is_admin) {
+                        alternarAbas('admin');
+                    } else {
+                        alternarAbas('catalogo');
+                    }
+                }
+            } catch (err) {
+                exibirNotificacaoSpa('Ops!', `Falta de sintonia: ${err.message}`, '🍃');
+            }
+        }
+
+        // 🔑 Funções de Recuperação de Senha
+        function abrirModalEsqueciSenha() {
+            fecharTodosModais();
+            document.getElementById('recupEmail').value = '';
+            document.getElementById('recupCodigo').value = '';
+            document.getElementById('recupNovaSenha').value = '';
+            document.getElementById('etapaEmailRecup').style.display = 'block';
+            document.getElementById('etapaCodigoRecup').style.display = 'none';
+            document.getElementById('recupStatus').innerText = '';
+            document.getElementById('recuperarSenhaModal').style.display = 'flex';
+        }
+
+        async function solicitarCodigoRecuperacao() {
+            const email = document.getElementById('recupEmail').value.trim();
+            const status = document.getElementById('recupStatus');
+            if(!email) { status.style.color = "red"; status.innerText = "Informe seu e-mail."; return; }
+
+            status.style.color = "#555"; status.innerText = "Enviando código...";
+            try {
+                const res = await fetch('/api/esqueci-senha', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+                const data = await res.json();
+                if(res.ok) {
+                    status.style.color = "green"; status.innerText = data.message;
+                    document.getElementById('etapaEmailRecup').style.display = 'none';
+                    document.getElementById('etapaCodigoRecup').style.display = 'block';
+                } else {
+                    status.style.color = "red"; status.innerText = data.error;
+                }
+            } catch(e) {
+                status.style.color = "red"; status.innerText = "Erro de conexão.";
+            }
+        }
+
+        async function salvarNovaSenha() {
+            const email = document.getElementById('recupEmail').value.trim();
+            const codigo = document.getElementById('recupCodigo').value.trim();
+            const nova_senha = document.getElementById('recupNovaSenha').value;
+            const status = document.getElementById('recupStatus');
+
+            if(!codigo || !nova_senha) { status.style.color = "red"; status.innerText = "Preencha todos os campos."; return; }
+
+            try {
+                const res = await fetch('/api/redefinir-senha', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, codigo, nova_senha })
+                });
+                const data = await res.json();
+                if(res.ok) {
+                    exibirNotificacaoSpa("Sucesso!", data.message, "✨");
+                    fecharModal('recuperarSenhaModal');
+                } else {
+                    status.style.color = "red"; status.innerText = data.error;
+                }
+            } catch(e) {
+                status.style.color = "red"; status.innerText = "Erro ao redefinir.";
+            }
+        }
+ 
+        async function carregarServicos() {
+            const container = document.getElementById('container-servicos');
+            try {
+                const response = await fetch(`${BACKEND_URL}/api/servicos`);
+                if (!response.ok) throw new Error("Erro na requisição");
+                
+                servicosDados = await response.json();
+                container.innerHTML = '';
+ 
+                if (servicosDados.length === 0) {
+                    container.innerHTML = '<p style="text-align: center; grid-column: 1/-1;">Nenhum serviço disponível no momento.</p>';
+                    return;
+                }
+ 
+                servicosDados.forEach(servico => {
+                    const descricaoTratada = (servico.descricao || "Sem descrição disponível para este serviço no momento.").replace(/'/g, "\\'");
+
+                    const cardHtml = `
+                        <div class="card">
+                            <img src="${servico.imagem_url || 'https://images.unsplash.com/photo-1600334089648-b0d9d3028eb2?w=500'}" alt="${servico.tipo}">
+                            <div class="card-conteudo">
+                                <div>
+                                    <h2 class="card-titulo">${servico.tipo}</h2>
+                                    <p class="card-preco">R$ ${parseFloat(servico.valor).toFixed(2).replace('.', ',')}</p>
+                                </div>
+                                <div>
+                                    <p class="card-contratos">Contratado ${servico.contratos} vezes</p>
+                                    <button class="btn-contratar" onclick="abrirModalAgendamento(${servico.id}, '${servico.tipo}', '${descricaoTratada}')">Agendar Serviço</button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    container.innerHTML += cardHtml;
+                });
+            } catch (error) {
+                container.innerHTML = '<p style="text-align: center; color: red;">❌ Erro ao carregar os serviços da API.</p>';
+            }
+        }
+ 
+        function abrirModalAgendamento(id, tipo, descricao) {
+            if(!usuarioLogado) {
+                exibirNotificacaoSpa('Identificação Necessária', 'Para reservar uma experiência relaxante, por favor faça seu login no menu superior.', '🔒');
+                alternarAbas('login_tela');
+                return;
+            }
+            document.getElementById('modalServicoId').value = id;
+            document.getElementById('modalTitulo').innerText = `Agendar: ${tipo}`;
+            
+            const campoDescricao = document.getElementById('modalServicoDescricao');
+            if (campoDescricao) {
+                campoDescricao.innerText = descricao;
+            }
+            
+            const campoData = document.getElementById('modalData');
+            const agora = new Date();
+            const ano = agora.getFullYear();
+            const mes = String(agora.getMonth() + 1).padStart(2, '0');
+            const dia = String(agora.getDate()).padStart(2, '0');
+            const hora = String(agora.getHours()).padStart(2, '0');
+            const minutos = String(agora.getMinutes()).padStart(2, '0');
+            
+            campoData.min = `${ano}-${mes}-${dia}T${hora}:${minutos}`;
+            campoData.value = ""; 
+            
+            document.getElementById('modalStatus').innerText = '';
+            document.getElementById('agendamentoModal').style.display = 'flex';
+        }
+ 
+        function fecharModal(idModal) {
+            const el = document.getElementById(idModal);
+            if(el) el.style.display = 'none';
+        }
+ 
+        async function enviarAgendamento() {
+            const id = document.getElementById('modalServicoId').value;
+            const data = document.getElementById('modalData').value;
+            const status = document.getElementById('modalStatus');
+ 
+            if (!data) {
+                status.style.color = "#e74c3c"; status.innerText = "⚠️ Defina o dia e horário do seu momento!"; return;
+            }
+ 
+            try {
+                const response = await fetch('/api/agendar', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ servico_id: id, email: usuarioLogado.email, data: data })
+                });
+ 
+                const resultado = await response.json();
+                if (response.ok) {
+                    fecharModal('agendamentoModal');
+                    exibirNotificacaoSpa('Momento Confirmado!', `Gratidão, ${usuarioLogado.nome}! Seu momento Spa Panaceia foi agendado com sucesso.`, '✨');
+                    carregarServicos();
+                } else {
+                    status.style.color = "#e74c3c"; status.innerText = `❌ ${resultado.error}`;
+                }
+            } catch (error) {
+                status.style.color = "#e74c3c"; status.innerText = "❌ Falha de comunicação com o templo.";
+            }
+        }
+ 
+        async function carregarAgendamentosAdmin() {
+    const container = document.getElementById('container-admin-agendamentos'); 
+    if (!usuarioLogado || !usuarioLogado.is_admin) return;
+
+    try {
+        const response = await fetch(`${BACKEND_URL}/api/admin/agendamentos?admin_email=${usuarioLogado.email}`);
+        const agendamentos = await response.json(); 
+        
+        if (container) container.innerHTML = '';
+
+        if (!response.ok || agendamentos.error) {
+            if (container) container.innerHTML = `<tr><td colspan="7" style="text-align: center; color: red; font-weight: bold;">❌ Erro do Servidor: ${agendamentos.error || 'Falha desconhecida'}</td></tr>`;
+            return;
+        }
+
+        let faturamento = 0;
+        let totalContratos = agendamentos.length;
+        let pendentes = 0;
+        let concluidos = 0;
+        let cancelados = 0; 
+        let avalBom = 0;
+        let avalMedio = 0;
+        let avalRuim = 0;
+
+        if (agendamentos.length === 0) {
+            if (container) container.innerHTML = '<tr><td colspan="7" style="text-align: center;">Nenhum agendamento global encontrado.</td></tr>';
+            return;
+        }
+
+        agendamentos.forEach(ag => {
+            const dataFormatada = new Date(ag.data_atendimento).toLocaleString('pt-BR');
+            const servicoNome = ag.servico ? ag.servico.tipo : 'N/A';
+            const valorNumerico = parseFloat(ag.servico?.valor || 0);
+            const servicoValor = ag.servico ? `R$ ${valorNumerico.toFixed(2).replace('.', ',')}` : 'N/A';
+            const agendStatus = ag.status || 'Pendente';
+            
+            if (agendStatus === 'Concluido') {
+                concluidos++;
+                faturamento += valorNumerico; 
+            } else if (agendStatus === 'Cancelado') {
+                cancelados++; 
+            } else {
+                pendentes++; 
+            }
+
+            if (ag.avaliacao === 'Bom') avalBom++;
+            else if (ag.avaliacao === 'Médio') avalMedio++;
+            else if (ag.avaliacao === 'Ruim') avalRuim++;
+
+            if (container) {
+                let badgeAvaliacao = "<i style='color: #aaa;'>Sem avaliação</i>";
+                if (ag.avaliacao) {
+                    if (ag.avaliacao === "Bom") badgeAvaliacao = `<span class="badge-status badge-bom">😊 Bom</span>`;
+                    else if (ag.avaliacao === "Médio") badgeAvaliacao = `<span class="badge-status badge-medio">😐 Médio</span>`;
+                    else if (ag.avaliacao === "Ruim") badgeAvaliacao = `<span class="badge-status badge-ruim">🙁 Ruim</span>`;
+                }
+
+                let botaoAcao = '';
+                if (agendStatus === 'Concluido') {
+                    botaoAcao = `<span style="color: #10b981; font-weight: bold;">✓ Finalizado</span>`;
+                } else if (agendStatus === 'Cancelado') {
+                    botaoAcao = `<span style="color: #ef4444; font-weight: bold;">✕ Cancelado</span>`;
+                } else {
+                    botaoAcao = `<button class="btn-concluir" onclick="concluirAgendamentoAdmin(${ag.id})">Concluir</button>`;
+                }
+
+                container.innerHTML += `
+                    <tr>
+                        <td>${ag.email_cliente}</td>
+                        <td>${servicoNome}</td>
+                        <td>${dataFormatada}</td>
+                        <td>${servicoValor}</td>
+                        <td><span class="badge-status ${agendStatus === 'Concluido' ? 'badge-concluido' : agendStatus === 'Cancelado' ? 'badge-cancelado' : 'badge-pendente'}">${agendStatus}</span></td>
+                        <td>${badgeAvaliacao}</td>
+                        <td>${botaoAcao}</td>
+                    </tr>
+                `;
+            }
+        });
+
+        const cardFaturamento = document.getElementById('fin-faturamento');
+        if (cardFaturamento) {
+            cardFaturamento.innerText = `R$ ${faturamento.toFixed(2).replace('.', ',')}`;
+            document.getElementById('fin-total').innerText = totalContratos;
+            document.getElementById('fin-pendentes').innerText = pendentes;
+            document.getElementById('fin-concluidos').innerText = concluidos;
+            
+            const cardCancelados = document.getElementById('fin-cancelados');
+            if (cardCancelados) cardCancelados.innerText = cancelados;
+        }
+
+        const ctxContratos = document.getElementById('graficoContratos');
+        if (ctxContratos) {
+            if (chartContratos) chartContratos.destroy();
+            chartContratos = new Chart(ctxContratos, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Pendentes', 'Concluídos', 'Cancelados'],
+                    datasets: [{ 
+                        data: [pendentes, concluidos, cancelados], 
+                        backgroundColor: ['#d97706', '#059669', '#ef4444'], 
+                        borderWidth: 1 
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } } } }
+            });
+        }
+
+        const ctxAvaliacoes = document.getElementById('graficoAvaliacoes');
+        if (ctxAvaliacoes) {
+            if (chartAvaliacoes) chartAvaliacoes.destroy();
+            chartAvaliacoes = new Chart(ctxAvaliacoes, {
+                type: 'bar',
+                data: {
+                    labels: ['😊 Bom', '😐 Médio', '🙁 Ruim'],
+                    datasets: [{ data: [avalBom, avalMedio, avalRuim], backgroundColor: ['#10b981', '#f59e0b', '#ef4444'], borderRadius: 4 }]
+                },
+                options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { ticks: { stepSize: 1 } } } }
+            });
+        }
+
+    } catch (error) {
+        console.error("Erro detalhado no dashboard financeiro:", error);
+    }
+}
+        
+        async function concluirAgendamentoAdmin(id) {
+            try {
+                const response = await fetch(`${BACKEND_URL}/api/admin/agendamentos/${id}/concluir`, { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json' }, 
+                    body: JSON.stringify({ admin_email: usuarioLogado.email }) 
+                });
+
+                const resultado = await response.json();
+                if (response.ok) {
+                    exibirNotificacaoSpa('Sucesso', 'Agendamento concluído e pontos creditados!', '✨');
+                    carregarAgendamentosAdmin(); 
+                } else {
+                    exibirNotificacaoSpa('Erro', resultado.error || 'Erro ao concluir.', '⚠️');
+                }
+            } catch (err) {
+                console.error("Erro ao concluir agendamento:", err);
+                exibirNotificacaoSpa('Ops!', 'Não foi possível conectar ao servidor remoto.', '🍃');
+            }
+        }
+        
+        function abrirModalRemarcar(id) {
+            fecharTodosModais();
+            document.getElementById('reagendarId').value = id;
+            
+            const campoNovaData = document.getElementById('novaData');
+            const agora = new Date();
+            const ano = agora.getFullYear();
+            const mes = String(agora.getMonth() + 1).padStart(2, '0');
+            const dia = String(agora.getDate()).padStart(2, '0');
+            const hora = String(agora.getHours()).padStart(2, '0');
+            const minutos = String(agora.getMinutes()).padStart(2, '0');
+            
+            campoNovaData.min = `${ano}-${mes}-${dia}T${hora}:${minutos}`;
+            campoNovaData.value = "";
+
+            document.getElementById('reagendarStatus').innerText = '';
+            document.getElementById('reagendamentoModal').style.display = 'flex';
+        }
+ 
+        async function salvarRemarcacao() {
+            const id = document.getElementById('reagendarId').value;
+            const novaData = document.getElementById('novaData').value;
+            const status = document.getElementById('reagendarStatus');
+ 
+            if(!novaData) { status.style.color = "red"; status.innerText = "⚠️ Defina uma nova data e hora antes de salvar."; return; }
+ 
+            try {
+                const response = await fetch(`/api/agendamentos/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ data: novaData })
+                });
+ 
+                const resultado = await response.json();
+                if(response.ok) {
+                    fecharModal('reagendamentoModal');
+                    exibirNotificacaoSpa('Horário Atualizado', 'Sua nova janela de tranquilidade foi reagendada com sucesso!', '📅');
+                    carregarMeusAgendamentos();
+                } else {
+                    status.style.color = "red"; status.innerText = `❌ ${resultado.error}`;
+                }
+            } catch(e) { status.style.color = "red"; status.innerText = "❌ Erro na conexão."; }
+        }
+ 
+        function solicitarCancelamento(id) {
+            fecharTodosModais();
+            document.getElementById('cancelarAgendamentoId').value = id;
+            document.getElementById('confirmarCancelamentoModal').style.display = 'flex';
+        }
+
+        async function ejecutarCancelamentoConfirmado() {
+            const id = document.getElementById('cancelarAgendamentoId').value;
+ 
+            try {
+                const url = `/api/agendamentos/${id}`;
+                const response = await fetch(url, { 
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                
+                if(response.ok) {
+                    fecharModal('confirmarCancelamentoModal'); 
+                    exibirNotificacaoSpa(
+                        'Reserva Cancelada', 
+                        'Seu agendamento foi cancelado. Sentiremos sua falta, mas lembre-se que as portas do templo Spa Panaceia estarão sempre abertas para quando seu espírito precisar de paz.', 
+                        '🌅'
+                    );
+                    carregarMeusAgendamentos();
+                } else { 
+                    const erroServidor = await response.json().catch(() => ({ error: 'Resposta não é um JSON válido.' }));
+                    fecharModal('confirmarCancelamentoModal');
+                    exibirNotificacaoSpa(
+                        'Não foi possível processar', 
+                        `O servidor recebeu e rejeitou a ação. Motivo: ${erroServidor.error || 'Erro interno no servidor.'}`, 
+                        '🍃'
+                    ); 
+                }
+            } catch(e) { 
+                fecharModal('confirmarCancelamentoModal');
+                exibirNotificacaoSpa('Erro de Conexão', 'Não foi possível estabelecer contato com o servidor central.', '📴'); 
+            }
+        }
+ 
+        async function carregarUsuariosCadastrados() {
+            const containerUsuarios = document.getElementById('container-admin-usuarios');
+            if (!containerUsuarios) return;
+            if (!usuarioLogado || !usuarioLogado.is_admin) return;
+
+            try {
+                const response = await fetch(`${BACKEND_URL}/api/admin/usuarios?admin_email=${usuarioLogado.email}`);
+                const listaUsuarios = await response.json();
+                containerUsuarios.innerHTML = '';
+
+                if (listaUsuarios.length === 0) {
+                    containerUsuarios.innerHTML = '<tr><td colspan="4" style="text-align: center;">Nenhum usuário cadastrado no sistema.</td></tr>';
+                    return;
+                }
+
+                listaUsuarios.forEach(user => {
+                    const gastosFormatados = `R$ ${parseFloat(user.gastos || 0).toFixed(2).replace('.', ',')}`;
+                    
+                    containerUsuarios.innerHTML += `
+                        <tr>
+                            <td style="font-weight: 500; color: #2d3748;">👤 ${user.nome}</td>
+                            <td style="color: #4a5568;">${user.email}</td>
+                            <td style="text-align: center; font-weight: bold;">
+                                <span title="Total Histórico (Ativos + Cancelados)" style="color: #4a5568;">${user.total}</span> | 
+                                <span title="Agendamentos Pendentes/Confirmados" style="color: #d97706;">${user.pendentes}</span> | 
+                                <span title="Agendamentos Concluídos com sucesso" style="color: #059669;">${user.concluidos}</span> |
+                                <span title="Agendamentos Cancelados (Tabela dedicada)" style="color: #ef4444; background: #fee2e2; padding: 2px 6px; border-radius: 4px;">${user.cancelados}</span>
+                            </td>
+                            <td style="font-weight: bold; color: #2575fc;">${gastosFormatados}</td>
+                        </tr>
+                    `;
+                });
+
+            } catch (error) {
+                console.error("Erro ao carregar usuários cadastrados:", error);
+                containerUsuarios.innerHTML = '<tr><td colspan="4" style="text-align: center; color: red;">❌ Erro ao conectar com a base de dados de usuários.</td></tr>';
+            }
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            carregarAgendamentosAdmin();
+        });
+
+        function toggleVisibilidadeSenha() {
+            const campoSenha = document.getElementById('authSenha');
+            if (campoSenha.type === 'password') {
+                campoSenha.type = 'text';
+            } else {
+                campoSenha.type = 'password';
+            }
+        }
+
+        window.onload = function() {
+            const usuarioSalvo = localStorage.getItem('usuario_spa');
+            if (usuarioSalvo) {
+                usuarioLogado = JSON.parse(usuarioSalvo);
+            }
+            
+            atualizarPainelUsuario();
+            alternarAbas('catalogo'); 
+        };
+
+        function toggleChat() {
+            const janela = document.getElementById('chatbotJanela');
+            janela.style.display = janela.style.display === 'none' || janela.style.display === '' ? 'flex' : 'none';
+        }
+
+        async function enviarMensagemChat() {
+            const input = document.getElementById('chatInput');
+            const mensagem = input.value.trim();
+            if (!mensagem) return;
+
+            const chatMensagens = document.getElementById('chatMensagens');
+            
+            chatMensagens.innerHTML += `
+                <div style="background: #6a11cb; color: white; padding: 12px 15px; border-radius: 15px; border-bottom-right-radius: 4px; max-width: 85%; align-self: flex-end; font-size: 14px; line-height: 1.5; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+                    ${mensagem}
+                </div>`;
+            input.value = '';
+            chatMensagens.scrollTop = chatMensagens.scrollHeight;
+
+            const idDigitando = "digitando-" + Date.now();
+            chatMensagens.innerHTML += `
+                <div id="${idDigitando}" style="background: #e2e8f0; color: #64748b; padding: 12px 15px; border-radius: 15px; border-bottom-left-radius: 4px; max-width: 85%; align-self: flex-start; font-size: 14px; font-style: italic;">
+                    Sintonizando energias... ✨
+                </div>`;
+            chatMensagens.scrollTop = chatMensagens.scrollHeight;
+
+            try {
+                const response = await fetch(`${BACKEND_URL}/api/chat`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ mensagem: mensagem })
+                });
+
+                const data = await response.json();
+                document.getElementById(idDigitando).remove(); 
+
+                if (response.ok) {
+                    chatMensagens.innerHTML += `
+                        <div style="background: white; color: #333; padding: 12px 15px; border-radius: 15px; border-bottom-left-radius: 4px; max-width: 85%; align-self: flex-start; font-size: 14px; line-height: 1.5; border: 1px solid #e2e8f0; box-shadow: 0 2px 5px rgba(0,0,0,0.02);">
+                            ${data.resposta}
+                        </div>`;
+                } else {
+                    chatMensagens.innerHTML += `<div style="color: #ef4444; align-self: center; font-size: 13px;">${data.error}</div>`;
+                }
+            } catch (err) {
+                document.getElementById(idDigitando).remove();
+                chatMensagens.innerHTML += `<div style="color: #ef4444; align-self: center; font-size: 13px;">Falha de comunicação com o assistente.</div>`;
+            }
+            chatMensagens.scrollTop = chatMensagens.scrollHeight;
+        }
+    </script>
+
+    <!-- 🤖 CHATBOT UI FLUTUANTE -->
+    <button onclick="toggleChat()" style="position: fixed; bottom: 25px; right: 25px; width: 65px; height: 65px; border-radius: 50%; background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%); color: white; border: none; font-size: 28px; cursor: pointer; box-shadow: 0 10px 20px rgba(106, 17, 203, 0.4); z-index: 10000; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
+        ✨
+    </button>
+
+    <div id="chatbotJanela" style="display: none; position: fixed; bottom: 100px; right: 25px; width: 340px; height: 450px; background: white; border-radius: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.2); z-index: 10000; flex-direction: column; overflow: hidden; border: 1px solid #e2e8f0;">
+        <div style="background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%); color: white; padding: 18px; font-weight: bold; display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 16px;">🌿 Orientador Panaceia</span>
+            <button onclick="toggleChat()" style="background: none; border: none; color: white; font-size: 24px; cursor: pointer; line-height: 1;">&times;</button>
+        </div>
+        <div id="chatMensagens" style="flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; background: #f8fafc;">
+            <div style="background: #e2e8f0; color: #333; padding: 12px 15px; border-radius: 15px; border-bottom-left-radius: 4px; max-width: 85%; align-self: flex-start; font-size: 14px; line-height: 1.5;">
+                Olá! Sou o guia virtual do Spa. Me conte o que você está sentindo hoje (estresse, dores no corpo, cansaço) e eu te recomendarei o melhor momento de bem-estar.
+            </div>
+        </div>
+        <div style="padding: 12px; background: white; border-top: 1px solid #e2e8f0; display: flex; gap: 10px; align-items: center;">
+            <input type="text" id="chatInput" placeholder="Como você se sente hoje?" style="flex: 1; padding: 12px; border: 1px solid #cbd5e1; border-radius: 20px; font-size: 14px; outline: none;" onkeypress="if(event.key === 'Enter') enviarMensagemChat()">
+            <button onclick="enviarMensagemChat()" style="background: #10b981; color: white; border: none; width: 42px; height: 42px; border-radius: 50%; cursor: pointer; font-weight: bold; font-size: 18px; display: flex; justify-content: center; align-items: center;">
+                ➤
+            </button>
+        </div>
+    </div>
+</body>
+</html>
