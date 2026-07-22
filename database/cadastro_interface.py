@@ -1,7 +1,5 @@
 import os
 import random
-import smtplib
-from email.message import EmailMessage
 from datetime import datetime
 from flask import Flask, request, jsonify, send_from_directory
 from dotenv import load_dotenv
@@ -37,27 +35,52 @@ if not url or not key:
 
 supabase: Client = create_client(url, key)
 
-# Configurações de E-mail e Tokens
+# Configurações de Tokens
 serializer = URLSafeTimedSerializer(key)
-EMAIL_SERVIDOR = os.environ.get("EMAIL_SUPORTE")
-SENHA_EMAIL = os.environ.get("SENHA_EMAIL_SUPORTE")
 
+# ==============================================================================
+# --- 📧 NOVO SISTEMA DE E-MAIL VIA BREVO API (ENVIA PARA QUALQUER UM) ---
+# ==============================================================================
 def enviar_email_transacional(destinatario, assunto, conteudo_html):
-    try:
-        msg = EmailMessage()
-        msg.set_content(conteudo_html, subtype='html')
-        msg['Subject'] = assunto
-        msg['From'] = EMAIL_SERVIDOR
-        msg['To'] = destinatario
-
-        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
-            smtp.login(EMAIL_SERVIDOR, SENHA_EMAIL)
-            smtp.send_message(msg)
-        return True
-    except Exception as e:
-        print(f"❌ Erro ao enviar e-mail: {e}")
+    api_key = os.environ.get("BREVO_API_KEY")
+    
+    # ⚠️ Mude para o e-mail exato que você usou para criar a conta no Brevo:
+    email_remetente = "spapanaceia@gmail.com" 
+    nome_remetente = "Spa Panaceia"
+    
+    if not api_key:
+        print("❌ Erro: Chave BREVO_API_KEY não encontrada nas variáveis de ambiente.")
         return False
 
+    url = "https://api.brevo.com/v3/smtp/email"
+    
+    headers = {
+        "accept": "application/json",
+        "api-key": api_key,
+        "content-type": "application/json"
+    }
+    
+    payload = {
+        "sender": {"name": nome_remetente, "email": email_remetente},
+        "to": [{"email": destinatario}],
+        "subject": assunto,
+        "htmlContent": conteudo_html
+    }
+    
+    try:
+        resposta = requests.post(url, headers=headers, json=payload)
+        
+        # O Brevo retorna 201 quando cria o e-mail com sucesso
+        if resposta.status_code in [200, 201]:
+            print(f"✅ E-mail enviado com sucesso para {destinatario}!")
+            return True
+        else:
+            print(f"❌ Erro ao enviar via Brevo: {resposta.text}")
+            return False
+            
+    except Exception as e:
+        print(f"❌ Erro interno na API do Brevo: {e}")
+        return False
 
 # ==============================================================================
 # --- 🌍 ROTAS DE PÁGINAS VISUAIS (HTML) ---
@@ -130,9 +153,6 @@ def confirmar_email():
         return "<h3>Conta confirmada com sucesso! ✨ Você já pode fechar esta aba e fazer login no site.</h3>", 200
     except Exception:
         return "<h3>Link inválido ou expirado. Tente se cadastrar novamente.</h3>", 400
-    
-
-    
 
 
 @app.route('/api/login', methods=['POST'])
