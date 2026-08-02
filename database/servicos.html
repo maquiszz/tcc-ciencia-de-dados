@@ -16,6 +16,70 @@
             align-items: center;
         }
         
+#modal-verificacao {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.6); /* Fundo escuro semitransparente */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 999999; /* Garante que fique acima de tudo */
+}
+
+.modal-conteudo {
+    background: #ffffff;
+    padding: 30px;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 400px;
+    text-align: center;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+}
+
+.inputs-codigo {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin: 20px 0;
+}
+
+.otp-input {
+    width: 40px;
+    height: 50px;
+    font-size: 22px;
+    font-weight: bold;
+    text-align: center;
+    border: 2px solid #ccc;
+    border-radius: 8px;
+    outline: none;
+}
+
+.otp-input:focus {
+    border-color: #6a11cb;
+}
+
+/* Botão de Verificação */
+#btn-confirmar-otp {
+    width: 100%;
+    padding: 12px;
+    background-color: #6a11cb;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    margin-top: 10px;
+    transition: background 0.3s;
+}
+
+#btn-confirmar-otp:hover {
+    background-color: #530ca8;
+}
+
         /* 🗺️ BARRA DE NAVEGAÇÃO SUPERIOR */
         .navbar-topo {
             display: flex;
@@ -614,6 +678,195 @@
 }
     }
 
+// Variable global de fallback
+let emailParaVerificar = "";
+
+// ------------------------------------------------------------------------------
+// ⚡ AUTOMACÃO DOS QUADRADINHOS OTP (Avanço, Recuo e Colar)
+// ------------------------------------------------------------------------------
+function inicializarEventosOTP() {
+    const inputs = document.querySelectorAll('.otp-input');
+
+    inputs.forEach((input, index) => {
+        // Limpa eventos anteriores
+        input.oninput = null;
+        input.onkeydown = null;
+        input.onpaste = null;
+
+        // Avanço automático ao digitar
+        input.addEventListener('input', (e) => {
+            const val = e.target.value;
+            if (val.length >= 1 && index < inputs.length - 1) {
+                inputs[index + 1].focus();
+            }
+        });
+
+        // Voltar ao apagar (Backspace)
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Backspace' && !e.target.value && index > 0) {
+                inputs[index - 1].focus();
+            }
+        });
+
+        // Permite colar o código de 6 dígitos de uma vez (Ctrl + V)
+        input.addEventListener('paste', (e) => {
+            e.preventDefault();
+            const colarTexto = (e.clipboardData || window.clipboardData).getData('text').trim();
+            if (/^\d{6}$/.test(colarTexto)) {
+                colarTexto.split('').forEach((char, i) => {
+                    if (inputs[i]) inputs[i].value = char;
+                });
+                inputs[inputs.length - 1].focus();
+            }
+        });
+    });
+}
+
+// ------------------------------------------------------------------------------
+// 1. CADASTRAR USUÁRIO
+// ------------------------------------------------------------------------------
+async function cadastrarUsuario(event) {
+    if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+    }
+
+    // Pega os valores dos inputs reais e estilizados
+    const nomeInput = document.getElementById('cad-nome');
+    const emailInput = document.getElementById('cad-email');
+    const senhaInput = document.getElementById('cad-senha');
+
+    const nome = nomeInput ? nomeInput.value.trim() : "";
+    const email = emailInput ? emailInput.value.trim().toLowerCase() : "";
+    const senha = senhaInput ? senhaInput.value : "";
+
+    if (!nome || !email || !senha) {
+        alert("Por favor, preencha todos os campos.");
+        return;
+    }
+
+    // 💾 Salva o e-mail imediatamente
+    emailParaVerificar = email;
+    localStorage.setItem('email_em_verificacao', email);
+
+    // Injeta o e-mail no texto do modal
+    const displayEmail = document.getElementById('email-destino-display');
+    if (displayEmail) displayEmail.textContent = email;
+
+    try {
+        const response = await fetch(`${BACKEND_URL}/cadastrar`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ nome, email, senha })
+        });
+
+        const res = await response.json();
+
+        if (response.ok) {
+            // Oculta o formulário/card de cadastro principal (se houver um container envelopando ele)
+            const cardCadastro = document.getElementById('card-cadastro') || document.getElementById('form-cadastro-principal');
+            if (cardCadastro) cardCadastro.style.display = 'none';
+
+            // Exibe o modal de verificação OTP
+            const modalOTP = document.getElementById('modal-verificacao');
+            if (modalOTP) {
+                modalOTP.style.display = 'flex'; // ou 'block'
+                
+                // Limpa e foca no primeiro campo OTP
+                document.querySelectorAll('.otp-input').forEach(i => i.value = '');
+                if (typeof inicializarEventosOTP === 'function') inicializarEventosOTP();
+                
+                const primeiroInput = document.querySelector('.otp-input');
+                if (primeiroInput) primeiroInput.focus();
+            }
+        } else {
+            alert("⚠️ " + (res.error || "Erro no cadastro."));
+        }
+    } catch (error) {
+        console.error("Erro no cadastro:", error);
+        alert("Erro de conexão com o servidor.");
+    }
+}
+// ------------------------------------------------------------------------------
+// 2. CONFIRMAR CÓDIGO OTP
+// ------------------------------------------------------------------------------
+async function confirmarCodigoOTP() {
+    // 1. Recupera o e-mail em memória ou localStorage
+    let email = localStorage.getItem('email_em_verificacao') || emailParaVerificar;
+    
+    if (!email) {
+        const display = document.getElementById('email-destino-display');
+        if (display && display.textContent !== "...") {
+            email = display.textContent.trim();
+        }
+    }
+
+    // 2. Coleta os 6 dígitos dos quadradinhos
+    const inputs = document.querySelectorAll('.otp-input');
+    let codigoDigitado = "";
+    inputs.forEach(input => codigoDigitado += input.value.trim());
+
+    if (codigoDigitado.length < 6) {
+        exibirNotificacaoSpa('Código Incompleto', '⚠️ Por favor, preencha todos os 6 dígitos do código.', '🔢');
+        return;
+    }
+
+    const msgStatus = document.getElementById('msg-otp-status');
+    if (msgStatus) {
+        msgStatus.style.color = "#6a11cb";
+        msgStatus.textContent = "Verificando código...";
+    }
+
+    try {
+        const response = await fetch(`${BACKEND_URL}/api/validar-codigo`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: email, codigo: codigoDigitado })
+        });
+
+        const res = await response.json();
+
+        if (response.ok) {
+            // 🟢 MENSAGEM DE SUCESSO SOLICITADA:
+            exibirNotificacaoSpa(
+                'Conta Verificada!', 
+                'Sua conta foi verificada com sucesso! Faça o login e aproveite nossos serviços!', 
+                '🎉'
+            );
+
+            // Limpa o armazenamento temporário
+            localStorage.removeItem('email_em_verificacao');
+            
+            // Oculta o modal OTP
+            const modalOTP = document.getElementById('modal-verificacao');
+            if (modalOTP) modalOTP.style.display = 'none';
+
+            // Alterna para a tela de login
+            if (typeof alternarModoAuth === 'function' && modoAuth === 'cadastro') {
+                alternarModoAuth();
+            }
+            if (typeof alternarAbas === 'function') {
+                alternarAbas('login_tela');
+            }
+
+        } else {
+            // 🔴 MENSAGEM DE ERRO SOLICITADA:
+            exibirNotificacaoSpa(
+                'Código Incorreto', 
+                'O código digitado está incorreto, verifique e tente novamente!', 
+                '❌'
+            );
+
+            if (msgStatus) {
+                msgStatus.style.color = "#d9534f";
+                msgStatus.textContent = "O código digitado está incorreto, verifique e tente novamente!";
+            }
+        }
+    } catch (err) {
+        console.error("Erro na validação do OTP:", err);
+        exibirNotificacaoSpa('Erro de Conexão', 'Não foi possível conectar ao servidor. Tente novamente.', '🌐');
+    }
+}
         async function carregarMeusAgendamentos() {
             const container = document.getElementById('container-meus-agendamentos');
             if(!usuarioLogado) {
@@ -720,56 +973,95 @@ document.getElementById('contadorPontos').innerText = `${usuarioLogado.pontos ||
             alternarAbas('catalogo');
         }
  
-        async function processarAutenticacao() {
-            const nome = document.getElementById('authNome').value;
-            const email = document.getElementById('authEmail').value.trim();
-            const senha = document.getElementById('authSenha').value;
- 
-            if (!email || !senha || (modoAuth === 'cadastro' && !nome)) {
-                exibirNotificacaoSpa('Atenção', '⚠️ Por favor, preencha todos os campos necessários para prosseguir.', '✨');
-                return;
+       async function processarAutenticacao() {
+    const nome = document.getElementById('authNome').value.trim();
+    const email = document.getElementById('authEmail').value.trim().toLowerCase();
+    const senha = document.getElementById('authSenha').value;
+
+    if (!email || !senha || (modoAuth === 'cadastro' && !nome)) {
+        exibirNotificacaoSpa('Atenção', '⚠️ Por favor, preencha todos os campos necessários para prosseguir.', '✨');
+        return;
+    }
+
+    if (modoAuth === 'cadastro') {
+        const regexSenha = /^(?=.*[a-z])(?=.*[A-Z])(?=.*[@$!%*?&#,.]).{8,}$/;
+        if (!regexSenha.test(senha)) {
+            exibirNotificacaoSpa('Senha Fraca', '⚠️ Sua senha precisa ter no mínimo 8 caracteres, incluindo pelo menos uma letra maiúscula, uma letra minúscula e um caractere especial.', '🔒');
+            return;
+        }
+    }
+
+    // Garante que a URL use o BACKEND_URL se estiver definido ou a rota relativa
+    const baseUrl = typeof BACKEND_URL !== 'undefined' ? BACKEND_URL : '';
+    const urlApi = modoAuth === 'cadastro' ? `${baseUrl}/cadastrar` : `${baseUrl}/api/login`;
+    const payload = modoAuth === 'cadastro' ? { nome, email, senha } : { email, senha };
+
+    try {
+        const response = await fetch(urlApi, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        
+        const data = await response.json();
+
+        if (!response.ok) throw new Error(data.error || "Erro na operação");
+
+        if (modoAuth === 'cadastro') {
+            // 💾 1. Salva o e-mail no navegador e na memória para a validação do OTP
+            const emailFinal = data.email || email;
+            emailParaVerificar = emailFinal;
+            localStorage.setItem('email_em_verificacao', emailFinal);
+
+            // 🏷️ 2. Injeta o e-mail no texto do modal
+            const displayEmail = document.getElementById('email-destino-display');
+            if (displayEmail) displayEmail.textContent = emailFinal;
+
+            // 👁️ 3. Oculta a caixa/tela de cadastro e exibe o modal de 6 dígitos
+            const authBox = document.getElementById('authBox');
+            if (authBox) authBox.classList.remove('ativa');
+
+            const modalOTP = document.getElementById('modal-verificacao');
+            if (modalOTP) {
+                modalOTP.style.display = 'flex'; // Exibe o modal
+                
+                // Limpa campos anteriores de código
+                document.querySelectorAll('.otp-input').forEach(i => i.value = '');
+                
+                // Ativa a automação dos campos (pular de quadradinho)
+                if (typeof inicializarEventosOTP === 'function') {
+                    inicializarEventosOTP();
+                }
+
+                // Foca automaticamente no primeiro campo
+                const primeiroInput = document.querySelector('.otp-input');
+                if (primeiroInput) primeiroInput.focus();
             }
 
-            if (modoAuth === 'cadastro') {
-                const regexSenha = /^(?=.*[a-z])(?=.*[A-Z])(?=.*[@$!%*?&#,.]).{8,}$/;
-                if (!regexSenha.test(senha)) {
-                    exibirNotificacaoSpa('Senha Fraca', '⚠️ Sua senha precisa ter no mínimo 8 caracteres, incluindo pelo menos uma letra maiúscula, uma letra minúscula e um caractere especial.', '🔒');
-                    return;
-                }
+            // Notifica o usuário
+            exibirNotificacaoSpa('Conta Criada', '🎉 Conta criada com sucesso! Digite o código de 6 dígitos enviado ao seu e-mail para ativar.', '✉️');
+            
+            // Limpa o campo de senha
+            document.getElementById('authSenha').value = ''; 
+
+        } else {
+            // --- FLUXO DE LOGIN ---
+            usuarioLogado = data.usuario;
+            localStorage.setItem('usuario_spa', JSON.stringify(usuarioLogado));
+            atualizarPainelUsuario();
+            
+            if (usuarioLogado.is_admin) {
+                alternarAbas('admin');
+            } else {
+                alternarAbas('catalogo');
             }
- 
-            const urlApi = modoAuth === 'cadastro' ? '/cadastrar' : '/api/login';
-            const payload = modoAuth === 'cadastro' ? { nome, email, senha } : { email, senha };
- 
-            try {
-                const response = await fetch(urlApi, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                const data = await response.json();
- 
-                if (!response.ok) throw new Error(data.error || "Erro na operação");
- 
-                if (modoAuth === 'cadastro') {
-                    exibirNotificacaoSpa('Conta Criada', '🎉 Conta criada com sucesso! Enviamos um e-mail de confirmação para você ativar sua conta.', '✉️');
-                    alternarModoAuth();
-                    document.getElementById('authSenha').value = ''; 
-                } else {
-                    usuarioLogado = data.usuario;
-                    localStorage.setItem('usuario_spa', JSON.stringify(usuarioLogado));
-                    atualizarPainelUsuario();
-                    
-                    if(usuarioLogado.is_admin) {
-                        alternarAbas('admin');
-                    } else {
-                        alternarAbas('catalogo');
-                    }
-                }
-            } catch (err) {
-                exibirNotificacaoSpa('Ops!', `Falta de sintonia: ${err.message}`, '🍃');
-            }
+
+            exibirNotificacaoSpa('Boas-vindas', `Olá, ${usuarioLogado.nome || 'Cliente'}! Login realizado com sucesso.`, '✨');
         }
+    } catch (err) {
+        exibirNotificacaoSpa('Ops!', `Falta de sintonia: ${err.message}`, '🍃');
+    }
+}
 
         // 🔑 Funções de Recuperação de Senha
         function abrirModalEsqueciSenha() {
@@ -1302,5 +1594,30 @@ document.getElementById('contadorPontos').innerText = `${usuarioLogado.pontos ||
             </button>
         </div>
     </div>
+
+
+<div id="card-cadastro">
+  <div id="modal-verificacao" style="display: none;">
+    <div class="modal-conteudo">
+        <h3>Verificação de E-mail</h3>
+        <p>Digite o código enviado para <b id="email-destino-display">...</b>:</p>
+        
+        <div class="inputs-codigo">
+            <input type="text" maxlength="1" class="otp-input" pattern="[0-9]*" inputmode="numeric" autofocus />
+            <input type="text" maxlength="1" class="otp-input" pattern="[0-9]*" inputmode="numeric" />
+            <input type="text" maxlength="1" class="otp-input" pattern="[0-9]*" inputmode="numeric" />
+            <input type="text" maxlength="1" class="otp-input" pattern="[0-9]*" inputmode="numeric" />
+            <input type="text" maxlength="1" class="otp-input" pattern="[0-9]*" inputmode="numeric" />
+            <input type="text" maxlength="1" class="otp-input" pattern="[0-9]*" inputmode="numeric" />
+        </div>
+
+        <button type="button" id="btn-confirmar-otp" onclick="confirmarCodigoOTP()">Verificar Conta</button>
+        
+        <p style="margin-top: 15px;"><a href="#" onclick="reenviarCodigoOTP(); return false;" style="color: #6a11cb;">Reenviar código</a></p>
+        <span id="msg-otp-status" style="display: block; margin-top: 10px; font-weight: bold;"></span>
+    </div>
+</div>
+
+<script src="script.js"></script>
 </body>
 </html>

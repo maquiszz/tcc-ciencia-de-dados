@@ -100,50 +100,73 @@ def pagina_cadastro():
 # --- ⚙️ ROTAS DE PROCESSAMENTO DE DADOS (API) ---
 # ==============================================================================
 
+import secrets
+from datetime import datetime, timedelta, timezone
+
 @app.route('/cadastrar', methods=['POST'])
 def cadastrar():
-    dados = request.json
+    dados = request.json or {}
     nome = dados.get('nome')
     email = dados.get('email')
     senha_limpa = dados.get('senha')
 
+    # 1. Validações de campos obrigatórios
     if not nome or not email or not senha_limpa:
         return jsonify({"error": "Nome, e-mail e senha são obrigatórios."}), 400
 
     if "@" not in email or "." not in email.split("@")[-1]:
         return jsonify({"error": "Por favor, insira um e-mail real e válido."}), 400
 
+    # 2. Mantém a criptografia original da senha
     senha_criptografada = generate_password_hash(senha_limpa, method='pbkdf2:sha256')
 
     try:
-        # Cadastra o usuário como não verificado inicialmente
+        # 3. Verifica antecipadamente se o e-mail já está cadastrado
+        checagem = supabase.table("usuarios").select("id").eq("email", email).execute()
+        if checagem.data:
+            return jsonify({"error": "Este e-mail já está cadastrado no sistema."}), 400
+
+        # 4. Gera o código OTP de 6 dígitos e a expiração (15 minutos)
+        codigo_otp = f"{secrets.randbelow(1000000):06d}"
+        expiracao = (datetime.now(timezone.utc) + timedelta(minutes=15)).isoformat()
+
+        # 5. Salva o usuário no Supabase usando 'email_verificado' (corrige o erro PGRST204)
         supabase.table("usuarios").insert({
             "nome": nome, 
             "email": email, 
             "senha": senha_criptografada,
-            "verificado": False
+            "email_verificado": False,  # 👈 Ajustado para o nome correto da coluna
+            "codigo_otp": codigo_otp,
+            "codigo_expira_em": expiracao,
+            "is_admin": False
         }).execute()
 
-        # Gera link de confirmação válido por 1 hora
-        token = serializer.dumps(email, salt='confirmar-email')
-        link_confirmacao = f"http://127.0.0.1:5000/api/confirmar?token={token}"
-
+        # 6. Prepara o template do e-mail com o código numérico
         html_msg = f"""
-        <div style="font-family: Arial, sans-serif; padding: 20px; color: #333;">
-            <h2 style="color: #6a11cb;">Bem-vindo(a) ao Spa Panaceia, {nome}! 🌿</h2>
-            <p>Falta apenas um clique para ativar sua conta de bem-estar.</p>
-            <a href="{link_confirmacao}" style="display: inline-block; padding: 12px 25px; background: #6a11cb; color: white; text-decoration: none; border-radius: 8px; font-weight: bold; margin-top: 15px;">Confirmar Meu E-mail</a>
-            <p style="margin-top: 20px; font-size: 12px; color: #777;">Se você não se cadastrou, ignore esta mensagem.</p>
+        <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 10px; color: #333;">
+            <h2 style="color: #6a11cb; text-align: center;">Bem-vindo(a) ao Spa Panaceia, {nome}! 🌿</h2>
+            <p>Seu código de verificação para ativar a sua conta é:</p>
+            
+            <div style="background-color: #f0f4ff; text-align: center; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                <span style="font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #6a11cb;">{codigo_otp}</span>
+            </div>
+            
+            <p style="font-size: 13px; color: #666; text-align: center;">Este código é válido por 15 minutos.</p>
+            <p style="margin-top: 20px; font-size: 12px; color: #999; text-align: center;">Se você não realizou este cadastro, desconsidere esta mensagem.</p>
         </div>
         """
-        enviar_email_transacional(email, "Confirme sua conta - Spa Panaceia", html_msg)
+        
+        # 7. Dispara o e-mail via API da Brevo
+        enviar_email_transacional(email, "Seu código de ativação - Spa Panaceia", html_msg)
 
-        return jsonify({"message": "Cadastro realizado! Verifique sua caixa de entrada para ativar a conta."}), 201
+        return jsonify({
+            "message": "Cadastro realizado! Digite o código de 6 dígitos enviado ao seu e-mail para ativar a conta.",
+            "email": email
+        }), 201
+
     except Exception as e:
         print(f"❌ Erro ao salvar no banco: {e}")
-        return jsonify({"error": "Erro ao salvar usuário. O e-mail já pode estar em uso."}), 500
-
-
+        return jsonify({"error": "Erro ao criar conta. Tente novamente mais tarde."}), 500
 @app.route('/api/confirmar', methods=['GET'])
 def confirmar_email():
     token = request.args.get('token')
@@ -154,41 +177,96 @@ def confirmar_email():
     except Exception:
         return "<h3>Link inválido ou expirado. Tente se cadastrar novamente.</h3>", 400
 
+from datetime import datetime, timezone
+
+@app.route('/api/validar-codigo', methods=['POST'])
+def validar_codigo():
+    dados = request.json or {}
+    email = dados.get('email')
+    codigo_digitado = dados.get('codigo')
+
+    if not email or not codigo_digitado:
+        return jsonify({"error": "E-mail e código são obrigatórios."}), 400
+
+    try:
+        # Busca o usuário no Supabase
+        res = supabase.table("usuarios").select("*").eq("email", email).execute()
+        
+        if not res.data:
+            return jsonify({"error": "Usuário não encontrado."}), 404
+
+        usuario = res.data[0]
+
+        # 1. Verifica se já está verificado
+        if usuario.get('email_verificado'):
+            return jsonify({"message": "Conta já verificada! Faça login para continuar."}), 200
+
+        # 2. Compara o código digitado com o do banco
+        codigo_salvo = usuario.get('codigo_otp')
+        if str(codigo_salvo) != str(codigo_digitado):
+            return jsonify({"error": "Código de verificação incorreto."}), 400
+
+        # 3. Verifica se o código expirou
+        expiracao_str = usuario.get('codigo_expira_em')
+        if expiracao_str:
+            expiracao = datetime.fromisoformat(expiracao_str.replace('Z', '+00:00'))
+            if datetime.now(timezone.utc) > expiracao:
+                return jsonify({"error": "Código expirado. Solicite um novo código."}), 400
+
+        # 4. Atualiza o status do usuário no Supabase para verificado
+        supabase.table("usuarios").update({
+            "email_verificado": True,
+            "codigo_otp": None,         # Limpa o código usado
+            "codigo_expira_em": None
+        }).eq("email", email).execute()
+
+        return jsonify({"message": "E-mail verificado com sucesso!"}), 200
+
+    except Exception as e:
+        print(f"❌ Erro ao validar código: {e}")
+        return jsonify({"error": "Erro interno ao validar o código."}), 500
 
 @app.route('/api/login', methods=['POST'])
 def login():
-    dados = request.json
-    email = dados.get('email')
-    senha_digitada = dados.get('senha')
+    dados = request.json or {}
+    email = dados.get('email', '').strip().lower()
+    senha = dados.get('senha')
 
-    if not email or not senha_digitada:
+    if not email or not senha:
         return jsonify({"error": "E-mail e senha são obrigatórios."}), 400
 
     try:
-        usuario = supabase.table("usuarios").select("*").eq("email", email).execute()
-        
-        if not usuario.data:
-            return jsonify({"error": "E-mail não encontrado. Por favor, crie uma conta primeiro."}), 404
-        
-        user_db = usuario.data[0]
-        
-        # 🔒 Trava de verificação de e-mail
-        if not user_db.get('verificado', True):
-            return jsonify({"error": "Conta não verificada. Por favor, verifique seu e-mail para ativar o cadastro antes de entrar."}), 403
+        # Busca usuário no Supabase
+        res = supabase.table("usuarios").select("*").eq("email", email).execute()
 
-        senha_banco = user_db.get('senha')
-        
-        if not check_password_hash(senha_banco, senha_digitada):
-            return jsonify({"error": "Senha incorreta. Tente novamente."}), 401
-        
-        # Remove a senha hash do objeto, mantendo o campo 'is_admin' intacto para o frontend
-        user_db.pop('senha', None)
-        
-        return jsonify({"message": "Login realizado com sucesso!", "usuario": user_db}), 200
+        if not res.data:
+            return jsonify({"error": "Usuário não encontrado."}), 404
+
+        usuario = res.data[0]
+
+        # 🔒 Checa se o e-mail foi verificado
+        if not usuario.get('email_verificado'):
+            return jsonify({"error": "Conta não verificada. Verifique seu e-mail antes de entrar."}), 403
+
+        # 🔑 Comparação de Senha via Hash (Werkzeug)
+        senha_hash_banco = usuario.get('senha')
+
+        # O check_password_hash compara a senha digitada em texto puro com o hash gravado no banco
+        if not senha_hash_banco or not check_password_hash(senha_hash_banco, senha):
+            return jsonify({"error": "E-mail ou senha incorretos."}), 401
+
+        return jsonify({
+            "message": "Login realizado com sucesso!",
+            "usuario": {
+                "id": usuario.get('id'),
+                "nome": usuario.get('nome'),
+                "email": usuario.get('email')
+            }
+        }), 200
+
     except Exception as e:
-        print(f"❌ Erro interno no login: {e}")
-        return jsonify({"error": "Erro interno no servidor de autenticação."}), 500
-
+        print(f"❌ Erro no login: {e}")
+        return jsonify({"error": "Erro interno do servidor."}), 500
 
 @app.route('/api/esqueci-senha', methods=['POST'])
 def esqueci_senha():
