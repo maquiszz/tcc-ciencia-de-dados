@@ -107,7 +107,7 @@ from datetime import datetime, timedelta, timezone
 def cadastrar():
     dados = request.json or {}
     nome = dados.get('nome')
-    email = dados.get('email')
+    email = dados.get('email', '').strip().lower()
     senha_limpa = dados.get('senha')
 
     # 1. Validações de campos obrigatórios
@@ -235,38 +235,40 @@ def login():
     if not email or not senha:
         return jsonify({"error": "E-mail e senha são obrigatórios."}), 400
 
+  
     try:
-        # Busca usuário no Supabase
+  
         res = supabase.table("usuarios").select("*").eq("email", email).execute()
-
+  
         if not res.data:
             return jsonify({"error": "Usuário não encontrado."}), 404
 
         usuario = res.data[0]
 
-        # 🔒 Checa se o e-mail foi verificado
+  
         if not usuario.get('email_verificado'):
             return jsonify({"error": "Conta não verificada. Verifique seu e-mail antes de entrar."}), 403
 
-        # 🔑 Comparação de Senha via Hash (Werkzeug)
+  
         senha_hash_banco = usuario.get('senha')
-
-        # O check_password_hash compara a senha digitada em texto puro com o hash gravado no banco
+  
         if not senha_hash_banco or not check_password_hash(senha_hash_banco, senha):
             return jsonify({"error": "E-mail ou senha incorretos."}), 401
 
+        # ✅ FIX: Adicionado is_admin na resposta do JSON
         return jsonify({
             "message": "Login realizado com sucesso!",
             "usuario": {
                 "id": usuario.get('id'),
                 "nome": usuario.get('nome'),
-                "email": usuario.get('email')
+                "email": usuario.get('email'),
+                "is_admin": usuario.get('is_admin', False)  # 👈 ADICIONE ESTA LINHA!
             }
         }), 200
 
     except Exception as e:
         print(f"❌ Erro no login: {e}")
-        return jsonify({"error": "Erro interno do servidor."}), 500
+        return jsonify({"error": "Erro interno no servidor."}), 500
 
 @app.route('/api/esqueci-senha', methods=['POST'])
 def esqueci_senha():
