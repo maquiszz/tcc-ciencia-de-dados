@@ -16,70 +16,6 @@
             align-items: center;
         }
         
-#modal-verificacao {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    background-color: rgba(0, 0, 0, 0.6); /* Fundo escuro semitransparente */
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 999999; /* Garante que fique acima de tudo */
-}
-
-.modal-conteudo {
-    background: #ffffff;
-    padding: 30px;
-    border-radius: 12px;
-    width: 90%;
-    max-width: 400px;
-    text-align: center;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
-}
-
-.inputs-codigo {
-    display: flex;
-    justify-content: center;
-    gap: 8px;
-    margin: 20px 0;
-}
-
-.otp-input {
-    width: 40px;
-    height: 50px;
-    font-size: 22px;
-    font-weight: bold;
-    text-align: center;
-    border: 2px solid #ccc;
-    border-radius: 8px;
-    outline: none;
-}
-
-.otp-input:focus {
-    border-color: #6a11cb;
-}
-
-/* Botão de Verificação */
-#btn-confirmar-otp {
-    width: 100%;
-    padding: 12px;
-    background-color: #6a11cb;
-    color: white;
-    border: none;
-    border-radius: 8px;
-    font-size: 16px;
-    font-weight: bold;
-    cursor: pointer;
-    margin-top: 10px;
-    transition: background 0.3s;
-}
-
-#btn-confirmar-otp:hover {
-    background-color: #530ca8;
-}
-
         /* 🗺️ BARRA DE NAVEGAÇÃO SUPERIOR */
         .navbar-topo {
             display: flex;
@@ -213,7 +149,7 @@
         .btn-remarcar { background: #f39c12; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; }
         .btn-cancelar { background: #e74c3c; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; }
  
-        /* 🗓️ ESTILOS DOS MODAIS */
+        /* 🗓️ ESTILOS DOS MODAIS GERAIS */
         .modal-overlay {
             position: fixed;
             top: 0;
@@ -224,11 +160,18 @@
             display: none;
             justify-content: center;
             align-items: center;
-            backdrop-filter: blur(6px);
-            z-index: 99999 !important;
+            backdrop-filter: blur(4px);
+            z-index: 99999;
         }
+        .modal-overlay.active {
+            display: flex !important;
+        }
+        .modal-overlay.hidden {
+            display: none !important;
+        }
+
         .modal-box {
-            background: rgba(255, 255, 255, 1);
+            background: #ffffff;
             padding: 30px;
             border-radius: 20px;
             width: 90%;
@@ -236,7 +179,6 @@
             box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
             text-align: center;
             position: relative;
-            border: 1px solid rgba(255, 255, 255, 0.2);
         }
         .modal-box h3 { margin-bottom: 15px; color: #333; font-size: 22px; }
         .modal-box label { display: block; text-align: left; margin: 12px 0 5px; font-size: 14px; font-weight: 600; color: #555; }
@@ -293,12 +235,14 @@
         }
         .badge-pendente { background: #fef3c7; color: #d97706; }
         .badge-concluido { background: #d1fae5; color: #059669; }
+        .badge-cancelado { background: #fee2e2; color: #ef4444; }
         .btn-concluir {
             background: #10b981; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 13px; transition: background 0.2s;
         }
         .btn-concluir:hover { background: #059669; }
         .btn-concluir:disabled { background: #cbd5e1; cursor: not-allowed; }
-        /* 🌟 NOVOS ESTILOS DE AVALIAÇÃO */
+        
+        /* 🌟 ESTILOS DE AVALIAÇÃO */
         .badge-bom { background: #d1fae5; color: #069669; }
         .badge-medio { background: #fef3c7; color: #d97706; }
         .badge-ruim { background: #fce8e6; color: #c5221f; }
@@ -317,6 +261,119 @@
             transform: scale(1.05);
         }
 
+        /* 🔢 ESTILOS DO MODAL OTP */
+        #modal-verificacao {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: rgba(0, 0, 0, 0.6);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 999999;
+        }
+
+        .modal-conteudo {
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+        }
+
+        .inputs-codigo {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin: 20px 0;
+        }
+
+        .otp-input {
+            width: 40px;
+            height: 50px;
+            font-size: 22px;
+            font-weight: bold;
+            text-align: center;
+            border: 2px solid #ccc;
+            border-radius: 8px;
+            outline: none;
+        }
+
+        .otp-input:focus {
+            border-color: #6a11cb;
+        }
+
+        #btn-confirmar-otp {
+            width: 100%;
+            padding: 12px;
+            background-color: #6a11cb;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: background 0.3s;
+        }
+
+        #btn-confirmar-otp:hover {
+            background-color: #530ca8;
+        }
+
+        /* ✨ ESTILOS DO MODAL DE NOTIFICAÇÃO */
+        .modal-card {
+            background-color: #ffffff !important;
+            width: 90%;
+            max-width: 380px;
+            padding: 30px 20px;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .modal-icone {
+            font-size: 40px;
+            margin-bottom: 12px;
+        }
+
+        .modal-titulo {
+            font-size: 20px;
+            color: #2d3748;
+            margin-bottom: 8px;
+            font-weight: 700;
+        }
+
+        .modal-card .modal-mensagem {
+            font-size: 14px;
+            color: #4a5568;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+
+        .modal-btn {
+            width: 100%;
+            padding: 12px;
+            background-color: #6a11cb;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .modal-btn:hover {
+            background-color: #530ca8;
+        }
     </style>
 </head>
 <body>
@@ -349,9 +406,7 @@
         </div>
         <button id="btnAuth" onclick="processarAutenticacao()">Entrar</button>
         
-        <!-- 🔑 BOTÃO DE ESQUECI MINHA SENHA -->
         <span style="font-size: 13px; color: #e74c3c; cursor: pointer; margin-top: 10px; display: block;" onclick="abrirModalEsqueciSenha()">Esqueceu sua senha?</span>
-        
         <span id="authToggle" class="auth-toggle" onclick="alternarModoAuth()">Não tem conta? Cadastre-se</span>
     </div>
  
@@ -370,20 +425,21 @@
             <h1>📅 Seus Agendamentos</h1>
             <p>Gerencie seus horários reservados no Spa Panaceia</p>
         </header>
+        
+        <div id="cardFidelidade" style="background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%); color: white; padding: 20px; border-radius: 15px; max-width: 600px; margin: 0 auto 20px auto; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 15px rgba(106,17,203,0.3);">
+            <div>
+                <h4 style="font-size: 18px; margin-bottom: 5px;">🌸 Clube de Fidelidade Panaceia</h4>
+                <p style="font-size: 14px; opacity: 0.9;">Acumule pontos concluindo sessões e troque por benefícios!</p>
+            </div>
+            <div style="text-align: right; background: rgba(255,255,255,0.2); padding: 10px 15px; border-radius: 10px;">
+                <span style="font-size: 12px; display: block; text-transform: uppercase; font-weight: bold;">Seus Pontos</span>
+                <strong id="contadorPontos" style="font-size: 22px;">0 pts</strong>
+            </div>
+        </div>
+
         <div class="lista-agendamentos" id="container-meus-agendamentos">
             <p style="text-align: center;">Por favor, faça login para ver seus agendamentos.</p>
         </div>
-        <!-- 🌟 CARD DE FIDELIDADE DO CLIENTE -->
-    <div id="cardFidelidade" style="background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%); color: white; padding: 20px; border-radius: 15px; max-width: 600px; margin: 0 auto 20px auto; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 15px rgba(106,17,203,0.3);">
-        <div>
-            <h4 style="font-size: 18px; margin-bottom: 5px;">🌸 Clube de Fidelidade Panaceia</h4>
-            <p style="font-size: 14px; opacity: 0.9;">Acumule pontos concluindo sessões e troque por benefícios!</p>
-        </div>
-        <div style="text-align: right; background: rgba(255,255,255,0.2); padding: 10px 15px; border-radius: 10px;">
-            <span style="font-size: 12px; display: block; text-transform: uppercase; font-weight: bold;">Seus Pontos</span>
-            <strong id="contadorPontos" style="font-size: 22px;">0 pts</strong>
-        </div>
-    </div>
     </div>
 
     <div id="secao-admin" class="secao-conteudo">
@@ -391,7 +447,6 @@
             <h1>👑 Painel Gerencial de Administração</h1>
             <p>Monitore os agendamentos globais e valide a realização das sessões</p>
         </header>
-
 
         <div class="admin-container">
             <table class="tabela-admin">
@@ -413,7 +468,9 @@
                 </tbody>
             </table>
         </div>
-    </div> <div id="secao-financeiro" class="secao-conteudo">
+    </div> 
+
+    <div id="secao-financeiro" class="secao-conteudo">
         <header style="margin-bottom: 25px;">
             <h1>📊 Mini Dashboard Financeiro & Estatísticas</h1>
             <p>Visão diária do faturamento, contratos e índice de satisfação do Spa.</p>
@@ -475,7 +532,7 @@
         </div>
     </div>
 
-
+    <!-- MODAIS DE OPERAÇÃO -->
     <div class="modal-overlay" id="agendamentoModal">
         <div class="modal-box">
             <button class="btn-fechar" onclick="fecharModal('agendamentoModal')">&times;</button>
@@ -523,12 +580,22 @@
         </div>
     </div>
 
-    <!-- 🔑 MODAL DE RECUPERAÇÃO DE SENHA -->
+    <!-- MODAL NOTIFICAÇÃO PERSONALIZADO -->
+    <div id="modalNotificacao" class="modal-overlay hidden">
+        <div class="modal-card">
+            <div class="modal-icone" id="modalIcone">✨</div>
+            <h3 id="modalTituloNotificacao" class="modal-titulo">Até logo!</h3>
+            <p id="modalMensagem" class="modal-mensagem">Sua sessão foi encerrada com sucesso.</p>
+            <button id="modalBtn" class="modal-btn" onclick="fecharModalNotificacao()">Compreendido</button>
+        </div>
+    </div>
+
+    <!-- MODAL DE RECUPERAÇÃO DE SENHA -->
     <div class="modal-overlay" id="recuperarSenhaModal">
         <div class="modal-box">
             <button class="btn-fechar" onclick="fecharModal('recuperarSenhaModal')">&times;</button>
             <h3>Recuperar Senha</h3>
-            <p class="modal-mensagem">Digite seu e-mail para receber um código de validação[cite: 2].</p>
+            <p>Digite seu e-mail para receber um código de validação.</p>
             
             <div id="etapaEmailRecup">
                 <label for="recupEmail">E-mail Cadastrado:</label>
@@ -546,7 +613,52 @@
             <p id="recupStatus" style="margin-top: 15px; font-size: 14px; font-weight: 500;"></p>
         </div>
     </div>
- 
+
+    <!-- MODAL VERIFICAÇÃO OTP -->
+    <div id="modal-verificacao" style="display: none;">
+        <div class="modal-conteudo">
+            <h3>Verificação de E-mail</h3>
+            <p>Digite o código enviado para <b id="email-destino-display">...</b>:</p>
+            
+            <div class="inputs-codigo">
+                <input type="text" maxlength="1" class="otp-input" pattern="[0-9]*" inputmode="numeric" autofocus />
+                <input type="text" maxlength="1" class="otp-input" pattern="[0-9]*" inputmode="numeric" />
+                <input type="text" maxlength="1" class="otp-input" pattern="[0-9]*" inputmode="numeric" />
+                <input type="text" maxlength="1" class="otp-input" pattern="[0-9]*" inputmode="numeric" />
+                <input type="text" maxlength="1" class="otp-input" pattern="[0-9]*" inputmode="numeric" />
+                <input type="text" maxlength="1" class="otp-input" pattern="[0-9]*" inputmode="numeric" />
+            </div>
+
+            <button type="button" id="btn-confirmar-otp" onclick="confirmarCodigoOTP()">Verificar Conta</button>
+            <p style="margin-top: 15px;"><a href="#" onclick="return false;" style="color: #6a11cb;">Reenviar código</a></p>
+            <span id="msg-otp-status" style="display: block; margin-top: 10px; font-weight: bold;"></span>
+        </div>
+    </div>
+
+    <!-- 🤖 CHATBOT UI FLUTUANTE -->
+    <button onclick="toggleChat()" style="position: fixed; bottom: 25px; right: 25px; width: 65px; height: 65px; border-radius: 50%; background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%); color: white; border: none; font-size: 28px; cursor: pointer; box-shadow: 0 10px 20px rgba(106, 17, 203, 0.4); z-index: 10000; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
+        ✨
+    </button>
+
+    <div id="chatbotJanela" style="display: none; position: fixed; bottom: 100px; right: 25px; width: 340px; height: 450px; background: white; border-radius: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.2); z-index: 10000; flex-direction: column; overflow: hidden; border: 1px solid #e2e8f0;">
+        <div style="background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%); color: white; padding: 18px; font-weight: bold; display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 16px;">🌿 Orientador Panaceia</span>
+            <button onclick="toggleChat()" style="background: none; border: none; color: white; font-size: 24px; cursor: pointer; line-height: 1;">&times;</button>
+        </div>
+        <div id="chatMensagens" style="flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; background: #f8fafc;">
+            <div style="background: #e2e8f0; color: #333; padding: 12px 15px; border-radius: 15px; border-bottom-left-radius: 4px; max-width: 85%; align-self: flex-start; font-size: 14px; line-height: 1.5;">
+                Olá! Sou o guia virtual do Spa. Me conte o que você está sentindo hoje (estresse, dores no corpo, cansaço) e eu te recomendarei o melhor momento de bem-estar.
+            </div>
+        </div>
+        <div style="padding: 12px; background: white; border-top: 1px solid #e2e8f0; display: flex; gap: 10px; align-items: center;">
+            <input type="text" id="chatInput" placeholder="Como você se sente hoje?" style="flex: 1; padding: 12px; border: 1px solid #cbd5e1; border-radius: 20px; font-size: 14px; outline: none;" onkeypress="if(event.key === 'Enter') enviarMensagemChat()">
+            <button onclick="enviarMensagemChat()" style="background: #10b981; color: white; border: none; width: 42px; height: 42px; border-radius: 50%; cursor: pointer; font-weight: bold; font-size: 18px; display: flex; justify-content: center; align-items: center;">
+                ➤
+            </button>
+        </div>
+    </div>
+
+    <!-- SCRIPT DE LÓGICA PRINCIPAL -->
     <script>
         let servicosDados = [];
         let modoAbas = 'catalogo';
@@ -555,7 +667,9 @@
         const BACKEND_URL = "";
         let chartContratos = null;
         let chartAvaliacoes = null;
- 
+        let acaoAoFecharModal = null;
+        let emailParaVerificar = "";
+
         function toggleDropdownMenu(event) {
             event.stopPropagation();
             if (!usuarioLogado) {
@@ -570,20 +684,42 @@
             if (dropdown) dropdown.classList.remove('ativo');
         });
 
-        function exibirNotificacaoSpa(titulo, texto, icone = '🌿') {
+        function fecharTodosModais() {
+            const modais = ['agendamentoModal', 'reagendamentoModal', 'notificacaoModal', 'confirmarCancelamentoModal', 'recuperarSenhaModal', 'modalNotificacao'];
+            modais.forEach(id => {
+                const el = document.getElementById(id);
+                if(el) {
+                    el.style.display = 'none';
+                    el.classList.remove('active');
+                    el.classList.add('hidden');
+                }
+            });
+        }
+
+        function abrirModal(idModal) {
             fecharTodosModais();
+            const el = document.getElementById(idModal);
+            if (el) {
+                el.classList.remove('hidden');
+                el.classList.add('active');
+                el.style.display = 'flex';
+            }
+        }
+
+        function fecharModal(idModal) {
+            const el = document.getElementById(idModal);
+            if(el) {
+                el.classList.remove('active');
+                el.classList.add('hidden');
+                el.style.display = 'none';
+            }
+        }
+
+        function exibirNotificacaoSpa(titulo, texto, icone = '🌿') {
             document.getElementById('notificacaoIcone').innerText = icone;
             document.getElementById('notificacaoTitulo').innerText = titulo;
             document.getElementById('notificacaoTexto').innerText = texto;
-            document.getElementById('notificacaoModal').style.display = 'flex';
-        }
-
-        function fecharTodosModais() {
-            const modais = ['agendamentoModal', 'reagendamentoModal', 'notificacaoModal', 'confirmarCancelamentoModal', 'recuperarSenhaModal'];
-            modais.forEach(id => {
-                const el = document.getElementById(id);
-                if(el) el.style.display = 'none';
-            });
+            abrirModal('notificacaoModal');
         }
 
         function alternarAbas(aba) {
@@ -639,246 +775,151 @@
             }
         }
  
-       // Dentro da sua função atualizarPainelUsuario():
-    function atualizarPainelUsuario() {
-    const btnGatilho = document.getElementById('btnDropdownGatilho');
-    const dropPerfil = document.getElementById('drop-meu-perfil');
-    const dropAdmin = document.getElementById('drop-admin-painel');
-    const dropFinanceiro = document.getElementById('drop-admin-financeiro');
-    const dropUsuarios = document.getElementById('drop-admin-usuarios');
-    const dropDeslogar = document.getElementById('drop-deslogar');
+        function atualizarPainelUsuario() {
+            const btnGatilho = document.getElementById('btnDropdownGatilho');
+            const dropPerfil = document.getElementById('drop-meu-perfil');
+            const dropAdmin = document.getElementById('drop-admin-painel');
+            const dropFinanceiro = document.getElementById('drop-admin-financeiro');
+            const dropUsuarios = document.getElementById('drop-admin-usuarios');
+            const dropDeslogar = document.getElementById('drop-deslogar');
 
-    // Se NÃO houver usuário logado, esconde TUDO e bota o texto padrão
-    if (!usuarioLogado) {
-        if(btnGatilho) btnGatilho.innerText = "👤 Acessar Conta";
-        if(dropPerfil) dropPerfil.style.display = 'none';
-        if(dropAdmin) dropAdmin.style.display = 'none';
-        if(dropFinanceiro) dropFinanceiro.style.display = 'none';
-        if(dropUsuarios) dropUsuarios.style.display = 'none';
-        if(dropDeslogar) dropDeslogar.style.display = 'none';
-        return;
-    }
-
-    // Se houver usuário logado, muda o texto do botão para o primeiro nome dele
-    const primeiroNome = usuarioLogado.nome ? usuarioLogado.nome.split(' ')[0] : 'Usuário';
-    if(btnGatilho) btnGatilho.innerText = `👤 ${primeiroNome}`;
-    if(dropDeslogar) dropDeslogar.style.display = 'block';
-
-    // Governança de níveis de acesso
-  if (usuarioLogado.is_admin) {
-        if(dropAdmin) dropAdmin.style.display = 'block';
-        if(dropFinanceiro) dropFinanceiro.style.display = 'block';
-        if(dropUsuarios) dropUsuarios.style.display = 'block'; 
-        if(dropPerfil) dropPerfil.style.display = 'none';
-    } else {
-        if(dropPerfil) dropPerfil.style.display = 'block';
-        if(dropAdmin) dropAdmin.style.display = 'none';
-        if(dropFinanceiro) dropFinanceiro.style.display = 'none';
-        if(dropUsuarios) dropUsuarios.style.display = 'none'; 
-}
-    }
-
-// Variable global de fallback
-let emailParaVerificar = "";
-
-// ------------------------------------------------------------------------------
-// ⚡ AUTOMACÃO DOS QUADRADINHOS OTP (Avanço, Recuo e Colar)
-// ------------------------------------------------------------------------------
-function inicializarEventosOTP() {
-    const inputs = document.querySelectorAll('.otp-input');
-
-    inputs.forEach((input, index) => {
-        // Limpa eventos anteriores
-        input.oninput = null;
-        input.onkeydown = null;
-        input.onpaste = null;
-
-        // Avanço automático ao digitar
-        input.addEventListener('input', (e) => {
-            const val = e.target.value;
-            if (val.length >= 1 && index < inputs.length - 1) {
-                inputs[index + 1].focus();
+            if (!usuarioLogado) {
+                if(btnGatilho) btnGatilho.innerText = "👤 Acessar Conta";
+                if(dropPerfil) dropPerfil.style.display = 'none';
+                if(dropAdmin) dropAdmin.style.display = 'none';
+                if(dropFinanceiro) dropFinanceiro.style.display = 'none';
+                if(dropUsuarios) dropUsuarios.style.display = 'none';
+                if(dropDeslogar) dropDeslogar.style.display = 'none';
+                return;
             }
-        });
 
-        // Voltar ao apagar (Backspace)
-        input.addEventListener('keydown', (e) => {
-            if (e.key === 'Backspace' && !e.target.value && index > 0) {
-                inputs[index - 1].focus();
+            const primeiroNome = usuarioLogado.nome ? usuarioLogado.nome.split(' ')[0] : 'Usuário';
+            if(btnGatilho) btnGatilho.innerText = `👤 ${primeiroNome}`;
+            if(dropDeslogar) dropDeslogar.style.display = 'block';
+
+            if (usuarioLogado.is_admin) {
+                if(dropAdmin) dropAdmin.style.display = 'block';
+                if(dropFinanceiro) dropFinanceiro.style.display = 'block';
+                if(dropUsuarios) dropUsuarios.style.display = 'block'; 
+                if(dropPerfil) dropPerfil.style.display = 'none';
+            } else {
+                if(dropPerfil) dropPerfil.style.display = 'block';
+                if(dropAdmin) dropAdmin.style.display = 'none';
+                if(dropFinanceiro) dropFinanceiro.style.display = 'none';
+                if(dropUsuarios) dropUsuarios.style.display = 'none'; 
             }
-        });
+        }
 
-        // Permite colar o código de 6 dígitos de uma vez (Ctrl + V)
-        input.addEventListener('paste', (e) => {
-            e.preventDefault();
-            const colarTexto = (e.clipboardData || window.clipboardData).getData('text').trim();
-            if (/^\d{6}$/.test(colarTexto)) {
-                colarTexto.split('').forEach((char, i) => {
-                    if (inputs[i]) inputs[i].value = char;
+        function inicializarEventosOTP() {
+            const inputs = document.querySelectorAll('.otp-input');
+            inputs.forEach((input, index) => {
+                input.oninput = null;
+                input.onkeydown = null;
+                input.onpaste = null;
+
+                input.addEventListener('input', (e) => {
+                    const val = e.target.value;
+                    if (val.length >= 1 && index < inputs.length - 1) {
+                        inputs[index + 1].focus();
+                    }
                 });
-                inputs[inputs.length - 1].focus();
-            }
-        });
-    });
-}
 
-// ------------------------------------------------------------------------------
-// 1. CADASTRAR USUÁRIO
-// ------------------------------------------------------------------------------
-async function cadastrarUsuario(event) {
-    if (event) {
-        event.preventDefault();
-        event.stopPropagation();
-    }
+                input.addEventListener('keydown', (e) => {
+                    if (e.key === 'Backspace' && !e.target.value && index > 0) {
+                        inputs[index - 1].focus();
+                    }
+                });
 
-    // Pega os valores dos inputs reais e estilizados
-    const nomeInput = document.getElementById('cad-nome');
-    const emailInput = document.getElementById('cad-email');
-    const senhaInput = document.getElementById('cad-senha');
-
-    const nome = nomeInput ? nomeInput.value.trim() : "";
-    const email = emailInput ? emailInput.value.trim().toLowerCase() : "";
-    const senha = senhaInput ? senhaInput.value : "";
-
-    if (!nome || !email || !senha) {
-        alert("Por favor, preencha todos os campos.");
-        return;
-    }
-
-    // 💾 Salva o e-mail imediatamente
-    emailParaVerificar = email;
-    localStorage.setItem('email_em_verificacao', email);
-
-    // Injeta o e-mail no texto do modal
-    const displayEmail = document.getElementById('email-destino-display');
-    if (displayEmail) displayEmail.textContent = email;
-
-    try {
-        const response = await fetch(`${BACKEND_URL}/cadastrar`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ nome, email, senha })
-        });
-
-        const res = await response.json();
-
-        if (response.ok) {
-            // Oculta o formulário/card de cadastro principal (se houver um container envelopando ele)
-            const cardCadastro = document.getElementById('card-cadastro') || document.getElementById('form-cadastro-principal');
-            if (cardCadastro) cardCadastro.style.display = 'none';
-
-            // Exibe o modal de verificação OTP
-            const modalOTP = document.getElementById('modal-verificacao');
-            if (modalOTP) {
-                modalOTP.style.display = 'flex'; // ou 'block'
-                
-                // Limpa e foca no primeiro campo OTP
-                document.querySelectorAll('.otp-input').forEach(i => i.value = '');
-                if (typeof inicializarEventosOTP === 'function') inicializarEventosOTP();
-                
-                const primeiroInput = document.querySelector('.otp-input');
-                if (primeiroInput) primeiroInput.focus();
-            }
-        } else {
-            alert("⚠️ " + (res.error || "Erro no cadastro."));
+                input.addEventListener('paste', (e) => {
+                    e.preventDefault();
+                    const colarTexto = (e.clipboardData || window.clipboardData).getData('text').trim();
+                    if (/^\d{6}$/.test(colarTexto)) {
+                        colarTexto.split('').forEach((char, i) => {
+                            if (inputs[i]) inputs[i].value = char;
+                        });
+                        inputs[inputs.length - 1].focus();
+                    }
+                });
+            });
         }
-    } catch (error) {
-        console.error("Erro no cadastro:", error);
-        alert("Erro de conexão com o servidor.");
-    }
-}
-// ------------------------------------------------------------------------------
-// 2. CONFIRMAR CÓDIGO OTP
-// ------------------------------------------------------------------------------
-async function confirmarCodigoOTP() {
-    // 1. Recupera o e-mail em memória ou localStorage
-    let email = localStorage.getItem('email_em_verificacao') || emailParaVerificar;
-    
-    if (!email) {
-        const display = document.getElementById('email-destino-display');
-        if (display && display.textContent !== "...") {
-            email = display.textContent.trim();
-        }
-    }
 
-    // 2. Coleta os 6 dígitos dos quadradinhos
-    const inputs = document.querySelectorAll('.otp-input');
-    let codigoDigitado = "";
-    inputs.forEach(input => codigoDigitado += input.value.trim());
-
-    if (codigoDigitado.length < 6) {
-        exibirNotificacaoSpa('Código Incompleto', '⚠️ Por favor, preencha todos os 6 dígitos do código.', '🔢');
-        return;
-    }
-
-    const msgStatus = document.getElementById('msg-otp-status');
-    if (msgStatus) {
-        msgStatus.style.color = "#6a11cb";
-        msgStatus.textContent = "Verificando código...";
-    }
-
-    try {
-        const response = await fetch(`${BACKEND_URL}/api/validar-codigo`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: email, codigo: codigoDigitado })
-        });
-
-        const res = await response.json();
-
-        if (response.ok) {
-            // 🟢 MENSAGEM DE SUCESSO SOLICITADA:
-            exibirNotificacaoSpa(
-                'Conta Verificada!', 
-                'Sua conta foi verificada com sucesso! Faça o login e aproveite nossos serviços!', 
-                '🎉'
-            );
-
-            // Limpa o armazenamento temporário
-            localStorage.removeItem('email_em_verificacao');
+        async function confirmarCodigoOTP() {
+            let email = localStorage.getItem('email_em_verificacao') || emailParaVerificar;
             
-            // Oculta o modal OTP
-            const modalOTP = document.getElementById('modal-verificacao');
-            if (modalOTP) modalOTP.style.display = 'none';
-
-            // Alterna para a tela de login
-            if (typeof alternarModoAuth === 'function' && modoAuth === 'cadastro') {
-                alternarModoAuth();
-            }
-            if (typeof alternarAbas === 'function') {
-                alternarAbas('login_tela');
+            if (!email) {
+                const display = document.getElementById('email-destino-display');
+                if (display && display.textContent !== "...") {
+                    email = display.textContent.trim();
+                }
             }
 
-        } else {
-            // 🔴 MENSAGEM DE ERRO SOLICITADA:
-            exibirNotificacaoSpa(
-                'Código Incorreto', 
-                'O código digitado está incorreto, verifique e tente novamente!', 
-                '❌'
-            );
+            const inputs = document.querySelectorAll('.otp-input');
+            let codigoDigitado = "";
+            inputs.forEach(input => codigoDigitado += input.value.trim());
 
+            if (codigoDigitado.length < 6) {
+                exibirNotificacaoSpa('Código Incompleto', '⚠️ Por favor, preencha todos os 6 dígitos do código.', '🔢');
+                return;
+            }
+
+            const msgStatus = document.getElementById('msg-otp-status');
             if (msgStatus) {
-                msgStatus.style.color = "#d9534f";
-                msgStatus.textContent = "O código digitado está incorreto, verifique e tente novamente!";
+                msgStatus.style.color = "#6a11cb";
+                msgStatus.textContent = "Verificando código...";
+            }
+
+            try {
+                const response = await fetch(`${BACKEND_URL}/api/validar-codigo`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: email, codigo: codigoDigitado })
+                });
+
+                const res = await response.json();
+
+                if (response.ok) {
+                    exibirNotificacaoSpa(
+                        'Conta Verificada!', 
+                        'Sua conta foi verificada com sucesso! Faça o login e aproveite nossos serviços!', 
+                        '🎉'
+                    );
+
+                    localStorage.removeItem('email_em_verificacao');
+                    const modalOTP = document.getElementById('modal-verificacao');
+                    if (modalOTP) modalOTP.style.display = 'none';
+
+                    if (typeof alternarModoAuth === 'function' && modoAuth === 'cadastro') {
+                        alternarModoAuth();
+                    }
+                    if (typeof alternarAbas === 'function') {
+                        alternarAbas('login_tela');
+                    }
+                } else {
+                    exibirNotificacaoSpa(
+                        'Código Incorreto', 
+                        'O código digitado está incorreto, verifique e tente novamente!', 
+                        '❌'
+                    );
+
+                    if (msgStatus) {
+                        msgStatus.style.color = "#d9534f";
+                        msgStatus.textContent = "O código digitado está incorreto, verifique e tente novamente!";
+                    }
+                }
+            } catch (err) {
+                console.error("Erro na validação do OTP:", err);
+                exibirNotificacaoSpa('Erro de Conexão', 'Não foi possível conectar ao servidor. Tente novamente.', '🌐');
             }
         }
-    } catch (err) {
-        console.error("Erro na validação do OTP:", err);
-        exibirNotificacaoSpa('Erro de Conexão', 'Não foi possível conectar ao servidor. Tente novamente.', '🌐');
-    }
-}
+
         async function carregarMeusAgendamentos() {
             const container = document.getElementById('container-meus-agendamentos');
             if(!usuarioLogado) {
                 container.innerHTML = '<p style="text-align: center; color: #777;">Faça login acima para visualizar suas reservas ativas.</p>';
                 return;
-document.getElementById('contadorPontos').innerText = `${usuarioLogado.pontos || 0} pts`;
-
-            container.innerHTML = '<p style="text-align: center;">⏳ Buscando suas marcações...</p>';
-            // ... restante da função
-
             }
- 
+
+            document.getElementById('contadorPontos').innerText = `${usuarioLogado.pontos || 0} pts`;
             container.innerHTML = '<p style="text-align: center;">⏳ Buscando suas marcações...</p>';
  
             try {
@@ -950,11 +991,7 @@ document.getElementById('contadorPontos').innerText = `${usuarioLogado.pontos ||
                 });
                 
                 if (response.ok) {
-                    if (typeof exibirNotificacaoSpa === 'function') {
-                        exibirNotificacaoSpa('Obrigado!', 'Sua avaliação foi registrada com sucesso. ✨', '🌸');
-                    } else {
-                        alert('Obrigado! Sua avaliação foi registrada. ✨');
-                    }
+                    exibirNotificacaoSpa('Obrigado!', 'Sua avaliação foi registrada com sucesso. ✨', '🌸');
                     carregarMeusAgendamentos(); 
                 } else {
                     const erroDados = await response.json();
@@ -966,113 +1003,124 @@ document.getElementById('contadorPontos').innerText = `${usuarioLogado.pontos ||
             }
         }
 
+        function exibirModalNotificacao(titulo, mensagem, icone = '✨', aoFechar = null) {
+            document.getElementById('modalTituloNotificacao').innerText = titulo;
+            document.getElementById('modalMensagem').innerText = mensagem;
+            document.getElementById('modalIcone').innerText = icone;
+            
+            acaoAoFecharModal = aoFechar;
+            abrirModal('modalNotificacao');
+        }
+
+        function fecharModalNotificacao() {
+            fecharModal('modalNotificacao');
+            if (typeof acaoAoFecharModal === 'function') {
+                const callback = acaoAoFecharModal;
+                acaoAoFecharModal = null;
+                callback();
+            }
+        }
+
         function deslogar() {
+            const nomeUsuario = usuarioLogado?.nome ? `, ${usuarioLogado.nome}` : '';
+
             localStorage.removeItem('usuario_spa');
             usuarioLogado = null;
             atualizarPainelUsuario();
-            alternarAbas('catalogo');
-        }
- 
-       async function processarAutenticacao() {
-    const nome = document.getElementById('authNome').value.trim();
-    const email = document.getElementById('authEmail').value.trim().toLowerCase();
-    const senha = document.getElementById('authSenha').value;
 
-    if (!email || !senha || (modoAuth === 'cadastro' && !nome)) {
-        exibirNotificacaoSpa('Atenção', '⚠️ Por favor, preencha todos os campos necessários para prosseguir.', '✨');
-        return;
-    }
-
-    if (modoAuth === 'cadastro') {
-        const regexSenha = /^(?=.*[a-z])(?=.*[A-Z])(?=.*[@$!%*?&#,.]).{8,}$/;
-        if (!regexSenha.test(senha)) {
-            exibirNotificacaoSpa('Senha Fraca', '⚠️ Sua senha precisa ter no mínimo 8 caracteres, incluindo pelo menos uma letra maiúscula, uma letra minúscula e um caractere especial.', '🔒');
-            return;
-        }
-    }
-
-    // Garante que a URL use o BACKEND_URL se estiver definido ou a rota relativa
-    const baseUrl = typeof BACKEND_URL !== 'undefined' ? BACKEND_URL : '';
-    const urlApi = modoAuth === 'cadastro' ? `${baseUrl}/cadastrar` : `${baseUrl}/api/login`;
-    const payload = modoAuth === 'cadastro' ? { nome, email, senha } : { email, senha };
-
-    try {
-        const response = await fetch(urlApi, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
-        
-        const data = await response.json();
-
-        if (!response.ok) throw new Error(data.error || "Erro na operação");
-
-        if (modoAuth === 'cadastro') {
-            // 💾 1. Salva o e-mail no navegador e na memória para a validação do OTP
-            const emailFinal = data.email || email;
-            emailParaVerificar = emailFinal;
-            localStorage.setItem('email_em_verificacao', emailFinal);
-
-            // 🏷️ 2. Injeta o e-mail no texto do modal
-            const displayEmail = document.getElementById('email-destino-display');
-            if (displayEmail) displayEmail.textContent = emailFinal;
-
-            // 👁️ 3. Oculta a caixa/tela de cadastro e exibe o modal de 6 dígitos
-            const authBox = document.getElementById('authBox');
-            if (authBox) authBox.classList.remove('ativa');
-
-            const modalOTP = document.getElementById('modal-verificacao');
-            if (modalOTP) {
-                modalOTP.style.display = 'flex'; // Exibe o modal
-                
-                // Limpa campos anteriores de código
-                document.querySelectorAll('.otp-input').forEach(i => i.value = '');
-                
-                // Ativa a automação dos campos (pular de quadradinho)
-                if (typeof inicializarEventosOTP === 'function') {
-                    inicializarEventosOTP();
+            exibirModalNotificacao(
+                'Até logo!',
+                `Volte sempre${nomeUsuario}! Sua sessão foi encerrada com sucesso.`,
+                '✨',
+                function() {
+                    alternarAbas('catalogo');
                 }
-
-                // Foca automaticamente no primeiro campo
-                const primeiroInput = document.querySelector('.otp-input');
-                if (primeiroInput) primeiroInput.focus();
-            }
-
-            // Notifica o usuário
-            exibirNotificacaoSpa('Conta Criada', '🎉 Conta criada com sucesso! Digite o código de 6 dígitos enviado ao seu e-mail para ativar.', '✉️');
-            
-            // Limpa o campo de senha
-            document.getElementById('authSenha').value = ''; 
-
-        } else {
-            // --- FLUXO DE LOGIN ---
-            usuarioLogado = data.usuario;
-            localStorage.setItem('usuario_spa', JSON.stringify(usuarioLogado));
-            atualizarPainelUsuario();
-            
-            if (usuarioLogado.is_admin) {
-                alternarAbas('admin');
-            } else {
-                alternarAbas('catalogo');
-            }
-
-            exibirNotificacaoSpa('Boas-vindas', `Olá, ${usuarioLogado.nome || 'Cliente'}! Login realizado com sucesso.`, '✨');
+            );
         }
-    } catch (err) {
-        exibirNotificacaoSpa('Ops!', `Falta de sintonia: ${err.message}`, '🍃');
-    }
-}
 
-        // 🔑 Funções de Recuperação de Senha
+        async function processarAutenticacao() {
+            const nome = document.getElementById('authNome').value.trim();
+            const email = document.getElementById('authEmail').value.trim().toLowerCase();
+            const senha = document.getElementById('authSenha').value;
+
+            if (!email || !senha || (modoAuth === 'cadastro' && !nome)) {
+                exibirNotificacaoSpa('Atenção', '⚠️ Por favor, preencha todos os campos necessários para prosseguir.', '✨');
+                return;
+            }
+
+            if (modoAuth === 'cadastro') {
+                const regexSenha = /^(?=.*[a-z])(?=.*[A-Z])(?=.*[@$!%*?&#,.]).{8,}$/;
+                if (!regexSenha.test(senha)) {
+                    exibirNotificacaoSpa('Senha Fraca', '⚠️ Sua senha precisa ter no mínimo 8 caracteres, incluindo pelo menos uma letra maiúscula, uma letra minúscula e um caractere especial.', '🔒');
+                    return;
+                }
+            }
+
+            const baseUrl = typeof BACKEND_URL !== 'undefined' ? BACKEND_URL : '';
+            const urlApi = modoAuth === 'cadastro' ? `${baseUrl}/cadastrar` : `${baseUrl}/api/login`;
+            const payload = modoAuth === 'cadastro' ? { nome, email, senha } : { email, senha };
+
+            try {
+                const response = await fetch(urlApi, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                
+                const data = await response.json();
+
+                if (!response.ok) throw new Error(data.error || "Erro na operação");
+
+                if (modoAuth === 'cadastro') {
+                    const emailFinal = data.email || email;
+                    emailParaVerificar = emailFinal;
+                    localStorage.setItem('email_em_verificacao', emailFinal);
+
+                    const displayEmail = document.getElementById('email-destino-display');
+                    if (displayEmail) displayEmail.textContent = emailFinal;
+
+                    const authBox = document.getElementById('authBox');
+                    if (authBox) authBox.classList.remove('ativa');
+
+                    const modalOTP = document.getElementById('modal-verificacao');
+                    if (modalOTP) {
+                        modalOTP.style.display = 'flex';
+                        document.querySelectorAll('.otp-input').forEach(i => i.value = '');
+                        inicializarEventosOTP();
+
+                        const primeiroInput = document.querySelector('.otp-input');
+                        if (primeiroInput) primeiroInput.focus();
+                    }
+
+                    exibirNotificacaoSpa('Conta Criada', '🎉 Conta criada com sucesso! Digite o código de 6 dígitos enviado ao seu e-mail para ativar.', '✉️');
+                    document.getElementById('authSenha').value = ''; 
+
+                } else {
+                    usuarioLogado = data.usuario;
+                    localStorage.setItem('usuario_spa', JSON.stringify(usuarioLogado));
+                    atualizarPainelUsuario();
+
+                    if (usuarioLogado.is_admin) {
+                        alternarAbas('admin');
+                    } else {
+                        alternarAbas('catalogo');
+                    }
+
+                    exibirNotificacaoSpa('Boas-vindas', `Olá, ${usuarioLogado.nome || 'Cliente'}! Login realizado com sucesso.`, '✨');
+                }
+            } catch (err) {
+                exibirNotificacaoSpa('Ops!', `Falta de sintonia: ${err.message}`, '🍃');
+            }
+        }
+
         function abrirModalEsqueciSenha() {
-            fecharTodosModais();
             document.getElementById('recupEmail').value = '';
             document.getElementById('recupCodigo').value = '';
             document.getElementById('recupNovaSenha').value = '';
             document.getElementById('etapaEmailRecup').style.display = 'block';
             document.getElementById('etapaCodigoRecup').style.display = 'none';
             document.getElementById('recupStatus').innerText = '';
-            document.getElementById('recuperarSenhaModal').style.display = 'flex';
+            abrirModal('recuperarSenhaModal');
         }
 
         async function solicitarCodigoRecuperacao() {
@@ -1116,8 +1164,8 @@ document.getElementById('contadorPontos').innerText = `${usuarioLogado.pontos ||
                 });
                 const data = await res.json();
                 if(res.ok) {
-                    exibirNotificacaoSpa("Sucesso!", data.message, "✨");
                     fecharModal('recuperarSenhaModal');
+                    exibirNotificacaoSpa("Sucesso!", data.message, "✨");
                 } else {
                     status.style.color = "red"; status.innerText = data.error;
                 }
@@ -1141,8 +1189,6 @@ document.getElementById('contadorPontos').innerText = `${usuarioLogado.pontos ||
                 }
  
                 servicosDados.forEach(servico => {
-                    const descricaoTratada = (servico.descricao || "Sem descrição disponível para este serviço no momento.").replace(/'/g, "\\'");
-
                     const cardHtml = `
                         <div class="card">
                             <img src="${servico.imagem_url || 'https://images.unsplash.com/photo-1600334089648-b0d9d3028eb2?w=500'}" alt="${servico.tipo}">
@@ -1153,7 +1199,7 @@ document.getElementById('contadorPontos').innerText = `${usuarioLogado.pontos ||
                                 </div>
                                 <div>
                                     <p class="card-contratos">Contratado ${servico.contratos} vezes</p>
-                                    <button class="btn-contratar" onclick="abrirModalAgendamento(${servico.id}, '${servico.tipo}', '${descricaoTratada}')">Agendar Serviço</button>
+                                    <button class="btn-contratar" onclick="abrirModalAgendamentoPorId(${servico.id})">Agendar Serviço</button>
                                 </div>
                             </div>
                         </div>
@@ -1163,6 +1209,12 @@ document.getElementById('contadorPontos').innerText = `${usuarioLogado.pontos ||
             } catch (error) {
                 container.innerHTML = '<p style="text-align: center; color: red;">❌ Erro ao carregar os serviços da API.</p>';
             }
+        }
+
+        function abrirModalAgendamentoPorId(servicoId) {
+            const servico = servicosDados.find(s => s.id === servicoId);
+            if (!servico) return;
+            abrirModalAgendamento(servico.id, servico.tipo, servico.descricao || "Sem descrição disponível para este serviço no momento.");
         }
  
         function abrirModalAgendamento(id, tipo, descricao) {
@@ -1191,12 +1243,7 @@ document.getElementById('contadorPontos').innerText = `${usuarioLogado.pontos ||
             campoData.value = ""; 
             
             document.getElementById('modalStatus').innerText = '';
-            document.getElementById('agendamentoModal').style.display = 'flex';
-        }
- 
-        function fecharModal(idModal) {
-            const el = document.getElementById(idModal);
-            if(el) el.style.display = 'none';
+            abrirModal('agendamentoModal');
         }
  
         async function enviarAgendamento() {
@@ -1229,130 +1276,127 @@ document.getElementById('contadorPontos').innerText = `${usuarioLogado.pontos ||
         }
  
         async function carregarAgendamentosAdmin() {
-    const container = document.getElementById('container-admin-agendamentos'); 
-    if (!usuarioLogado || !usuarioLogado.is_admin) return;
+            const container = document.getElementById('container-admin-agendamentos'); 
+            if (!usuarioLogado || !usuarioLogado.is_admin) return;
 
-    try {
-        const response = await fetch(`${BACKEND_URL}/api/admin/agendamentos?admin_email=${usuarioLogado.email}`);
-        const agendamentos = await response.json(); 
-        
-        if (container) container.innerHTML = '';
+            try {
+                const response = await fetch(`${BACKEND_URL}/api/admin/agendamentos?admin_email=${usuarioLogado.email}`);
+                const agendamentos = await response.json(); 
+                
+                if (container) container.innerHTML = '';
 
-        if (!response.ok || agendamentos.error) {
-            if (container) container.innerHTML = `<tr><td colspan="7" style="text-align: center; color: red; font-weight: bold;">❌ Erro do Servidor: ${agendamentos.error || 'Falha desconhecida'}</td></tr>`;
-            return;
-        }
-
-        let faturamento = 0;
-        let totalContratos = agendamentos.length;
-        let pendentes = 0;
-        let concluidos = 0;
-        let cancelados = 0; 
-        let avalBom = 0;
-        let avalMedio = 0;
-        let avalRuim = 0;
-
-        if (agendamentos.length === 0) {
-            if (container) container.innerHTML = '<tr><td colspan="7" style="text-align: center;">Nenhum agendamento global encontrado.</td></tr>';
-            return;
-        }
-
-        agendamentos.forEach(ag => {
-            const dataFormatada = new Date(ag.data_atendimento).toLocaleString('pt-BR');
-            const servicoNome = ag.servico ? ag.servico.tipo : 'N/A';
-            const valorNumerico = parseFloat(ag.servico?.valor || 0);
-            const servicoValor = ag.servico ? `R$ ${valorNumerico.toFixed(2).replace('.', ',')}` : 'N/A';
-            const agendStatus = ag.status || 'Pendente';
-            
-            if (agendStatus === 'Concluido') {
-                concluidos++;
-                faturamento += valorNumerico; 
-            } else if (agendStatus === 'Cancelado') {
-                cancelados++; 
-            } else {
-                pendentes++; 
-            }
-
-            if (ag.avaliacao === 'Bom') avalBom++;
-            else if (ag.avaliacao === 'Médio') avalMedio++;
-            else if (ag.avaliacao === 'Ruim') avalRuim++;
-
-            if (container) {
-                let badgeAvaliacao = "<i style='color: #aaa;'>Sem avaliação</i>";
-                if (ag.avaliacao) {
-                    if (ag.avaliacao === "Bom") badgeAvaliacao = `<span class="badge-status badge-bom">😊 Bom</span>`;
-                    else if (ag.avaliacao === "Médio") badgeAvaliacao = `<span class="badge-status badge-medio">😐 Médio</span>`;
-                    else if (ag.avaliacao === "Ruim") badgeAvaliacao = `<span class="badge-status badge-ruim">🙁 Ruim</span>`;
+                if (!response.ok || agendamentos.error) {
+                    if (container) container.innerHTML = `<tr><td colspan="7" style="text-align: center; color: red; font-weight: bold;">❌ Erro do Servidor: ${agendamentos.error || 'Falha desconhecida'}</td></tr>`;
+                    return;
                 }
 
-                let botaoAcao = '';
-                if (agendStatus === 'Concluido') {
-                    botaoAcao = `<span style="color: #10b981; font-weight: bold;">✓ Finalizado</span>`;
-                } else if (agendStatus === 'Cancelado') {
-                    botaoAcao = `<span style="color: #ef4444; font-weight: bold;">✕ Cancelado</span>`;
-                } else {
-                    botaoAcao = `<button class="btn-concluir" onclick="concluirAgendamentoAdmin(${ag.id})">Concluir</button>`;
+                let faturamento = 0;
+                let totalContratos = agendamentos.length;
+                let pendentes = 0;
+                let concluidos = 0;
+                let cancelados = 0; 
+                let avalBom = 0;
+                let avalMedio = 0;
+                let avalRuim = 0;
+
+                if (agendamentos.length === 0) {
+                    if (container) container.innerHTML = '<tr><td colspan="7" style="text-align: center;">Nenhum agendamento global encontrado.</td></tr>';
+                    return;
                 }
 
-                container.innerHTML += `
-                    <tr>
-                        <td>${ag.email_cliente}</td>
-                        <td>${servicoNome}</td>
-                        <td>${dataFormatada}</td>
-                        <td>${servicoValor}</td>
-                        <td><span class="badge-status ${agendStatus === 'Concluido' ? 'badge-concluido' : agendStatus === 'Cancelado' ? 'badge-cancelado' : 'badge-pendente'}">${agendStatus}</span></td>
-                        <td>${badgeAvaliacao}</td>
-                        <td>${botaoAcao}</td>
-                    </tr>
-                `;
+                agendamentos.forEach(ag => {
+                    const dataFormatada = new Date(ag.data_atendimento).toLocaleString('pt-BR');
+                    const servicoNome = ag.servico ? ag.servico.tipo : 'N/A';
+                    const valorNumerico = parseFloat(ag.servico?.valor || 0);
+                    const servicoValor = ag.servico ? `R$ ${valorNumerico.toFixed(2).replace('.', ',')}` : 'N/A';
+                    const agendStatus = ag.status || 'Pendente';
+                    
+                    if (agendStatus === 'Concluido') {
+                        concluidos++;
+                        faturamento += valorNumerico; 
+                    } else if (agendStatus === 'Cancelado') {
+                        cancelados++; 
+                    } else {
+                        pendentes++; 
+                    }
+
+                    if (ag.avaliacao === 'Bom') avalBom++;
+                    else if (ag.avaliacao === 'Médio') avalMedio++;
+                    else if (ag.avaliacao === 'Ruim') avalRuim++;
+
+                    if (container) {
+                        let badgeAvaliacao = "<i style='color: #aaa;'>Sem avaliação</i>";
+                        if (ag.avaliacao) {
+                            if (ag.avaliacao === "Bom") badgeAvaliacao = `<span class="badge-status badge-bom">😊 Bom</span>`;
+                            else if (ag.avaliacao === "Médio") badgeAvaliacao = `<span class="badge-status badge-medio">😐 Médio</span>`;
+                            else if (ag.avaliacao === "Ruim") badgeAvaliacao = `<span class="badge-status badge-ruim">🙁 Ruim</span>`;
+                        }
+
+                        let botaoAcao = '';
+                        if (agendStatus === 'Concluido') {
+                            botaoAcao = `<span style="color: #10b981; font-weight: bold;">✓ Finalizado</span>`;
+                        } else if (agendStatus === 'Cancelado') {
+                            botaoAcao = `<span style="color: #ef4444; font-weight: bold;">✕ Cancelado</span>`;
+                        } else {
+                            botaoAcao = `<button class="btn-concluir" onclick="concluirAgendamentoAdmin(${ag.id})">Concluir</button>`;
+                        }
+
+                        container.innerHTML += `
+                            <tr>
+                                <td>${ag.email_cliente}</td>
+                                <td>${servicoNome}</td>
+                                <td>${dataFormatada}</td>
+                                <td>${servicoValor}</td>
+                                <td><span class="badge-status ${agendStatus === 'Concluido' ? 'badge-concluido' : agendStatus === 'Cancelado' ? 'badge-cancelado' : 'badge-pendente'}">${agendStatus}</span></td>
+                                <td>${badgeAvaliacao}</td>
+                                <td>${botaoAcao}</td>
+                            </tr>
+                        `;
+                    }
+                });
+
+                const cardFaturamento = document.getElementById('fin-faturamento');
+                if (cardFaturamento) {
+                    cardFaturamento.innerText = `R$ ${faturamento.toFixed(2).replace('.', ',')}`;
+                    document.getElementById('fin-total').innerText = totalContratos;
+                    document.getElementById('fin-pendentes').innerText = pendentes;
+                    document.getElementById('fin-concluidos').innerText = concluidos;
+                }
+
+                const ctxContratos = document.getElementById('graficoContratos');
+                if (ctxContratos) {
+                    if (chartContratos) chartContratos.destroy();
+                    chartContratos = new Chart(ctxContratos, {
+                        type: 'doughnut',
+                        data: {
+                            labels: ['Pendentes', 'Concluídos', 'Cancelados'],
+                            datasets: [{ 
+                                data: [pendentes, concluidos, cancelados], 
+                                backgroundColor: ['#d97706', '#059669', '#ef4444'], 
+                                borderWidth: 1 
+                            }]
+                        },
+                        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } } } }
+                    });
+                }
+
+                const ctxAvaliacoes = document.getElementById('graficoAvaliacoes');
+                if (ctxAvaliacoes) {
+                    if (chartAvaliacoes) chartAvaliacoes.destroy();
+                    chartAvaliacoes = new Chart(ctxAvaliacoes, {
+                        type: 'bar',
+                        data: {
+                            labels: ['😊 Bom', '😐 Médio', '🙁 Ruim'],
+                            datasets: [{ data: [avalBom, avalMedio, avalRuim], backgroundColor: ['#10b981', '#f59e0b', '#ef4444'], borderRadius: 4 }]
+                        },
+                        options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { ticks: { stepSize: 1 } } } }
+                    });
+                }
+
+            } catch (error) {
+                console.error("Erro detalhado no dashboard financeiro:", error);
             }
-        });
-
-        const cardFaturamento = document.getElementById('fin-faturamento');
-        if (cardFaturamento) {
-            cardFaturamento.innerText = `R$ ${faturamento.toFixed(2).replace('.', ',')}`;
-            document.getElementById('fin-total').innerText = totalContratos;
-            document.getElementById('fin-pendentes').innerText = pendentes;
-            document.getElementById('fin-concluidos').innerText = concluidos;
-            
-            const cardCancelados = document.getElementById('fin-cancelados');
-            if (cardCancelados) cardCancelados.innerText = cancelados;
         }
-
-        const ctxContratos = document.getElementById('graficoContratos');
-        if (ctxContratos) {
-            if (chartContratos) chartContratos.destroy();
-            chartContratos = new Chart(ctxContratos, {
-                type: 'doughnut',
-                data: {
-                    labels: ['Pendentes', 'Concluídos', 'Cancelados'],
-                    datasets: [{ 
-                        data: [pendentes, concluidos, cancelados], 
-                        backgroundColor: ['#d97706', '#059669', '#ef4444'], 
-                        borderWidth: 1 
-                    }]
-                },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } } } }
-            });
-        }
-
-        const ctxAvaliacoes = document.getElementById('graficoAvaliacoes');
-        if (ctxAvaliacoes) {
-            if (chartAvaliacoes) chartAvaliacoes.destroy();
-            chartAvaliacoes = new Chart(ctxAvaliacoes, {
-                type: 'bar',
-                data: {
-                    labels: ['😊 Bom', '😐 Médio', '🙁 Ruim'],
-                    datasets: [{ data: [avalBom, avalMedio, avalRuim], backgroundColor: ['#10b981', '#f59e0b', '#ef4444'], borderRadius: 4 }]
-                },
-                options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { ticks: { stepSize: 1 } } } }
-            });
-        }
-
-    } catch (error) {
-        console.error("Erro detalhado no dashboard financeiro:", error);
-    }
-}
         
         async function concluirAgendamentoAdmin(id) {
             try {
@@ -1376,7 +1420,6 @@ document.getElementById('contadorPontos').innerText = `${usuarioLogado.pontos ||
         }
         
         function abrirModalRemarcar(id) {
-            fecharTodosModais();
             document.getElementById('reagendarId').value = id;
             
             const campoNovaData = document.getElementById('novaData');
@@ -1391,7 +1434,7 @@ document.getElementById('contadorPontos').innerText = `${usuarioLogado.pontos ||
             campoNovaData.value = "";
 
             document.getElementById('reagendarStatus').innerText = '';
-            document.getElementById('reagendamentoModal').style.display = 'flex';
+            abrirModal('reagendamentoModal');
         }
  
         async function salvarRemarcacao() {
@@ -1420,9 +1463,8 @@ document.getElementById('contadorPontos').innerText = `${usuarioLogado.pontos ||
         }
  
         function solicitarCancelamento(id) {
-            fecharTodosModais();
             document.getElementById('cancelarAgendamentoId').value = id;
-            document.getElementById('confirmarCancelamentoModal').style.display = 'flex';
+            abrirModal('confirmarCancelamentoModal');
         }
 
         async function ejecutarCancelamentoConfirmado() {
@@ -1497,10 +1539,6 @@ document.getElementById('contadorPontos').innerText = `${usuarioLogado.pontos ||
             }
         }
 
-        document.addEventListener("DOMContentLoaded", () => {
-            carregarAgendamentosAdmin();
-        });
-
         function toggleVisibilidadeSenha() {
             const campoSenha = document.getElementById('authSenha');
             if (campoSenha.type === 'password') {
@@ -1509,16 +1547,6 @@ document.getElementById('contadorPontos').innerText = `${usuarioLogado.pontos ||
                 campoSenha.type = 'password';
             }
         }
-
-        window.onload = function() {
-            const usuarioSalvo = localStorage.getItem('usuario_spa');
-            if (usuarioSalvo) {
-                usuarioLogado = JSON.parse(usuarioSalvo);
-            }
-            
-            atualizarPainelUsuario();
-            alternarAbas('catalogo'); 
-        };
 
         function toggleChat() {
             const janela = document.getElementById('chatbotJanela');
@@ -1570,54 +1598,16 @@ document.getElementById('contadorPontos').innerText = `${usuarioLogado.pontos ||
             }
             chatMensagens.scrollTop = chatMensagens.scrollHeight;
         }
+
+        window.onload = function() {
+            const usuarioSalvo = localStorage.getItem('usuario_spa');
+            if (usuarioSalvo) {
+                usuarioLogado = JSON.parse(usuarioSalvo);
+            }
+            
+            atualizarPainelUsuario();
+            alternarAbas('catalogo'); 
+        };
     </script>
-
-    <!-- 🤖 CHATBOT UI FLUTUANTE -->
-    <button onclick="toggleChat()" style="position: fixed; bottom: 25px; right: 25px; width: 65px; height: 65px; border-radius: 50%; background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%); color: white; border: none; font-size: 28px; cursor: pointer; box-shadow: 0 10px 20px rgba(106, 17, 203, 0.4); z-index: 10000; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
-        ✨
-    </button>
-
-    <div id="chatbotJanela" style="display: none; position: fixed; bottom: 100px; right: 25px; width: 340px; height: 450px; background: white; border-radius: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.2); z-index: 10000; flex-direction: column; overflow: hidden; border: 1px solid #e2e8f0;">
-        <div style="background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%); color: white; padding: 18px; font-weight: bold; display: flex; justify-content: space-between; align-items: center;">
-            <span style="font-size: 16px;">🌿 Orientador Panaceia</span>
-            <button onclick="toggleChat()" style="background: none; border: none; color: white; font-size: 24px; cursor: pointer; line-height: 1;">&times;</button>
-        </div>
-        <div id="chatMensagens" style="flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; background: #f8fafc;">
-            <div style="background: #e2e8f0; color: #333; padding: 12px 15px; border-radius: 15px; border-bottom-left-radius: 4px; max-width: 85%; align-self: flex-start; font-size: 14px; line-height: 1.5;">
-                Olá! Sou o guia virtual do Spa. Me conte o que você está sentindo hoje (estresse, dores no corpo, cansaço) e eu te recomendarei o melhor momento de bem-estar.
-            </div>
-        </div>
-        <div style="padding: 12px; background: white; border-top: 1px solid #e2e8f0; display: flex; gap: 10px; align-items: center;">
-            <input type="text" id="chatInput" placeholder="Como você se sente hoje?" style="flex: 1; padding: 12px; border: 1px solid #cbd5e1; border-radius: 20px; font-size: 14px; outline: none;" onkeypress="if(event.key === 'Enter') enviarMensagemChat()">
-            <button onclick="enviarMensagemChat()" style="background: #10b981; color: white; border: none; width: 42px; height: 42px; border-radius: 50%; cursor: pointer; font-weight: bold; font-size: 18px; display: flex; justify-content: center; align-items: center;">
-                ➤
-            </button>
-        </div>
-    </div>
-
-
-<div id="card-cadastro">
-  <div id="modal-verificacao" style="display: none;">
-    <div class="modal-conteudo">
-        <h3>Verificação de E-mail</h3>
-        <p>Digite o código enviado para <b id="email-destino-display">...</b>:</p>
-        
-        <div class="inputs-codigo">
-            <input type="text" maxlength="1" class="otp-input" pattern="[0-9]*" inputmode="numeric" autofocus />
-            <input type="text" maxlength="1" class="otp-input" pattern="[0-9]*" inputmode="numeric" />
-            <input type="text" maxlength="1" class="otp-input" pattern="[0-9]*" inputmode="numeric" />
-            <input type="text" maxlength="1" class="otp-input" pattern="[0-9]*" inputmode="numeric" />
-            <input type="text" maxlength="1" class="otp-input" pattern="[0-9]*" inputmode="numeric" />
-            <input type="text" maxlength="1" class="otp-input" pattern="[0-9]*" inputmode="numeric" />
-        </div>
-
-        <button type="button" id="btn-confirmar-otp" onclick="confirmarCodigoOTP()">Verificar Conta</button>
-        
-        <p style="margin-top: 15px;"><a href="#" onclick="reenviarCodigoOTP(); return false;" style="color: #6a11cb;">Reenviar código</a></p>
-        <span id="msg-otp-status" style="display: block; margin-top: 10px; font-weight: bold;"></span>
-    </div>
-</div>
-
-<script src="script.js"></script>
 </body>
 </html>
