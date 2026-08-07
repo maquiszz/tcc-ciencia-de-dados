@@ -8,6 +8,8 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from flask_cors import CORS  # 1. Importe o CORS
 import requests
 from itsdangerous import URLSafeTimedSerializer
+import traceback
+from flask import request, jsonify
 
 app = Flask(__name__)
 CORS(app, resources={r"/api/*": {"origins": ["http://127.0.0.1:5500", "http://localhost:5500", "https://seu-site-hospedado.com"]}})
@@ -272,20 +274,27 @@ def login():
 
 @app.route('/api/esqueci-senha', methods=['POST'])
 def esqueci_senha():
-    dados = request.json
-    email = dados.get('email')
+    dados = request.json or {}
+    email = dados.get('email', '').strip().lower()
 
     if not email:
         return jsonify({"error": "Informe seu e-mail cadastrado."}), 400
 
     try:
-        usuario = supabase.table("usuarios").select("*").eq("email", email).execute()
+        # 1. Verifica se o usuário existe
+        usuario = supabase.table("usuarios").select("id").eq("email", email).execute()
+        
         if not usuario.data:
-            return jsonify({"error": "E-mail não encontrado em nossa base."}), 404
+            # Retorna mensagem genérica para não expor e-mails cadastrados
+            return jsonify({"message": "Se o e-mail estiver cadastrado, você receberá o código de recuperação."}), 200
 
-        codigo = str(random.randint(100000, 999999))
+        # 2. Gera um código numérico de 6 dígitos
+        codigo = f"{random.randint(100000, 999999):06d}"
+
+        # 3. Salva o código na coluna token_recuperacao
         supabase.table("usuarios").update({"token_recuperacao": codigo}).eq("email", email).execute()
 
+        # 4. Envia o e-mail
         html_msg = f"""
         <div style="font-family: Arial, sans-serif; padding: 20px; color: #333;">
             <h3 style="color: #6a11cb;">Recuperação de Senha - Spa Panaceia 🌸</h3>
@@ -295,43 +304,57 @@ def esqueci_senha():
         </div>
         """
         enviar_email_transacional(email, "Código de Recuperação de Senha", html_msg)
+
         return jsonify({"message": "Código de recuperação enviado para o seu e-mail!"}), 200
+
     except Exception as e:
-        print(f"❌ Erro no esqueci senha: {e}")
-        return jsonify({"error": "Erro interno ao processar recuperação."}), 500
+        print("❌ Erro no /api/esqueci-senha:")
+        traceback.print_exc()
+        return jsonify({"error": "Erro ao processar a solicitação."}), 500
 
 
 @app.route('/api/redefinir-senha', methods=['POST'])
 def redefinir_senha():
-    dados = request.json
-    email = dados.get('email')
-    codigo = dados.get('codigo')
-    nova_senha = dados.get('nova_senha')
+    dados = request.json or {}
+    email = dados.get('email', '').strip().lower()
+    codigo = str(dados.get('codigo', '')).strip()
+    nova_senha = dados.get('nova_senha', '').strip()
 
     if not email or not codigo or not nova_senha:
         return jsonify({"error": "Preencha todos os campos."}), 400
 
+    if len(nova_senha) < 6:
+        return jsonify({"error": "A senha deve ter no mínimo 6 caracteres."}), 400
+
     try:
-        usuario = supabase.table("usuarios").select("*").eq("email", email).execute()
+        # 1. Busca o token salvo no banco para o e-mail
+        usuario = supabase.table("usuarios").select("token_recuperacao").eq("email", email).execute()
+        
         if not usuario.data:
             return jsonify({"error": "Usuário não encontrado."}), 404
 
-        user_db = usuario.data[0]
-        if user_db.get('token_recuperacao') != codigo:
+        token_salvo = str(usuario.data[0].get('token_recuperacao') or '')
+
+        # 2. Valida o código digitado
+        if not token_salvo or token_salvo != codigo:
             return jsonify({"error": "Código de verificação incorreto."}), 400
 
-        senha_criptografada = generate_password_hash(nova_senha, method='pbkdf2:sha256')
+        # 3. Criptografa a nova senha e limpa o token
+        senha_hash = generate_password_hash(nova_senha, method='pbkdf2:sha256')
         
         supabase.table("usuarios").update({
-            "senha": senha_criptografada,
+            "senha": senha_hash,
             "token_recuperacao": None
         }).eq("email", email).execute()
 
-        return jsonify({"message": "Senha redefinida com sucesso! Faça login com a nova senha."}), 200
+        return jsonify({"message": "Senha redefinida com sucesso! Faça login para continuar."}), 200
+
     except Exception as e:
-        return jsonify({"error": "Erro ao redefinir senha."}), 500
-
-
+        print("❌ Erro no /api/redefinir-senha:")
+        traceback.print_exc()
+        return jsonify({"error": "Erro ao redefinir a senha."}), 500
+    
+    
 @app.route('/api/servicos', methods=['GET'])
 def listar_servicos():
     try:

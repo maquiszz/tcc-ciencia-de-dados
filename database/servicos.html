@@ -1114,66 +1114,98 @@
         }
 
         function abrirModalEsqueciSenha() {
-            document.getElementById('recupEmail').value = '';
-            document.getElementById('recupCodigo').value = '';
-            document.getElementById('recupNovaSenha').value = '';
-            document.getElementById('etapaEmailRecup').style.display = 'block';
-            document.getElementById('etapaCodigoRecup').style.display = 'none';
-            document.getElementById('recupStatus').innerText = '';
-            abrirModal('recuperarSenhaModal');
+    document.getElementById('recupEmail').value = '';
+    document.getElementById('recupCodigo').value = '';
+    document.getElementById('recupNovaSenha').value = '';
+    
+    document.getElementById('etapaEmailRecup').style.display = 'block';
+    document.getElementById('etapaCodigoRecup').style.display = 'none';
+    
+    const status = document.getElementById('recupStatus');
+    status.innerText = '';
+    
+    abrirModal('recuperarSenhaModal');
+}
+
+async function solicitarCodigoRecuperacao() {
+    const email = document.getElementById('recupEmail').value.trim();
+    const status = document.getElementById('recupStatus');
+
+    if (!email) {
+        status.style.color = "red";
+        status.innerText = "Informe seu e-mail.";
+        return;
+    }
+
+    status.style.color = "#555";
+    status.innerText = "Enviando código...";
+
+    try {
+        const res = await fetch('/api/esqueci-senha', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email })
+        });
+        const data = await res.json();
+
+        if (res.ok) {
+            status.style.color = "green";
+            status.innerText = data.message;
+            
+            // Transiciona para a etapa de digitação do código e nova senha
+            document.getElementById('etapaEmailRecup').style.display = 'none';
+            document.getElementById('etapaCodigoRecup').style.display = 'block';
+        } else {
+            status.style.color = "red";
+            status.innerText = data.error || "Erro ao solicitar código.";
         }
+    } catch (e) {
+        status.style.color = "red";
+        status.innerText = "Erro de conexão com o servidor.";
+    }
+}
 
-        async function solicitarCodigoRecuperacao() {
-            const email = document.getElementById('recupEmail').value.trim();
-            const status = document.getElementById('recupStatus');
-            if(!email) { status.style.color = "red"; status.innerText = "Informe seu e-mail."; return; }
+async function salvarNovaSenha() {
+    const email = document.getElementById('recupEmail').value.trim();
+    const codigo = document.getElementById('recupCodigo').value.trim();
+    const nova_senha = document.getElementById('recupNovaSenha').value.trim();
+    const status = document.getElementById('recupStatus');
 
-            status.style.color = "#555"; status.innerText = "Enviando código...";
-            try {
-                const res = await fetch('/api/esqueci-senha', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email })
-                });
-                const data = await res.json();
-                if(res.ok) {
-                    status.style.color = "green"; status.innerText = data.message;
-                    document.getElementById('etapaEmailRecup').style.display = 'none';
-                    document.getElementById('etapaCodigoRecup').style.display = 'block';
-                } else {
-                    status.style.color = "red"; status.innerText = data.error;
-                }
-            } catch(e) {
-                status.style.color = "red"; status.innerText = "Erro de conexão.";
-            }
+    if (!codigo || !nova_senha) {
+        status.style.color = "red";
+        status.innerText = "Preencha todos os campos.";
+        return;
+    }
+
+    if (nova_senha.length < 6) {
+        status.style.color = "red";
+        status.innerText = "A senha deve ter pelo menos 6 caracteres.";
+        return;
+    }
+
+    status.style.color = "#555";
+    status.innerText = "Atualizando senha...";
+
+    try {
+        const res = await fetch('/api/redefinir-senha', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, codigo, nova_senha })
+        });
+        const data = await res.json();
+
+        if (res.ok) {
+            fecharModal('recuperarSenhaModal');
+            exibirNotificacaoSpa("Sucesso!", data.message, "✨");
+        } else {
+            status.style.color = "red";
+            status.innerText = data.error || "Erro ao redefinir.";
         }
-
-        async function salvarNovaSenha() {
-            const email = document.getElementById('recupEmail').value.trim();
-            const codigo = document.getElementById('recupCodigo').value.trim();
-            const nova_senha = document.getElementById('recupNovaSenha').value;
-            const status = document.getElementById('recupStatus');
-
-            if(!codigo || !nova_senha) { status.style.color = "red"; status.innerText = "Preencha todos os campos."; return; }
-
-            try {
-                const res = await fetch('/api/redefinir-senha', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, codigo, nova_senha })
-                });
-                const data = await res.json();
-                if(res.ok) {
-                    fecharModal('recuperarSenhaModal');
-                    exibirNotificacaoSpa("Sucesso!", data.message, "✨");
-                } else {
-                    status.style.color = "red"; status.innerText = data.error;
-                }
-            } catch(e) {
-                status.style.color = "red"; status.innerText = "Erro ao redefinir.";
-            }
-        }
- 
+    } catch (e) {
+        status.style.color = "red";
+        status.innerText = "Erro de conexão com o servidor.";
+    }
+}
         async function carregarServicos() {
             const container = document.getElementById('container-servicos');
             try {
