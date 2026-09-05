@@ -1,18 +1,30 @@
 import os
 import random
-from datetime import datetime
-from flask import Flask, request, jsonify, send_from_directory
-from dotenv import load_dotenv
-from supabase import create_client, Client
-from werkzeug.security import generate_password_hash, check_password_hash
-from flask_cors import CORS  # 1. Importe o CORS
-import requests
-from itsdangerous import URLSafeTimedSerializer
+import secrets
 import traceback
-from flask import request, jsonify
+from datetime import datetime, timedelta, timezone
+
+import requests
+from dotenv import load_dotenv
+from flask import Flask, jsonify, request, send_from_directory
+from flask_cors import CORS
+from itsdangerous import URLSafeTimedSerializer
+from supabase import Client, create_client
+from werkzeug.security import check_password_hash, generate_password_hash
 
 app = Flask(__name__)
-CORS(app, resources={r"/api/*": {"origins": ["http://127.0.0.1:5500", "http://localhost:5500", "https://seu-site-hospedado.com"]}})
+CORS(
+    app,
+    resources={
+        r"/api/*": {
+            "origins": [
+                "http://127.0.0.1:5500",
+                "http://localhost:5500",
+                "https://seu-site-hospedado.com",
+            ]
+        }
+    },
+)
 
 # ==============================================================================
 # --- 🔑 CONFIGURAÇÃO INTELIGENTE DO BANCO (LOCAL VS PRODUÇÃO) ---
@@ -26,13 +38,17 @@ if os.path.exists(caminho_env):
     load_dotenv(dotenv_path=caminho_env)
     print(f"👉 Chaves carregadas localmente de: {caminho_env}")
 else:
-    print("👉 Arquivo 'database.env' não encontrado. Usando variáveis de ambiente do Render.")
+    print(
+        "👉 Arquivo 'database.env' não encontrado. Usando variáveis de ambiente do Render."
+    )
 
 url = os.environ.get("SUPABASE_URL")
 key = os.environ.get("SUPABASE_KEY")
 
 if not url or not key:
-    print("\n❌ ERRO CRÍTICO: As variáveis SUPABASE_URL ou SUPABASE_KEY não foram encontradas!")
+    print(
+        "\n❌ ERRO CRÍTICO: As variáveis SUPABASE_URL ou SUPABASE_KEY não foram encontradas!"
+    )
     exit()
 
 supabase: Client = create_client(url, key)
@@ -40,110 +56,124 @@ supabase: Client = create_client(url, key)
 # Configurações de Tokens
 serializer = URLSafeTimedSerializer(key)
 
+
 # ==============================================================================
 # --- 📧 NOVO SISTEMA DE E-MAIL VIA BREVO API (ENVIA PARA QUALQUER UM) ---
 # ==============================================================================
 def enviar_email_transacional(destinatario, assunto, conteudo_html):
     api_key = os.environ.get("BREVO_API_KEY")
-    
-    # ⚠️ Mude para o e-mail exato que você usou para criar a conta no Brevo:
-    email_remetente = "spapanaceia@gmail.com" 
+
+    email_remetente = "spapanaceia@gmail.com"
     nome_remetente = "Spa Panaceia"
-    
+
     if not api_key:
-        print("❌ Erro: Chave BREVO_API_KEY não encontrada nas variáveis de ambiente.")
+        print(
+            "❌ Erro: Chave BREVO_API_KEY não encontrada nas variáveis de ambiente."
+        )
         return False
 
     url = "https://api.brevo.com/v3/smtp/email"
-    
+
     headers = {
         "accept": "application/json",
         "api-key": api_key,
-        "content-type": "application/json"
+        "content-type": "application/json",
     }
-    
+
     payload = {
         "sender": {"name": nome_remetente, "email": email_remetente},
         "to": [{"email": destinatario}],
         "subject": assunto,
-        "htmlContent": conteudo_html
+        "htmlContent": conteudo_html,
     }
-    
+
     try:
         resposta = requests.post(url, headers=headers, json=payload)
-        
-        # O Brevo retorna 201 quando cria o e-mail com sucesso
+
         if resposta.status_code in [200, 201]:
             print(f"✅ E-mail enviado com sucesso para {destinatario}!")
             return True
         else:
             print(f"❌ Erro ao enviar via Brevo: {resposta.text}")
             return False
-            
+
     except Exception as e:
         print(f"❌ Erro interno na API do Brevo: {e}")
         return False
+
 
 # ==============================================================================
 # --- 🌍 ROTAS DE PÁGINAS VISUAIS (HTML) ---
 # ==============================================================================
 
-@app.route('/')
+
+@app.route("/")
 def pagina_principal():
-    return send_from_directory(diretorio_do_script, 'servicos.html')
+    return send_from_directory(diretorio_do_script, "servicos.html")
 
 
-@app.route('/cadastro')
+@app.route("/cadastro")
 def pagina_cadastro():
-    return send_from_directory(diretorio_do_script, 'index.html')
+    return send_from_directory(diretorio_do_script, "index.html")
 
 
 # ==============================================================================
 # --- ⚙️ ROTAS DE PROCESSAMENTO DE DADOS (API) ---
 # ==============================================================================
 
-import secrets
-from datetime import datetime, timedelta, timezone
 
-@app.route('/cadastrar', methods=['POST'])
+@app.route("/cadastrar", methods=["POST"])
 def cadastrar():
     dados = request.json or {}
-    nome = dados.get('nome')
-    email = dados.get('email', '').strip().lower()
-    senha_limpa = dados.get('senha')
+    nome = dados.get("nome")
+    email = dados.get("email", "").strip().lower()
+    senha_limpa = dados.get("senha")
 
-    # 1. Validações de campos obrigatórios
     if not nome or not email or not senha_limpa:
         return jsonify({"error": "Nome, e-mail e senha são obrigatórios."}), 400
 
     if "@" not in email or "." not in email.split("@")[-1]:
-        return jsonify({"error": "Por favor, insira um e-mail real e válido."}), 400
+        return (
+            jsonify({"error": "Por favor, insira um e-mail real e válido."}),
+            400,
+        )
 
-    # 2. Mantém a criptografia original da senha
-    senha_criptografada = generate_password_hash(senha_limpa, method='pbkdf2:sha256')
+    senha_criptografada = generate_password_hash(
+        senha_limpa, method="pbkdf2:sha256"
+    )
 
     try:
-        # 3. Verifica antecipadamente se o e-mail já está cadastrado
-        checagem = supabase.table("usuarios").select("id").eq("email", email).execute()
+        checagem = (
+            supabase.table("usuarios")
+            .select("id")
+            .eq("email", email)
+            .execute()
+        )
         if checagem.data:
-            return jsonify({"error": "Este e-mail já está cadastrado no sistema."}), 400
+            return (
+                jsonify(
+                    {"error": "Este e-mail já está cadastrado no sistema."}
+                ),
+                400,
+            )
 
-        # 4. Gera o código OTP de 6 dígitos e a expiração (15 minutos)
         codigo_otp = f"{secrets.randbelow(1000000):06d}"
-        expiracao = (datetime.now(timezone.utc) + timedelta(minutes=15)).isoformat()
+        expiracao = (
+            datetime.now(timezone.utc) + timedelta(minutes=15)
+        ).isoformat()
 
-        # 5. Salva o usuário no Supabase usando 'email_verificado' (corrige o erro PGRST204)
-        supabase.table("usuarios").insert({
-            "nome": nome, 
-            "email": email, 
-            "senha": senha_criptografada,
-            "email_verificado": False,  # 👈 Ajustado para o nome correto da coluna
-            "codigo_otp": codigo_otp,
-            "codigo_expira_em": expiracao,
-            "is_admin": False
-        }).execute()
+        supabase.table("usuarios").insert(
+            {
+                "nome": nome,
+                "email": email,
+                "senha": senha_criptografada,
+                "email_verificado": False,
+                "codigo_otp": codigo_otp,
+                "codigo_expira_em": expiracao,
+                "is_admin": False,
+            }
+        ).execute()
 
-        # 6. Prepara o template do e-mail com o código numérico
         html_msg = f"""
         <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 10px; color: #333;">
             <h2 style="color: #6a11cb; text-align: center;">Bem-vindo(a) ao Spa Panaceia, {nome}! 🌿</h2>
@@ -157,70 +187,105 @@ def cadastrar():
             <p style="margin-top: 20px; font-size: 12px; color: #999; text-align: center;">Se você não realizou este cadastro, desconsidere esta mensagem.</p>
         </div>
         """
-        
-        # 7. Dispara o e-mail via API da Brevo
-        enviar_email_transacional(email, "Seu código de ativação - Spa Panaceia", html_msg)
 
-        return jsonify({
-            "message": "Cadastro realizado! Digite o código de 6 dígitos enviado ao seu e-mail para ativar a conta.",
-            "email": email
-        }), 201
+        enviar_email_transacional(
+            email, "Seu código de ativação - Spa Panaceia", html_msg
+        )
+
+        return (
+            jsonify(
+                {
+                    "message": "Cadastro realizado! Digite o código de 6 dígitos enviado ao seu e-mail para ativar a conta.",
+                    "email": email,
+                }
+            ),
+            201,
+        )
 
     except Exception as e:
         print(f"❌ Erro ao salvar no banco: {e}")
-        return jsonify({"error": "Erro ao criar conta. Tente novamente mais tarde."}), 500
-@app.route('/api/confirmar', methods=['GET'])
+        return (
+            jsonify(
+                {"error": "Erro ao criar conta. Tente novamente mais tarde."}
+            ),
+            500,
+        )
+
+
+@app.route("/api/confirmar", methods=["GET"])
 def confirmar_email():
-    token = request.args.get('token')
+    token = request.args.get("token")
     try:
-        email = serializer.loads(token, salt='confirmar-email', max_age=3600)
-        supabase.table("usuarios").update({"verificado": True}).eq("email", email).execute()
-        return "<h3>Conta confirmada com sucesso! ✨ Você já pode fechar esta aba e fazer login no site.</h3>", 200
+        email = serializer.loads(token, salt="confirmar-email", max_age=3600)
+        supabase.table("usuarios").update({"verificado": True}).eq(
+            "email", email
+        ).execute()
+        return (
+            "<h3>Conta confirmada com sucesso! ✨ Você já pode fechar esta aba e fazer login no site.</h3>",
+            200,
+        )
     except Exception:
-        return "<h3>Link inválido ou expirado. Tente se cadastrar novamente.</h3>", 400
+        return (
+            "<h3>Link inválido ou expirado. Tente se cadastrar novamente.</h3>",
+            400,
+        )
 
-from datetime import datetime, timezone
 
-@app.route('/api/validar-codigo', methods=['POST'])
+@app.route("/api/validar-codigo", methods=["POST"])
 def validar_codigo():
     dados = request.json or {}
-    email = dados.get('email')
-    codigo_digitado = dados.get('codigo')
+    email = dados.get("email")
+    codigo_digitado = dados.get("codigo")
 
     if not email or not codigo_digitado:
         return jsonify({"error": "E-mail e código são obrigatórios."}), 400
 
     try:
-        # Busca o usuário no Supabase
-        res = supabase.table("usuarios").select("*").eq("email", email).execute()
-        
+        res = (
+            supabase.table("usuarios").select("*").eq("email", email).execute()
+        )
+
         if not res.data:
             return jsonify({"error": "Usuário não encontrado."}), 404
 
         usuario = res.data[0]
 
-        # 1. Verifica se já está verificado
-        if usuario.get('email_verificado'):
-            return jsonify({"message": "Conta já verificada! Faça login para continuar."}), 200
+        if usuario.get("email_verificado"):
+            return (
+                jsonify(
+                    {
+                        "message": "Conta já verificada! Faça login para continuar."
+                    }
+                ),
+                200,
+            )
 
-        # 2. Compara o código digitado com o do banco
-        codigo_salvo = usuario.get('codigo_otp')
+        codigo_salvo = usuario.get("codigo_otp")
         if str(codigo_salvo) != str(codigo_digitado):
             return jsonify({"error": "Código de verificação incorreto."}), 400
 
-        # 3. Verifica se o código expirou
-        expiracao_str = usuario.get('codigo_expira_em')
+        expiracao_str = usuario.get("codigo_expira_em")
         if expiracao_str:
-            expiracao = datetime.fromisoformat(expiracao_str.replace('Z', '+00:00'))
+            expiracao = datetime.fromisoformat(
+                expiracao_str.replace("Z", "+00:00")
+            )
             if datetime.now(timezone.utc) > expiracao:
-                return jsonify({"error": "Código expirado. Solicite um novo código."}), 400
+                return (
+                    jsonify(
+                        {
+                            "error": "Código expirado. Solicite um novo código."
+                        }
+                    ),
+                    400,
+                )
 
-        # 4. Atualiza o status do usuário no Supabase para verificado
-        supabase.table("usuarios").update({
-            "email_verificado": True,
-            "codigo_otp": None,         # Limpa o código usado
-            "codigo_expira_em": None
-        }).eq("email", email).execute()
+        supabase.table("usuarios").update(
+            {
+                "email_verificado": True,
+                "codigo_otp": None,
+                "codigo_expira_em": None,
+            }
+        ).eq("email", email).execute()
 
         return jsonify({"message": "E-mail verificado com sucesso!"}), 200
 
@@ -228,73 +293,96 @@ def validar_codigo():
         print(f"❌ Erro ao validar código: {e}")
         return jsonify({"error": "Erro interno ao validar o código."}), 500
 
-@app.route('/api/login', methods=['POST'])
+
+@app.route("/api/login", methods=["POST"])
 def login():
     dados = request.json or {}
-    email = dados.get('email', '').strip().lower()
-    senha = dados.get('senha')
+    email = dados.get("email", "").strip().lower()
+    senha = dados.get("senha")
 
     if not email or not senha:
         return jsonify({"error": "E-mail e senha são obrigatórios."}), 400
 
-  
     try:
-  
-        res = supabase.table("usuarios").select("*").eq("email", email).execute()
-  
+        res = (
+            supabase.table("usuarios").select("*").eq("email", email).execute()
+        )
+
         if not res.data:
             return jsonify({"error": "Usuário não encontrado."}), 404
 
         usuario = res.data[0]
 
-  
-        if not usuario.get('email_verificado'):
-            return jsonify({"error": "Conta não verificada. Verifique seu e-mail antes de entrar."}), 403
+        if not usuario.get("email_verificado"):
+            return (
+                jsonify(
+                    {
+                        "error": "Conta não verificada. Verifique seu e-mail antes de entrar."
+                    }
+                ),
+                403,
+            )
 
-  
-        senha_hash_banco = usuario.get('senha')
-  
-        if not senha_hash_banco or not check_password_hash(senha_hash_banco, senha):
+        senha_hash_banco = usuario.get("senha")
+
+        if not senha_hash_banco or not check_password_hash(
+            senha_hash_banco, senha
+        ):
             return jsonify({"error": "E-mail ou senha incorretos."}), 401
 
-        # ✅ FIX: Adicionado is_admin na resposta do JSON
-        return jsonify({
-            "message": "Login realizado com sucesso!",
-            "usuario": {
-                "id": usuario.get('id'),
-                "nome": usuario.get('nome'),
-                "email": usuario.get('email'),
-                "is_admin": usuario.get('is_admin', False)  # 👈 ADICIONE ESTA LINHA!
-            }
-        }), 200
+        return (
+            jsonify(
+                {
+                    "message": "Login realizado com sucesso!",
+                    "usuario": {
+                        "id": usuario.get("id"),
+                        "nome": usuario.get("nome"),
+                        "email": usuario.get("email"),
+                        "is_admin": usuario.get("is_admin", False),
+                        "pontos": usuario.get("pontos", 0),
+                    },
+                }
+            ),
+            200,
+        )
 
     except Exception as e:
         print(f"❌ Erro no login: {e}")
         return jsonify({"error": "Erro interno no servidor."}), 500
 
-@app.route('/api/esqueci-senha', methods=['POST'])
+
+@app.route("/api/esqueci-senha", methods=["POST"])
 def esqueci_senha():
     dados = request.json or {}
-    email = dados.get('email', '').strip().lower()
+    email = dados.get("email", "").strip().lower()
 
     if not email:
         return jsonify({"error": "Informe seu e-mail cadastrado."}), 400
 
     try:
-        # 1. Verifica se o usuário existe
-        usuario = supabase.table("usuarios").select("id").eq("email", email).execute()
-        
-        if not usuario.data:
-            # Retorna mensagem genérica para não expor e-mails cadastrados
-            return jsonify({"message": "Se o e-mail estiver cadastrado, você receberá o código de recuperação."}), 200
+        usuario = (
+            supabase.table("usuarios")
+            .select("id")
+            .eq("email", email)
+            .execute()
+        )
 
-        # 2. Gera um código numérico de 6 dígitos
+        if not usuario.data:
+            return (
+                jsonify(
+                    {
+                        "message": "Se o e-mail estiver cadastrado, você receberá o código de recuperação."
+                    }
+                ),
+                200,
+            )
+
         codigo = f"{random.randint(100000, 999999):06d}"
 
-        # 3. Salva o código na coluna token_recuperacao
-        supabase.table("usuarios").update({"token_recuperacao": codigo}).eq("email", email).execute()
+        supabase.table("usuarios").update({"token_recuperacao": codigo}).eq(
+            "email", email
+        ).execute()
 
-        # 4. Envia o e-mail
         html_msg = f"""
         <div style="font-family: Arial, sans-serif; padding: 20px; color: #333;">
             <h3 style="color: #6a11cb;">Recuperação de Senha - Spa Panaceia 🌸</h3>
@@ -303,9 +391,18 @@ def esqueci_senha():
             <p>Se você não solicitou isso, ignore este e-mail.</p>
         </div>
         """
-        enviar_email_transacional(email, "Código de Recuperação de Senha", html_msg)
+        enviar_email_transacional(
+            email, "Código de Recuperação de Senha", html_msg
+        )
 
-        return jsonify({"message": "Código de recuperação enviado para o seu e-mail!"}), 200
+        return (
+            jsonify(
+                {
+                    "message": "Código de recuperação enviado para o seu e-mail!"
+                }
+            ),
+            200,
+        )
 
     except Exception as e:
         print("❌ Erro no /api/esqueci-senha:")
@@ -313,49 +410,62 @@ def esqueci_senha():
         return jsonify({"error": "Erro ao processar a solicitação."}), 500
 
 
-@app.route('/api/redefinir-senha', methods=['POST'])
+@app.route("/api/redefinir-senha", methods=["POST"])
 def redefinir_senha():
     dados = request.json or {}
-    email = dados.get('email', '').strip().lower()
-    codigo = str(dados.get('codigo', '')).strip()
-    nova_senha = dados.get('nova_senha', '').strip()
+    email = dados.get("email", "").strip().lower()
+    codigo = str(dados.get("codigo", "")).strip()
+    nova_senha = dados.get("nova_senha", "").strip()
 
     if not email or not codigo or not nova_senha:
         return jsonify({"error": "Preencha todos os campos."}), 400
 
     if len(nova_senha) < 6:
-        return jsonify({"error": "A senha deve ter no mínimo 6 caracteres."}), 400
+        return (
+            jsonify({"error": "A senha deve ter no mínimo 6 caracteres."}),
+            400,
+        )
 
     try:
-        # 1. Busca o token salvo no banco para o e-mail
-        usuario = supabase.table("usuarios").select("token_recuperacao").eq("email", email).execute()
-        
+        usuario = (
+            supabase.table("usuarios")
+            .select("token_recuperacao")
+            .eq("email", email)
+            .execute()
+        )
+
         if not usuario.data:
             return jsonify({"error": "Usuário não encontrado."}), 404
 
-        token_salvo = str(usuario.data[0].get('token_recuperacao') or '')
+        token_salvo = str(usuario.data[0].get("token_recuperacao") or "")
 
-        # 2. Valida o código digitado
         if not token_salvo or token_salvo != codigo:
             return jsonify({"error": "Código de verificação incorreto."}), 400
 
-        # 3. Criptografa a nova senha e limpa o token
-        senha_hash = generate_password_hash(nova_senha, method='pbkdf2:sha256')
-        
-        supabase.table("usuarios").update({
-            "senha": senha_hash,
-            "token_recuperacao": None
-        }).eq("email", email).execute()
+        senha_hash = generate_password_hash(
+            nova_senha, method="pbkdf2:sha256"
+        )
 
-        return jsonify({"message": "Senha redefinida com sucesso! Faça login para continuar."}), 200
+        supabase.table("usuarios").update(
+            {"senha": senha_hash, "token_recuperacao": None}
+        ).eq("email", email).execute()
+
+        return (
+            jsonify(
+                {
+                    "message": "Senha redefinida com sucesso! Faça login para continuar."
+                }
+            ),
+            200,
+        )
 
     except Exception as e:
         print("❌ Erro no /api/redefinir-senha:")
         traceback.print_exc()
         return jsonify({"error": "Erro ao redefinir a senha."}), 500
-    
-    
-@app.route('/api/servicos', methods=['GET'])
+
+
+@app.route("/api/servicos", methods=["GET"])
 def listar_servicos():
     try:
         resposta = supabase.table("servico").select("*").execute()
@@ -364,42 +474,80 @@ def listar_servicos():
         return jsonify({"error": "Erro ao ler a tabela de serviços."}), 500
 
 
-@app.route('/api/agendar', methods=['POST'])
+@app.route("/api/agendar", methods=["POST"])
 def criar_agendamento():
-    dados = request.json
-    email = dados.get('email')
-    servico_id = dados.get('servico_id')
-    data_atendimento_str = dados.get('data')
+    dados = request.json or {}
+    email = dados.get("email")
+    servico_id = dados.get("servico_id")
+    data_atendimento_str = dados.get("data")
 
     if not email or not servico_id or not data_atendimento_str:
         return jsonify({"error": "Todos os campos são obrigatórios."}), 400
 
     try:
         data_selecionada = datetime.fromisoformat(data_atendimento_str)
-        if data_selecionada < datetime.now():
+        agora = datetime.now(data_selecionada.tzinfo) if data_selecionada.tzinfo else datetime.now()
+        
+        if data_selecionada < agora:
             return jsonify({"error": "Não é possível agendar numa data ou horário que já passou."}), 400
-            
+
         if data_selecionada.minute != 0:
             return jsonify({"error": "Os agendamentos devem ser feitos em horários cheios (ex: 09:00, 10:00)."}), 400
 
-        usuario_existe = supabase.table("usuarios").select("email").eq("email", email).execute()
+        # ==============================================================
+        # 🔒 NOVAS REGRAS DE NEGÓCIO: BLOQUEIO DE DIAS E HORÁRIOS
+        # ==============================================================
+        dia_semana = data_selecionada.weekday() # 0 = Segunda, 6 = Domingo
+        hora = data_selecionada.hour
+
+        # Bloqueia Segunda-feira (dia 0)
+        if dia_semana == 0:
+            return jsonify({"error": "O Spa é fechado às segundas-feiras para manutenção. Por favor, escolha de terça a domingo."}), 400
+        
+        # Bloqueia horários fora da janela 09:00 - 20:00
+        if not (9 <= hora <= 20):
+            return jsonify({"error": "O horário de atendimento é das 09:00 às 20:00."}), 400
+        # ==============================================================
+
+        usuario_existe = (
+            supabase.table("usuarios")
+            .select("email")
+            .eq("email", email)
+            .execute()
+        )
         if not usuario_existe.data:
             return jsonify({"error": "Usuário Inexistente. Crie uma conta antes de agendar."}), 404
 
-        conflito = supabase.table("agendamentos").select("id").eq("data_atendimento", data_atendimento_str).execute()
+        conflito = (
+            supabase.table("agendamentos")
+            .select("id")
+            .eq("data_atendimento", data_atendimento_str)
+            .neq("status", "Cancelado")
+            .execute()
+        )
         if conflito.data:
             return jsonify({"error": "Este horário já está reservado por outro cliente. Por favor, escolha outra opção."}), 409
 
-        supabase.table("agendamentos").insert({
-            "email_cliente": email,
-            "servico_id": servico_id,
-            "data_atendimento": data_atendimento_str
-        }).execute()
+        supabase.table("agendamentos").insert(
+            {
+                "email_cliente": email,
+                "servico_id": servico_id,
+                "data_atendimento": data_atendimento_str,
+                "status": "Pendente",
+            }
+        ).execute()
 
-        servico_atual = supabase.table("servico").select("contratos").eq("id", servico_id).execute()
+        servico_atual = (
+            supabase.table("servico")
+            .select("contratos")
+            .eq("id", servico_id)
+            .execute()
+        )
         if servico_atual.data:
-            contratos_atuais = servico_atual.data[0].get('contratos', 0)
-            supabase.table("servico").update({"contratos": contratos_atuais + 1}).eq("id", servico_id).execute()
+            contratos_atuais = servico_atual.data[0].get("contratos", 0) or 0
+            supabase.table("servico").update(
+                {"contratos": contratos_atuais + 1}
+            ).eq("id", servico_id).execute()
 
         return jsonify({"message": "Agendamento realizado com sucesso!"}), 201
     except Exception as e:
@@ -407,350 +555,322 @@ def criar_agendamento():
         return jsonify({"error": "Erro ao salvar o agendamento no banco."}), 500
 
 
-@app.route('/api/meus-agendamentos', methods=['GET'])
+@app.route("/api/meus-agendamentos", methods=["GET"])
 def meus_agendamentos():
-    email = request.args.get('email')
+    email = request.args.get("email")
     if not email:
         return jsonify({"error": "E-mail do usuário não informado."}), 400
 
     try:
-        resposta = supabase.table("agendamentos").select("id, data_atendimento, status, avaliacao, servico_id, servico(tipo, valor)").eq("email_cliente", email).execute()
+        resposta = (
+            supabase.table("agendamentos")
+            .select(
+                "id, data_atendimento, status, avaliacao, servico_id, servico(tipo, valor)"
+            )
+            .eq("email_cliente", email)
+            .execute()
+        )
         return jsonify(resposta.data), 200
     except Exception as e:
         print(f"❌ Erro ao buscar agendamentos: {e}")
-        return jsonify({"error": "Erro ao carregar a lista de agendamentos."}), 500
+        return (
+            jsonify({"error": "Erro ao carregar a lista de agendamentos."}),
+            500,
+        )
 
+    
+@app.route('/api/horarios-ocupados', methods=['GET'])
+def horarios_ocupados():
+    try:
+        # Busca todas as datas já reservadas que não foram canceladas
+        res = supabase.table("agendamentos").select("data_atendimento").neq("status", "Cancelado").execute()
+        # Retorna uma lista só com os textos das datas e horas
+        ocupados = [ag["data_atendimento"] for ag in res.data]
+        return jsonify(ocupados), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
-@app.route('/api/agendamentos/<int:id>', methods=['PUT'])
+@app.route("/api/agendamentos/<int:id>", methods=["PUT"])
 def alterar_horario(id):
-    dados = request.json
-    nova_data_str = dados.get('data')
+    dados = request.json or {}
+    nova_data_str = dados.get("data")
 
     if not nova_data_str:
         return jsonify({"error": "Nova data/hora é obrigatória."}), 400
 
     try:
-        data_selecionada = datetime.fromisoformat(nova_data_str)
-        if data_selecionada < datetime.now():
-            return jsonify({"error": "Não é possível remarcar para uma data no passado."}), 400
-            
-        if data_selecionada.minute != 0:
-            return jsonify({"error": "Os agendamentos devem ser feitos em horários cheios (ex: 09:00, 10:00)."}), 400
+        nova_data = datetime.fromisoformat(nova_data_str)
+        agora = datetime.now(nova_data.tzinfo) if nova_data.tzinfo else datetime.now()
 
-        conflito = supabase.table("agendamentos").select("id").eq("data_atendimento", nova_data_str).neq("id", id).execute()
+        if nova_data < agora:
+            return jsonify({"error": "A nova data não pode estar no passado."}), 400
+
+        if nova_data.minute != 0:
+            return jsonify({"error": "Agendamentos apenas em horários cheios."}), 400
+
+        conflito = (
+            supabase.table("agendamentos")
+            .select("id")
+            .eq("data_atendimento", nova_data_str)
+            .neq("id", id)
+            .neq("status", "Cancelado")
+            .execute()
+        )
         if conflito.data:
-            return jsonify({"error": "Este horário já está reservado. Escolha outro momento para a sua sessão."}), 409
+            return jsonify({"error": "Este horário já está reservado por outro cliente."}), 409
 
-        supabase.table("agendamentos").update({"data_atendimento": nova_data_str}).eq("id", id).execute()
-        return jsonify({"message": "Horário updated com sucesso!"}), 200
+        supabase.table("agendamentos").update(
+            {"data_atendimento": nova_data_str}
+        ).eq("id", id).execute()
+
+        return jsonify({"message": "Horário atualizado com sucesso!"}), 200
     except Exception as e:
-        print(f"❌ Erro ao atualizar horário: {e}")
-        return jsonify({"error": "Erro ao atualizar horário no banco."}), 500
+        print(f"❌ Erro ao alterar horário: {e}")
+        return jsonify({"error": "Erro interno ao reagendar."}), 500
 
 
-@app.route('/api/agendamentos/<int:id>', methods=['DELETE'])
+@app.route("/api/agendamentos/<int:id>", methods=["DELETE"])
 def cancelar_agendamento(id):
     try:
-        agendamento_busca = supabase.table("agendamentos").select("*").eq("id", id).execute()
-        
-        if not agendamento_busca.data:
-            return jsonify({"error": "Agendamento não encontrado no banco de dados."}), 404
-            
-        dados_agendamento = agendamento_busca.data[0]
-        servico_id = dados_agendamento.get('servico_id')
-
-        try:
-            supabase.table("agendamentos_cancelados").insert({
-                "agendamento_id": dados_agendamento.get('id'),
-                "email_cliente": dados_agendamento.get('email_cliente'),
-                "servico_id": servico_id,
-                "data_atendimento_original": dados_agendamento.get('data_atendimento')
-            }).execute()
-        except Exception as hist_err:
-            print(f"⚠️ Nota: Não foi possível salvar na tabela histórica: {hist_err}")
-
-        if servico_id:
-            try:
-                servico_atual = supabase.table("servico").select("contratos").eq("id", servico_id).execute()
-                if servico_atual.data:
-                    contratos_atuais = servico_atual.data[0].get('contratos', 0)
-                    novos_contratos = max(0, contratos_atuais - 1)
-                    supabase.table("servico").update({"contratos": novos_contratos}).eq("id", servico_id).execute()
-            except Exception as serv_err:
-                print(f"⚠️ Nota: Falha ao atualizar contador na tabela 'servico': {serv_err}")
-
-        supabase.table("agendamentos").delete().eq("id", id).execute()
-        return jsonify({"message": "Agendamento cancelado com sucesso!"}), 200
-
+        supabase.table("agendamentos").update({"status": "Cancelado"}).eq("id", id).execute()
+        return jsonify({"message": "Agendamento cancelado com sucesso."}), 200
     except Exception as e:
-        print(f"❌ Erro crítico ao processar exclusão do agendamento: {e}")
-        return jsonify({"error": "Erro interno ao processar o cancelamento no servidor."}), 500
+        print(f"❌ Erro ao cancelar agendamento: {e}")
+        return jsonify({"error": "Erro ao cancelar o agendamento."}), 500
 
 
-@app.route('/api/agendamentos/<int:id>/avaliar', methods=['POST'])
+@app.route("/api/agendamentos/<int:id>/avaliar", methods=["POST"])
 def avaliar_agendamento(id):
-    dados = request.json
-    nota = dados.get('avaliacao')
+    dados = request.json or {}
+    avaliacao = dados.get("avaliacao")
 
-    if nota not in ["Bom", "Médio", "Ruim"]:
-        return jsonify({"error": "Avaliação inválida. Use apenas Bom, Médio ou Ruim."}), 400
+    if avaliacao not in ["Bom", "Médio", "Ruim"]:
+        return jsonify({"error": "Avaliação inválida."}), 400
 
     try:
-        busca = supabase.table("agendamentos").select("status").eq("id", id).execute()
-        if not busca.data or busca.data[0].get('status') != 'Concluido':
-            return jsonify({"error": "Você só pode avaliar serviços já finalizados."}), 400
-
-        supabase.table("agendamentos").update({"avaliacao": nota}).eq("id", id).execute()
-        return jsonify({"message": "Obrigado pela sua avaliação!"}), 200
+        supabase.table("agendamentos").update({"avaliacao": avaliacao}).eq("id", id).execute()
+        return jsonify({"message": "Avaliação registrada!"}), 200
     except Exception as e:
-        print(f"❌ Erro ao salvar avaliação: {e}")
-        return jsonify({"error": "Erro interno ao salvar avaliação."}), 500
+        print(f"❌ Erro ao avaliar agendamento: {e}")
+        return jsonify({"error": "Erro ao salvar avaliação."}), 500
 
 
 # ==============================================================================
-# --- 👑 ROTAS EXCLUSIVAS DO PAINEL ADMINISTRATIVO (PROTEGIDAS) ---
+# --- 👑 ROTAS DE ADMINISTRAÇÃO E ESTOQUE ---
 # ==============================================================================
 
-@app.route('/api/admin/agendamentos', methods=['GET'])
-def admin_listar_todos_agendamentos():
-    admin_email = request.args.get('admin_email')
-    
+
+@app.route("/api/admin/agendamentos", methods=["GET"])
+def admin_agendamentos():
+    admin_email = request.args.get("admin_email")
     if not admin_email:
-        return jsonify({"error": "Identificação administrativa ausente."}), 400
-        
-    try:
-        checagem = supabase.table("usuarios").select("is_admin").eq("email", admin_email).execute()
-        if not checagem.data or not checagem.data[0].get('is_admin'):
-            return jsonify({"error": "Acesso negado. Rota exclusiva para administradores."}), 403
-    except Exception as e:
-        return jsonify({"error": f"Erro na checagem de admin: {str(e)}"}), 500
+        return jsonify({"error": "Email do administrador não informado."}), 400
 
     try:
-        servicos_req = supabase.table("servico").select("id, tipo, valor").execute()
-        lista_servicos = servicos_req.data or []
-        mapa_servicos = {s['id']: s for s in lista_servicos}
+        admin_check = supabase.table("usuarios").select("is_admin").eq("email", admin_email).execute()
+        if not admin_check.data or not admin_check.data[0].get("is_admin"):
+            return jsonify({"error": "Acesso não autorizado."}), 403
+
+        resposta = supabase.table("agendamentos").select("id, email_cliente, data_atendimento, status, avaliacao, servico(tipo, valor)").execute()
+        return jsonify(resposta.data), 200
     except Exception as e:
-        return jsonify({"error": f"Erro ao ler tabela 'servicos'. Detalhes: {str(e)}"}), 500
-
-    try:
-        resposta_ativos = supabase.table("agendamentos").select("id, data_atendimento, email_cliente, status, avaliacao, servico_id").execute()
-        agendamentos_ativos = resposta_ativos.data or []
-    except Exception as e:
-        return jsonify({"error": f"Erro ao ler tabela 'agendamentos'. Detalhes: {str(e)}"}), 500
-
-    try:
-        resposta_cancelados = supabase.table("agendamentos_cancelados").select("id, data_atendimento_original, email_cliente, servico_id").execute()
-        agendamentos_cancelados = resposta_cancelados.data or []
-    except Exception as e:
-        return jsonify({"error": f"Erro ao ler tabela 'agendamentos_cancelados'. Detalhes: {str(e)}"}), 500
-
-    try:
-        for ag in agendamentos_cancelados:
-            ag['data_atendimento'] = ag.pop('data_atendimento_original', None)
-            ag['status'] = 'Cancelado'
-            ag['avaliacao'] = None
-            
-            s_id = ag.get('servico_id')
-            if s_id and s_id in mapa_servicos:
-                ag['servico'] = {"tipo": mapa_servicos[s_id]['tipo'], "valor": mapa_servicos[s_id]['valor']}
-            else:
-                ag['servico'] = {"tipo": "Cancelado", "valor": 0}
-
-        for ag in agendamentos_ativos:
-            s_id = ag.get('servico_id')
-            if s_id and s_id in mapa_servicos:
-                ag['servico'] = {"tipo": mapa_servicos[s_id]['tipo'], "valor": mapa_servicos[s_id]['valor']}
-            else:
-                ag['servico'] = {"tipo": "N/A", "valor": 0}
-                
-        lista_completa = agendamentos_ativos + agendamentos_cancelados
-        return jsonify(lista_completa), 200
-
-    except Exception as e:
-        return jsonify({"error": f"Erro ao processar mapeamento dos dados: {str(e)}"}), 500
+        print(f"❌ Erro no admin agendamentos: {e}")
+        return jsonify({"error": "Erro ao buscar dados globais."}), 500
 
 
-@app.route('/api/admin/usuarios', methods=['GET'])
-def admin_listar_todos_usuarios():
-    admin_email = request.args.get('admin_email')
-    
+@app.route("/api/admin/agendamentos/<int:id>/concluir", methods=["POST"])
+def concluir_agendamento(id):
+    dados = request.json or {}
+    admin_email = dados.get("admin_email")
+
     if not admin_email:
-        return jsonify({"error": "Identificação administrativa ausente."}), 400
-        
+        return jsonify({"error": "Email do administrador é obrigatório."}), 400
+
     try:
-        checagem = supabase.table("usuarios").select("is_admin").eq("email", admin_email).execute()
-        if not checagem.data or not checagem.data[0].get('is_admin'):
-            return jsonify({"error": "Acesso negado. Rota exclusiva para administradores."}), 403
-            
-        usuarios_req = supabase.table("usuarios").select("nome, email, is_admin").execute()
-        usuarios_banco = usuarios_req.data or []
-        
-        ativos_req = supabase.table("agendamentos").select("email_cliente, status, servico(valor)").execute()
-        agendamentos_ativos = ativos_req.data or []
-        
-        cancelados_req = supabase.table("agendamentos_cancelados").select("email_cliente").execute()
-        agendamentos_cancelados = cancelados_req.data or []
-        
-        lista_resposta = []
-        
-        for usuario in usuarios_banco:
-            if usuario.get('is_admin'):
-                continue
-                
-            email_user = usuario.get('email')
-            user_ativos = [ag for ag in agendamentos_ativos if ag.get('email_cliente') == email_user]
-            user_cancelados = [ag for ag in agendamentos_cancelados if ag.get('email_cliente') == email_user]
-            
-            total_cancelados = len(user_cancelados)
-            total_ativos = len(user_ativos)
-            
-            pendentes = sum(1 for ag in user_ativos if ag.get('status') != 'Concluido')
-            concluidos = sum(1 for ag in user_ativos if ag.get('status') == 'Concluido')
-            
-            total_gasto = 0.0
-            for ag in user_ativos:
-                if ag.get('status') == 'Concluido' and ag.get('servico'):
-                    total_gasto += float(ag.get('servico', {}).get('valor', 0))
-            
-            lista_resposta.append({
-                "nome": usuario.get('nome') or email_user.split('@')[0],
-                "email": email_user,
-                "total": total_ativos + total_cancelados,
-                "pendentes": pendentes,
-                "concluidos": concluidos,
-                "cancelados": total_cancelados,
-                "gastos": total_gasto
-            })
-            
-        return jsonify(lista_resposta), 200
+        admin_check = supabase.table("usuarios").select("is_admin").eq("email", admin_email).execute()
+        if not admin_check.data or not admin_check.data[0].get("is_admin"):
+            return jsonify({"error": "Acesso não autorizado."}), 403
 
-    except Exception as e:
-        print(f"❌ Erro na consulta de administração de usuários: {e}")
-        return jsonify({"error": "Erro ao listar usuários do sistema."}), 500
-
-
-@app.route('/api/admin/agendamentos/<int:id>/concluir', methods=['POST'])
-def admin_concluir_agendamento(id):
-    dados = request.json
-    admin_email = dados.get('admin_email')
-    
-    if not admin_email:
-        return jsonify({"error": "Identificação administrativa ausente."}), 400
-        
-    try:
-        # Validação de segurança
-        checagem = supabase.table("usuarios").select("is_admin").eq("email", admin_email).execute()
-        if not checagem.data or not checagem.data[0].get('is_admin'):
-            return jsonify({"error": "Acesso negado. Rota exclusiva para administradores."}), 403
-            
-        # Pega os dados do agendamento para saber quem é o cliente
-        ag_busca = supabase.table("agendamentos").select("email_cliente, servico(valor)").eq("id", id).execute()
-        if not ag_busca.data:
+        # ADICIONADO: Puxando também o servico_id para sabermos qual foi o serviço feito
+        agendamento = supabase.table("agendamentos").select("email_cliente, status, servico_id").eq("id", id).execute()
+        if not agendamento.data:
             return jsonify({"error": "Agendamento não encontrado."}), 404
-        
-        info_ag = ag_busca.data[0]
-        email_cliente = info_ag.get('email_cliente')
-        
-        # Atualiza o status para 'Concluido'
-        supabase.table("agendamentos").update({"status": "Concluido"}).eq("id", id).execute()
-        
-        # 🌟 SISTEMA DE FIDELIDADE: Adiciona 10 pontos ao cliente
-        user_busca = supabase.table("usuarios").select("pontos").eq("email", email_cliente).execute()
-        if user_busca.data:
-            pontos_atuais = user_busca.data[0].get('pontos') or 0
-            novos_pontos = pontos_atuais + 10 # Cada serviço concluído dá 10 pontos
-            supabase.table("usuarios").update({"pontos": novos_pontos}).eq("email", email_cliente).execute()
 
-        return jsonify({"message": "Agendamento concluído e pontos de fidelidade creditados!"}), 200
+        cliente_email = agendamento.data[0].get("email_cliente")
+        servico_id = agendamento.data[0].get("servico_id")
+
+        supabase.table("agendamentos").update({"status": "Concluido"}).eq("id", id).execute()
+
+        # ADICIONADO: Buscando o valor do serviço e calculando 10%
+        pontos_ganhos = 0
+        if servico_id:
+            servico = supabase.table("servico").select("valor").eq("id", servico_id).execute()
+            if servico.data:
+                valor_servico = float(servico.data[0].get("valor", 0))
+                pontos_ganhos = int(valor_servico * 0.10) # 10% do valor
+
+        cliente = supabase.table("usuarios").select("pontos").eq("email", cliente_email).execute()
+        if cliente.data:
+            pontos_atuais = cliente.data[0].get("pontos", 0) or 0
+            # ATUALIZADO: Agora soma os 10% calculados em vez do número 10 fixo
+            supabase.table("usuarios").update({"pontos": pontos_atuais + pontos_ganhos}).eq("email", cliente_email).execute()
+
+        return jsonify({"message": f"Agendamento concluído e {pontos_ganhos} pontos creditados ao cliente!"}), 200
     except Exception as e:
         print(f"❌ Erro ao concluir agendamento: {e}")
-        return jsonify({"error": "Erro ao atualizar status do agendamento."}), 500
+        return jsonify({"error": "Erro ao concluir o serviço."}), 500
 
 
-@app.after_request
-def adicionar_cabecalhos_sem_cache(resposta):
-    resposta.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
-    resposta.headers["Pragma"] = "no-cache"
-    resposta.headers["Expires"] = "0"
-    return resposta
+@app.route("/api/usuario/pontos", methods=["GET"])
+def obter_pontos():
+    email = request.args.get("email")
+    if not email:
+        return jsonify({"error": "Email é obrigatório."}), 400
+
+    try:
+        cliente = supabase.table("usuarios").select("pontos").eq("email", email).execute()
+        if cliente.data:
+            pontos = cliente.data[0].get("pontos", 0) or 0
+            return jsonify({"pontos": pontos}), 200
+        return jsonify({"error": "Usuário não encontrado."}), 404
+    except Exception as e:
+        print(f"❌ Erro ao buscar pontos: {e}")
+        return jsonify({"error": "Erro ao buscar os pontos do usuário."}), 500    
 
 
-@app.route('/api/chat', methods=['POST'])
+@app.route("/api/admin/usuarios", methods=["GET"])
+def admin_usuarios():
+    admin_email = request.args.get("admin_email")
+    if not admin_email:
+        return jsonify({"error": "Email do administrador não informado."}), 400
+
+    try:
+        admin_check = supabase.table("usuarios").select("is_admin").eq("email", admin_email).execute()
+        if not admin_check.data or not admin_check.data[0].get("is_admin"):
+            return jsonify({"error": "Acesso não autorizado."}), 403
+
+        usuarios_res = supabase.table("usuarios").select("id, nome, email").execute()
+        agendamentos_res = supabase.table("agendamentos").select("email_cliente, status, servico(valor)").execute()
+
+        lista_final = []
+        agendamentos_dados = agendamentos_res.data or []
+
+        for user in usuarios_res.data or []:
+            user_email = user.get("email")
+            user_agends = [a for a in agendamentos_dados if a.get("email_cliente") == user_email]
+
+            total = len(user_agends)
+            pendentes = len([a for a in user_agends if a.get("status") == "Pendente"])
+            concluidos = len([a for a in user_agends if a.get("status") == "Concluido"])
+            cancelados = len([a for a in user_agends if a.get("status") == "Cancelado"])
+
+            gastos = sum(
+                float(a.get("servico", {}).get("valor", 0) or 0)
+                for a in user_agends
+                if a.get("status") == "Concluido" and a.get("servico")
+            )
+
+            lista_final.append({
+                "nome": user.get("nome"),
+                "email": user_email,
+                "total": total,
+                "pendentes": pendentes,
+                "concluidos": concluidos,
+                "cancelados": cancelados,
+                "gastos": gastos
+            })
+
+        return jsonify(lista_final), 200
+    except Exception as e:
+        print(f"❌ Erro ao listar usuários no admin: {e}")
+        return jsonify({"error": "Erro interno ao carregar relatório de clientes."}), 500
+
+
+@app.route("/api/estoque", methods=["GET"])
+def listar_estoque():
+    try:
+        res = supabase.table("estoque").select("*").order("id").execute()
+        return jsonify(res.data), 200
+    except Exception as e:
+        print(f"❌ Erro ao listar estoque: {e}")
+        return jsonify({"error": "Erro ao carregar o estoque."}), 500
+
+
+@app.route("/api/estoque", methods=["POST"])
+def adicionar_estoque():
+    dados = request.json or {}
+    nome = dados.get("nome")
+    quantidade = dados.get("quantidade", 0)
+    quantidade_minima = dados.get("quantidade_minima", 5)
+    unidade = dados.get("unidade", "un")
+
+    if not nome:
+        return jsonify({"error": "O nome do produto é obrigatório."}), 400
+
+    try:
+        supabase.table("estoque").insert({
+            "nome": nome,
+            "quantidade": quantidade,
+            "quantidade_minima": quantidade_minima,
+            "unidade": unidade
+        }).execute()
+
+        return jsonify({"message": "Item adicionado ao estoque!"}), 201
+    except Exception as e:
+        print(f"❌ Erro ao inserir item no estoque: {e}")
+        return jsonify({"error": "Erro ao cadastrar o produto no estoque."}), 500
+
+
+@app.route("/api/estoque/<int:id>", methods=["PUT"])
+def atualizar_estoque(id):
+    dados = request.json or {}
+    quantidade = dados.get("quantidade")
+
+    if quantidade is None:
+        return jsonify({"error": "Quantidade é obrigatória."}), 400
+
+    try:
+        supabase.table("estoque").update({"quantidade": quantidade}).eq("id", id).execute()
+        return jsonify({"message": "Estoque atualizado!"}), 200
+    except Exception as e:
+        print(f"❌ Erro ao atualizar item do estoque: {e}")
+        return jsonify({"error": "Erro ao alterar quantidade."}), 500
+
+
+@app.route("/api/estoque/<int:id>", methods=["DELETE"])
+def deletar_estoque(id):
+    try:
+        supabase.table("estoque").delete().eq("id", id).execute()
+        return jsonify({"message": "Item removido do estoque!"}), 200
+    except Exception as e:
+        print(f"❌ Erro ao deletar item do estoque: {e}")
+        return jsonify({"error": "Erro ao remover item do estoque."}), 500
+
+
+@app.route("/api/chat", methods=["POST"])
 def chat_assistente():
-    dados = request.json
-    mensagem_usuario = dados.get('mensagem')
+    dados = request.json or {}
+    mensagem = dados.get("mensagem", "")
 
-    if not mensagem_usuario:
+    if not mensagem:
         return jsonify({"error": "Mensagem vazia."}), 400
 
-    api_key = os.environ.get("OPENAI_API_KEY")
-    if not api_key:
-        return jsonify({"error": "Chave da OpenAI não configurada no servidor."}), 500
+    msg_lc = mensagem.lower()
+    if any(k in msg_lc for k in ["dor", "costas", "tenso", "tensão", "muscular"]):
+        resposta = "Para alívio de tensões profundas e dores musculares, recomendo nossa Massagem Terapêutica ou Massagem com Pedras Quentes. Elas ajudam a relaxar a musculatura acumulada pelo estresse."
+    elif any(k in msg_lc for k in ["estresse", "cansaço", "cansado", "ansiedade", "mente"]):
+        resposta = "Se você está buscando desacelerar a mente e renovar as energias, recomendo nossa Aromaterapia com Óleos Essenciais ou o Banho de Imersão Panaceia."
+    elif any(k in msg_lc for k in ["pele", "rosto", "facial", "esfoliação"]):
+        resposta = "Para cuidados estéticos e revitalização da pele, nossa Limpeza de Pele Profunda e o Ritual Facial Anti-aging são as opções ideais!"
+    else:
+        resposta = "Sinta-se à vontade para explorar nosso catálogo completo de serviços de bem-estar. Se precisar de uma recomendação específica para dores, estresse ou cuidados faciais, é só me chamar!"
 
-    try:
-        servicos_req = supabase.table("servico").select("tipo, valor").execute()
-        lista_servicos = servicos_req.data or []
-        
-        texto_servicos = ", ".join([f"{s['tipo']} (R$ {s['valor']})" for s in lista_servicos])
-        
-        prompt_sistema = f"""Você é o(a) recepcionista super carismático(a) e humano(a) do Spa Panaceia.
-        Aja como um amigo acolhedor: seja caloroso, demonstre empatia real e use uma linguagem muito natural, leve e coloquial. 
-        Fale pouco! Responda em no MÁXIMO 3 a 4 frases curtas. Pareça uma conversa de WhatsApp. Use emojis para dar vida ao texto.
-        O cliente dirá o que está sentindo. Acolha a dor dele rapidamente e sugira apenas 1 (ou no máximo 2) serviços que realmente ajudem.
-        Nossos serviços e preços reais são: {texto_servicos}.
-        NUNCA invente serviços. Vá direto ao ponto de forma gentil."""
-
-        headers = {
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json"
-        }
-        
-        payload = {
-            "model": "gpt-3.5-turbo", 
-            "messages": [
-                {"role": "system", "content": prompt_sistema},
-                {"role": "user", "content": mensagem_usuario}
-            ],
-            "max_tokens": 150,
-            "temperature": 0.85
-        }
-
-        resposta_openai = requests.post("https://api.openai.com/v1/chat/completions", json=payload, headers=headers)
-        dados_ai = resposta_openai.json()
-
-        if resposta_openai.status_code == 200:
-            texto_resposta = dados_ai['choices'][0]['message']['content'].strip()
-            return jsonify({"resposta": texto_resposta}), 200
-        else:
-            print("Erro da OpenAI:", dados_ai)
-            return jsonify({"error": "Nossa IA está meditando agora. Tente novamente mais tarde."}), 500
-
-    except Exception as e:
-        print(f"❌ Erro no chat: {e}")
-        return jsonify({"error": "Falha na comunicação neural do Spa."}), 500
-    
-
-@app.route('/api/usuario/dados', methods=['GET'])
-def dados_usuario():
-    email = request.args.get('email')
-    if not email:
-        return jsonify({"error": "E-mail não informado."}), 400
-    try:
-        res = supabase.table("usuarios").select("nome, email, is_admin, pontos").eq("email", email).execute()
-        if not res.data:
-            return jsonify({"error": "Usuário não encontrado."}), 404
-        return jsonify(res.data[0]), 200
-    except Exception as e:
-        return jsonify({"error": "Erro ao buscar dados."}), 500    
+    return jsonify({"resposta": resposta}), 200
 
 
-# ==============================================================================
-# --- 🚀 INICIALIZAÇÃO DINÂMICA COMPATÍVEL COM RENDER ---
-# ==============================================================================
 if __name__ == '__main__':
-    print("\n" + "═"*50)
-    print(" 🌿 SERVIDOR PANACEIA SPA CONFIGURADO 🌿")
-    print("═"*50)
-    
-    porta = int(os.environ.get("PORT", 5000))
-    app.run(host='0.0.0.0', port=porta)
+    # Pega a porta definida pelo Render (ou usa 5000 como padrão para testes locais)
+    port = int(os.environ.get('PORT', 5000))
+
+    # O segredo é o host='0.0.0.0'
+    app.run(host='0.0.0.0', port=port)
