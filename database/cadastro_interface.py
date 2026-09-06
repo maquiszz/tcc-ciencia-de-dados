@@ -11,6 +11,7 @@ from flask_cors import CORS
 from itsdangerous import URLSafeTimedSerializer
 from supabase import Client, create_client
 from werkzeug.security import check_password_hash, generate_password_hash
+from openai import OpenAI
 
 app = Flask(__name__)
 CORS(
@@ -55,6 +56,55 @@ supabase: Client = create_client(url, key)
 
 # Configurações de Tokens
 serializer = URLSafeTimedSerializer(key)
+
+
+#SISTEMA DE CHAT BOT
+
+# 1. Carrega as variáveis do seu arquivo de configuração específico
+load_dotenv('database.env')
+
+# 2. Inicializa o cliente da OpenAI puxando a chave do .env
+chave_api = os.getenv("OPENAI_API_KEY")
+client = OpenAI(api_key=chave_api)
+
+@app.route('/api/chat', methods=['POST'])
+def chat():
+    try:
+        dados = request.get_json()
+        mensagem_usuario = dados.get('mensagem')
+
+        if not mensagem_usuario:
+            return jsonify({"error": "Sinto o vácuo. Me diga como se sente."}), 400
+
+        # Contexto do Sistema (A personalidade do Orientador do Spa)
+        contexto_spa = (
+            "Você é o Orientador Virtual de bem-estar do Spa Panaceia. "
+            "Seu tom deve ser calmo, acolhedor, terapêutico e luxuoso. "
+            "O cliente vai dizer como está se sentindo (estresse, dores musculares, ansiedade). "
+            "Recomende brevemente um momento de autocuidado (ex: massagem, banho termal, aromaterapia). "
+            "Mantenha as respostas curtas, como uma conversa de chat (máximo de 3 frases)."
+        )
+
+        # Chamada real para a API da OpenAI
+        response = client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": contexto_spa},
+                {"role": "user", "content": mensagem_usuario}
+            ],
+            max_tokens=150,
+            temperature=0.7
+        )
+
+        # Extrai a resposta gerada pela IA
+        resposta_ia = response.choices[0].message.content.strip()
+
+        return jsonify({"resposta": resposta_ia}), 200
+
+    except Exception as e:
+        print(f"Erro na OpenAI: {e}")
+        return jsonify({"error": "Nossa conexão neural falhou momentaneamente. Respire fundo e tente novamente."}), 500
+
 
 
 # ==============================================================================

@@ -14,6 +14,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Spa Panaceia - Serviços e Estoque</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Adicione esta linha logo abaixo do Chart.js 👇 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+    
     
     <!-- Flatpickr (Calendário Customizado) -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
@@ -21,31 +26,82 @@
     <script src="https://npmcdn.com/flatpickr/dist/l10n/pt.js"></script>
 
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        /* 1. IMPORTAÇÃO DAS FONTES (Garante que o CSS puxe a fonte nova direto do Google) */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Poppins:wght@500;600;700;800&display=swap');
+
+        /* 2. FORÇA BRUTA PARA LIMPAR FONTES VELHAS E APLICAR 'INTER' EM TUDO */
+        * { 
+            margin: 0; padding: 0; box-sizing: border-box; 
+            font-family: 'Inter', sans-serif !important;
+        }
+
+        /* 3. APLICA 'POPPINS' (Arredondada/Premium) APENAS NOS TÍTULOS E DESTAQUES */
+        h1, h2, h3, h4, h5, h6, 
+        .titulo-spa, 
+        .card-titulo, 
+        .logo-spa, 
+        .card-preco, 
+        .item-agendamento-info h4 {
+            font-family: 'Poppins', sans-serif !important;
+            letter-spacing: -0.5px !important;
+        }
+
+
+        /* Notificações Flutuantes (Toast) */
+.spa-toast {
+    pointer-events: auto;
+    min-width: 300px;
+    max-width: 420px;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border-radius: 16px;
+    padding: 16px 20px;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12);
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    border-left: 6px solid #6a11cb;
+    animation: toastSlideIn 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    transition: all 0.3s ease;
+}
+
+body.dark-mode .spa-toast {
+    background: rgba(30, 41, 59, 0.95) !important;
+    color: #f1f5f9 !important;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45) !important;
+}
+
+.spa-toast.sucesso { border-left-color: #10b981; }
+.spa-toast.erro { border-left-color: #ef4444; }
+.spa-toast.aviso { border-left-color: #f59e0b; }
+
+.toast-fechar {
+    opacity: 0;
+    transform: translateX(120%);
+}
+
+@keyframes toastSlideIn {
+    from { opacity: 0; transform: translateX(100%); }
+    to { opacity: 1; transform: translateX(0); }
+}
         
         body {
             /* Fundo suave e quente estilo Spa */
             background: radial-gradient(circle at top left, #fbf7ff 0%, #f4f6f9 50%, #eef2f8 100%);
-            font-family: 'Plus Jakarta Sans', sans-serif;
             color: #2d3748;
             min-height: 100vh;
             padding: 20px;
             display: flex;
             flex-direction: column;
             align-items: center;
+            -webkit-font-smoothing: antialiased !important; /* Suaviza a leitura na tela inteira */
         }
 
         /* Títulos de Luxo apenas onde faz sentido (Catálogo) */
-        h1, h2, .card-titulo {
-            font-family: 'Playfair Display', serif;
-            color: #1a202c;
-        }
+        h1, h2, .card-titulo { color: #1a202c; }
 
-        /* Títulos dos modais e dashboard usam a fonte clean */
-        .modal-box h3, h3 {
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            color: #1a202c;
-        }
+        /* Títulos dos modais e dashboard */
+        .modal-box h3, h3 { color: #1a202c; }
 
         /* ANIMAÇÕES GERAIS */
         @keyframes fadeInUp {
@@ -70,7 +126,6 @@
             border: none !important;
             border-radius: 16px !important;
             padding: 10px !important;
-            font-family: 'Plus Jakarta Sans', sans-serif !important;
         }
 
         .flatpickr-day.selected, 
@@ -116,11 +171,63 @@
             top: 20px;
             z-index: 1000;
         }
+
+        /* 🌙 CALENDÁRIO FLATPICKR NO MODO ESCURO */
+        body.dark-mode .flatpickr-calendar {
+            background: #1e293b !important;
+            border: 1px solid #334155 !important;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.5) !important;
+        }
+
+        /* Meses, anos, setas e dias da semana */
+        body.dark-mode .flatpickr-month,
+        body.dark-mode .flatpickr-current-month,
+        body.dark-mode .flatpickr-current-month input.cur-year,
+        body.dark-mode span.flatpickr-weekday {
+            color: #f1f5f9 !important;
+            fill: #f1f5f9 !important; 
+        }
+
+        /* Dias normais */
+        body.dark-mode .flatpickr-day {
+            color: #cbd5e1 !important;
+        }
+
+        /* Efeito de passar o mouse nos dias */
+        body.dark-mode .flatpickr-day:hover,
+        body.dark-mode .flatpickr-day:focus {
+            background: #334155 !important;
+            border-color: #334155 !important;
+            color: #ffffff !important;
+        }
+
+        /* Mantém o roxo/azul no dia selecionado */
+        body.dark-mode .flatpickr-day.selected {
+            background: #6a11cb !important;
+            border-color: #6a11cb !important;
+            color: #ffffff !important;
+        }
+
+        /* Dias bloqueados (ex: Segundas-feiras ou dias passados) */
+        body.dark-mode .flatpickr-day.flatpickr-disabled,
+        body.dark-mode .flatpickr-day.flatpickr-disabled:hover {
+            color: #475569 !important;
+            background: transparent !important;
+            border-color: transparent !important;
+        }
+
+        /* Área do relógio/hora embaixo */
+        body.dark-mode .flatpickr-time {
+            border-top: 1px solid #334155 !important;
+        }
+        body.dark-mode .flatpickr-time input {
+            color: #f1f5f9 !important;
+            background: #1e293b !important;
+        }
         
         .logo-spa {
             font-size: 22px;
             font-weight: 700;
-            font-family: 'Playfair Display', serif;
             color: #6a11cb;
             cursor: pointer;
             transition: transform 0.3s ease;
@@ -183,7 +290,7 @@
         .dropdown-item.btn-sair:hover { background: #fff5f5; color: #c53030; }
         
         header { text-align: center; margin-bottom: 50px; }
-        header h1 { font-size: 42px; margin-bottom: 12px; letter-spacing: -0.5px; }
+        header h1 { font-size: 42px; margin-bottom: 12px; }
         header p { color: #718096; font-size: 17px; font-weight: 500; }
 
         /* 🔐 ÁREA DE AUTENTICAÇÃO */
@@ -195,7 +302,7 @@
             border: 1px solid rgba(255,255,255,0.5);
         }
         .auth-container.ativa { display: block; }
-        .auth-container h3 { font-size: 28px; margin-bottom: 20px; font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; }
+        .auth-container h3 { font-size: 28px; margin-bottom: 20px; }
         .auth-container input { width: 100%; padding: 14px; margin: 8px 0; border: 2px solid #e2e8f0; border-radius: 12px; transition: border 0.3s; font-size: 15px; outline: none; }
         .auth-container input:focus { border-color: #6a11cb; }
         .auth-container button { width: 100%; padding: 14px; background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%); color: white; border: none; border-radius: 12px; font-weight: 700; font-size: 16px; cursor: pointer; margin-top: 15px; transition: all 0.3s; box-shadow: 0 4px 15px rgba(106, 17, 203, 0.2); }
@@ -240,8 +347,8 @@
         .card:hover img { transform: scale(1.08); }
         
         .card-conteudo { padding: 25px; display: flex; flex-direction: column; flex-grow: 1; justify-content: space-between; }
-        .card-titulo { font-size: 22px; margin-bottom: 8px; font-weight: 700; }
-        .card-preco { font-size: 26px; color: #6a11cb; font-weight: 800; margin-bottom: 15px; letter-spacing: -0.5px; font-family: 'Plus Jakarta Sans', sans-serif; }
+        .card-titulo { font-size: 22px; margin-bottom: 8px; }
+        .card-preco { font-size: 26px; color: #6a11cb; margin-bottom: 15px; }
         
         .card-contratos { 
             display: inline-block; font-size: 12px; color: #4a5568; 
@@ -260,7 +367,7 @@
         .lista-agendamentos { display: flex; flex-direction: column; gap: 20px; max-width: 700px; margin: 0 auto; }
         .item-agendamento { background: white; padding: 25px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.03); display: flex; justify-content: space-between; align-items: center; border: 1px solid #edf2f7; transition: transform 0.3s; animation: fadeInUp 0.5s ease-out forwards; }
         .item-agendamento:hover { transform: scale(1.01); }
-        .item-agendamento-info h4 { font-family: 'Playfair Display', serif; font-size: 22px; margin-bottom: 8px; }
+        .item-agendamento-info h4 { font-size: 22px; margin-bottom: 8px; }
         .item-agendamento-info p { color: #64748b; font-size: 15px; margin-top: 5px; font-weight: 500; }
         .item-agendamento-acoes { display: flex; gap: 10px; }
         .btn-remarcar { background: #f59e0b; color: white; border: none; padding: 10px 16px; border-radius: 10px; cursor: pointer; font-weight: bold; transition: all 0.2s; }
@@ -283,7 +390,7 @@
             animation: scaleIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
         .modal-box label { display: block; text-align: left; margin: 15px 0 8px; font-size: 15px; font-weight: 600; color: #4a5568; }
-        .modal-box input { width: 100%; padding: 14px; border: 2px solid #e2e8f0; border-radius: 12px; font-size: 15px; outline: none; transition: border 0.3s; font-family: 'Plus Jakarta Sans', sans-serif; }
+        .modal-box input { width: 100%; padding: 14px; border: 2px solid #e2e8f0; border-radius: 12px; font-size: 15px; outline: none; transition: border 0.3s; }
         .modal-box input:focus { border-color: #6a11cb; }
         .btn-confirmar { width: 100%; padding: 15px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; border: none; border-radius: 12px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 25px; transition: transform 0.2s, box-shadow 0.2s; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3); }
         .btn-confirmar:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(16, 185, 129, 0.4); }
@@ -294,7 +401,7 @@
         .admin-container { background: white; padding: 35px; border-radius: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.03); overflow-x: auto; width: 100%; border: 1px solid #edf2f7; animation: fadeInUp 0.5s ease-out; }
         .tabela-admin { width: 100%; border-collapse: separate; border-spacing: 0; text-align: left; margin-top: 20px; min-width: 700px; }
         .tabela-admin th, .tabela-admin td { padding: 18px 20px; border-bottom: 1px solid #f1f5f9; font-size: 14px; }
-        .tabela-admin th { background-color: #f8fafc; color: #475569; font-weight: 800; text-transform: uppercase; font-size: 12px; letter-spacing: 0.5px; font-family: 'Plus Jakarta Sans', sans-serif;}
+        .tabela-admin th { background-color: #f8fafc; color: #475569; font-weight: 800; text-transform: uppercase; font-size: 12px; letter-spacing: 0.5px; }
         .tabela-admin th:first-child { border-top-left-radius: 12px; border-bottom-left-radius: 12px; }
         .tabela-admin th:last-child { border-top-right-radius: 12px; border-bottom-right-radius: 12px; }
         .tabela-admin tr:hover td { background-color: #f8fafc; }
@@ -314,28 +421,184 @@
             animation: pulseGlow 2.5s infinite;
         }
         .chatbot-btn:hover { transform: scale(1.15) rotate(10deg); animation: none; }
-    </style>
-</head>
-<body>
+
+        /* ⏰ TRAVA DE HORÁRIOS: Esconde os minutos e deixa só a hora cheia */
+        .flatpickr-time .flatpickr-minute,
+        .flatpickr-time .flatpickr-time-separator {
+            display: none !important;
+        }
+        
+        .flatpickr-time .flatpickr-hour {
+            width: 100% !important; /* Faz a caixinha da hora centralizar e ocupar o espaço todo */
+            max-width: 100% !important;
+            font-weight: 800 !important;
+        }
+
+/* 🌙 MODO ESCURO (DARK MODE) PREMIUM */
+        body.dark-mode {
+            background: radial-gradient(circle at top left, #0f172a 0%, #1e293b 50%, #0f172a 100%) !important;
+            color: #f1f5f9 !important;
+        }
+
+        /* Textos e Títulos */
+        body.dark-mode h1, body.dark-mode h2, body.dark-mode h3, body.dark-mode h4, body.dark-mode h5, 
+        body.dark-mode p:not(.badge-status), body.dark-mode label, body.dark-mode span:not(.badge-status):not([style*="color: white"]) {
+            color: #f1f5f9 !important;
+        }
+
+        /* Cards, Modais e Paineis */
+        body.dark-mode .card, body.dark-mode .modal-box, body.dark-mode .admin-container, 
+        body.dark-mode .auth-container, body.dark-mode .item-agendamento,
+        body.dark-mode div[style*="background: white"] {
+            background: #1e293b !important;
+            border-color: #334155 !important;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.3) !important;
+        }
+
+        /* Navbar e Dropdown Vidro Escuro */
+        body.dark-mode .navbar-topo, body.dark-mode .dropdown-menu-spa {
+            background: rgba(15, 23, 42, 0.85) !important;
+            border-color: rgba(255, 255, 255, 0.05) !important;
+        }
+
+        /* Inputs, Botão Tema e Tabelas */
+        body.dark-mode input, body.dark-mode #btn-theme-toggle, body.dark-mode .dropdown-item:hover, 
+        body.dark-mode .btn-fechar, body.dark-mode .card-contratos {
+            background: #334155 !important;
+            color: #f1f5f9 !important;
+            border-color: #475569 !important;
+        }
+
+        body.dark-mode .tabela-admin th { background-color: #334155 !important; color: #cbd5e1 !important; border-bottom: 1px solid #475569 !important;}
+        body.dark-mode .tabela-admin td { border-bottom: 1px solid #334155 !important; }
+        body.dark-mode .tabela-admin tr:hover td { background-color: #334155 !important; }
+
+
+    /* Estilos dos botões de filtro */
+        .btn-filtro.ativo {
+            background: #6a11cb !important;
+            color: white !important;
+            box-shadow: 0 4px 12px rgba(106, 17, 203, 0.25);
+        }
+
+        body.dark-mode .btn-filtro:not(.ativo) {
+            background: #334155 !important;
+            color: #cbd5e1 !important;
+        }
+
+        body.dark-mode div[style*="background: white; padding: 20px 25px"] {
+            background: #1e293b !important;
+            border-color: #334155 !important;
+        }  
+        
+    /* ======================================================= */
+        /* 📱 RESPONSIVIDADE TOTAL (MOBILE & TABLETS) */
+        /* ======================================================= */
+        @media (max-width: 768px) {
+            /* 1. Ajustes de Espaçamento e Fontes */
+            body { padding: 10px; }
+            header h1 { font-size: 28px !important; }
+            header p { font-size: 14px !important; padding: 0 10px; }
+
+            /* 2. Navbar Empilhada */
+            .navbar-topo {
+                flex-direction: column;
+                gap: 15px;
+                padding: 15px 20px;
+                border-radius: 24px;
+                position: relative;
+                top: 0;
+            }
+            .menu-usuario-container { width: 100%; display: flex; justify-content: center; }
+            .dropdown-menu-spa { width: 100%; right: auto; top: 110%; text-align: center; }
+            .dropdown-item { text-align: center; }
+
+            /* 3. Cards, Painéis e Botões */
+            .card-conteudo { padding: 20px !important; }
+            .admin-container { padding: 15px !important; border-radius: 16px; }
+            .btn-filtro { flex-grow: 1; margin-bottom: 5px; } /* Estica os botões de filtro */
+
+            /* 4. Tabelas (Garante o scroll horizontal sem quebrar a tela) */
+            .tabela-admin { min-width: 600px; font-size: 13px; }
+            .tabela-admin th, .tabela-admin td { padding: 12px 10px !important; }
+            
+            /* 5. Modais */
+            .modal-box { padding: 25px 20px !important; width: 95% !important; }
+            .modal-box h3 { font-size: 22px !important; }
+
+            /* 6. Chatbot (Tela Quase Cheia) */
+            #chatbotJanela {
+                width: 90vw !important;
+                height: 75vh !important;
+                right: 5vw !important;
+                bottom: 100px !important;
+            }
+
+            /* 7. Notificações Flutuantes (Toasts Centralizados) */
+            #toast-container { right: 5% !important; left: 5% !important; width: 90% !important; align-items: center; }
+            .spa-toast { min-width: 100% !important; max-width: 100% !important; justify-content: center; }
+            
+            /* 8. Inteligência Financeira e Fidelidade */
+            #cardFidelidade { flex-direction: column; text-align: center; gap: 15px; }
+            #cardFidelidade div { text-align: center !important; width: 100%; }
+        }    
+
+</style>
  
     <div class="navbar-topo">
         <div class="logo-spa" onclick="alternarAbas('catalogo')">✨ Spa Panaceia</div>
         
-        <div class="menu-usuario-container">
-            <button class="btn-perfil-gatilho" onclick="toggleDropdownMenu(event)" id="btnDropdownGatilho">
-                👤 Acessar Conta
+        <!-- Lado direito da Navbar: Tema ao lado do Perfil -->
+        <div style="display: flex; align-items: center; gap: 12px;">
+            
+            <!-- Botão de Alternar Modo (Claro/Escuro) -->
+            <button id="btn-theme-toggle" onclick="toggleTema()" style="background: #f1f5f9; border: none; width: 42px; height: 42px; border-radius: 50%; font-size: 18px; cursor: pointer; transition: all 0.3s; display: flex; justify-content: center; align-items: center; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
+                🌙
             </button>
-            <div class="dropdown-menu-spa" id="menuDropdownSpa">
-                <button class="dropdown-item" onclick="alternarAbas('catalogo')">🌸 Catálogo</button>
-                <button class="dropdown-item" id="drop-meu-perfil" onclick="alternarAbas('agendamentos')" style="display: none;">📅 Meu Perfil</button>
-                <button class="dropdown-item" id="drop-admin-painel" onclick="alternarAbas('admin')" style="display: none; color: #6a11cb; font-weight: bold;">👑 Painel Admin</button>
-                <button class="dropdown-item" id="drop-admin-financeiro" onclick="alternarAbas('financeiro')" style="display: none; color: #10b981; font-weight: bold;">📊 Painel Financeiro</button>
-                <button class="dropdown-item" id="drop-admin-usuarios" onclick="alternarAbas('usuarios')" style="display: none; color: #2575fc; font-weight: bold;">👥 Gerenciar Usuários</button>
-                <button class="dropdown-item" id="drop-admin-estoque" onclick="alternarAbas('estoque')" style="display: none; color: #d97706; font-weight: bold;">📦 Gestão de Estoque</button>
-                <button class="dropdown-item btn-sair" id="drop-deslogar" onclick="deslogar()" style="display: none;">🚪 Sair</button>                
+            
+            <!-- Menu do Usuário / Perfil -->
+            <div class="menu-usuario-container">
+                <button class="btn-perfil-gatilho" onclick="toggleDropdownMenu(event)" id="btnDropdownGatilho">
+                    <span id="nome-usuario-logado">👤 Acessar Conta</span>
+                </button>
+
+                <div class="dropdown-menu-spa" id="menuDropdownSpa">
+                    <button class="dropdown-item" onclick="alternarAbas('catalogo')">🌸 Catálogo</button>
+                    <button class="dropdown-item" id="drop-meu-perfil" onclick="alternarAbas('agendamentos')" style="display: none;">📅 Meu Perfil</button>
+                    <button class="dropdown-item" id="drop-admin-painel" onclick="alternarAbas('admin')" style="display: none; color: #6a11cb; font-weight: bold;">👑 Painel Admin</button>
+                    <button class="dropdown-item" id="drop-admin-financeiro" onclick="alternarAbas('financeiro')" style="display: none; color: #10b981; font-weight: bold;">📊 Painel Financeiro</button>
+                    <button class="dropdown-item" id="drop-admin-usuarios" onclick="alternarAbas('usuarios')" style="display: none; color: #2575fc; font-weight: bold;">👥 Gerenciar Usuários</button>
+                    <button class="dropdown-item" id="drop-admin-estoque" onclick="alternarAbas('estoque')" style="display: none; color: #d97706; font-weight: bold;">📦 Gestão de Estoque</button>
+                    <button class="dropdown-item btn-sair" id="drop-deslogar" onclick="deslogar()" style="display: none;">🚪 Sair</button>                
+                </div>
             </div>
         </div>
     </div>
+
+
+    <!-- ... (resto da navbar) ... -->
+        <!-- Lado direito da Navbar: Tema ao lado do Perfil -->
+        <div style="display: flex; align-items: center; gap: 12px;">
+            <!-- Botão de Alternar Modo (Claro/Escuro) -->
+            <button id="btn-theme-toggle" onclick="toggleTema()" style="background: #f1f5f9; border: none; width: 42px; height: 42px; border-radius: 50%; font-size: 18px; cursor: pointer; transition: all 0.3s; display: flex; justify-content: center; align-items: center; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
+                🌙
+            </button>
+            
+            <!-- Menu do Usuário / Perfil (sem o texto fixo 'Entrar') -->
+            <div class="menu-usuario-container">
+                <button class="btn-perfil-gatilho" onclick="toggleDropdown()">
+                    <span id="nome-usuario-logado"></span>
+                </button>
+
+                <div id="menu-dropdown-spa" class="dropdown-menu-spa">
+                    <button class="dropdown-item" onclick="mostrarSecao('secao-servicos')">💆 Serviços</button>
+                    <button class="dropdown-item" onclick="mostrarSecao('secao-agendamentos')">📅 Meus Agendamentos</button>
+                    <button id="item-admin-menu" class="dropdown-item" style="display: none;" onclick="mostrarSecao('secao-admin')">⚙️ Painel Admin</button>
+                    <button id="item-fin-menu" class="dropdown-item" style="display: none;" onclick="mostrarSecao('secao-financeiro')">📊 Financeiro & BI</button>
+                    <button class="dropdown-item btn-sair" onclick="logout()">Sair</button>
+                </div>
+            </div>
+        </div>
  
     <div id="authBox" class="auth-container">
         <h3 id="authTitulo">Fazer Login</h3>
@@ -384,17 +647,41 @@
 
     <!-- PAINEL GERENCIAL -->
     <div id="secao-admin" class="secao-conteudo">
-        <header>
+        <header style="margin-bottom: 40px;">
             <h1 style="font-family: 'Playfair Display', serif;">👑 Painel Gerencial</h1>
             <p>Monitore os agendamentos globais e valide a realização das sessões</p>
         </header>
+
+        <!-- 🎛️ BARRA DE FILTROS E EXPORTAÇÃO (BI) -->
+        <div style="background: white; padding: 20px 25px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.03); margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; border: 1px solid #edf2f7;">
+            
+            <!-- Filtros por Status -->
+            <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                <span style="font-size: 13px; font-weight: 700; color: #64748b; text-transform: uppercase;">Filtrar Status:</span>
+                <button onclick="filtrarAdmin('todos')" class="btn-filtro ativo" style="padding: 8px 16px; border-radius: 12px; border: none; background: #6a11cb; color: white; font-weight: 600; cursor: pointer; font-size: 13px; transition: all 0.2s;">Todos</button>
+                <button onclick="filtrarAdmin('Pendente')" class="btn-filtro" style="padding: 8px 16px; border-radius: 12px; border: none; background: #f1f5f9; color: #475569; font-weight: 600; cursor: pointer; font-size: 13px; transition: all 0.2s;">Pendentes</button>
+                <button onclick="filtrarAdmin('Concluido')" class="btn-filtro" style="padding: 8px 16px; border-radius: 12px; border: none; background: #f1f5f9; color: #475569; font-weight: 600; cursor: pointer; font-size: 13px; transition: all 0.2s;">Concluídos</button>
+                <button onclick="filtrarAdmin('Cancelado')" class="btn-filtro" style="padding: 8px 16px; border-radius: 12px; border: none; background: #f1f5f9; color: #475569; font-weight: 600; cursor: pointer; font-size: 13px; transition: all 0.2s;">Cancelados</button>
+            </div>
+
+            <!-- Botões de Exportação -->
+            <div style="display: flex; gap: 10px;">
+                <button onclick="exportarCSV()" style="background: #10b981; color: white; border: none; padding: 10px 18px; border-radius: 12px; font-weight: 700; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2); transition: transform 0.2s;">
+                    📥 Exportar Excel (CSV)
+                </button>
+                <button onclick="exportarPDF()" style="background: #ef4444; color: white; border: none; padding: 10px 18px; border-radius: 12px; font-weight: 700; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2); transition: transform 0.2s;">
+                    📄 Gerar Relatório PDF
+                </button>
+            </div>
+        </div>
+
         <div class="admin-container">
             <table class="tabela-admin">
                <thead><tr><th>Cliente</th><th>Serviço</th><th>Data/Hora</th><th>Valor</th><th>Status</th><th>Avaliação</th><th>Ações</th></tr></thead>
                 <tbody id="container-admin-agendamentos"><tr><td colspan="7" style="text-align: center;">⏳ Carregando...</td></tr></tbody>
             </table>
         </div>
-    </div> 
+    </div>
 
     <!-- PAINEL DE ESTOQUE -->
     <div id="secao-estoque" class="secao-conteudo">
@@ -466,7 +753,7 @@
         </div>
 
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
-            <!-- NOVO: GRÁFICO DE CURVA (Aproveita 100% da largura) -->
+            <!-- GRÁFICO DE CURVA (Aproveita 100% da largura) -->
             <div style="grid-column: 1 / -1; background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.03); display: flex; flex-direction: column; align-items: center; justify-content: center; animation: fadeInUp 0.8s ease-out;">
                 <h4 style="margin: 0 0 20px 0; color: #1a202c; font-size: 16px;">Curva de Tendência de Receita</h4>
                 <div style="width: 100%; height: 250px;"><canvas id="graficoTendencia"></canvas></div>
@@ -480,6 +767,44 @@
             <div style="background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.03); display: flex; flex-direction: column; align-items: center; justify-content: center; animation: fadeInUp 1s ease-out;">
                 <h4 style="margin: 0 0 20px 0; color: #1a202c; font-size: 16px;">Índice de Satisfação (NPS)</h4>
                 <div style="width: 100%; max-width: 220px;"><canvas id="graficoAvaliacoes"></canvas></div>
+            </div>
+        </div>
+
+        <!-- 🧠 NOVA SEÇÃO: INTELIGÊNCIA DE MERCADO -->
+        <div style="margin-top: 40px; border-top: 1px solid #e2e8f0; padding-top: 40px; animation: fadeInUp 1.2s ease-out;">
+            <h2 style="font-family: 'Poppins', sans-serif; font-size: 22px; color: #1e293b; margin-bottom: 25px; display: flex; align-items: center; gap: 10px;">
+                <span style="font-size: 28px;">🧠</span> Inteligência de Negócio e Mercado
+            </h2>
+            
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+                
+                <!-- Gráfico: TOP Serviços -->
+                <div style="background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.03); border: 1px solid #f1f5f9; display: flex; flex-direction: column;">
+                    <h4 style="margin-bottom: 20px; color: #334155; font-size: 15px; font-weight: 700;">🏆 Ranking de Serviços</h4>
+                    <div style="width: 100%; height: 250px; flex-grow: 1;"><canvas id="graficoTopServicos"></canvas></div>
+                </div>
+
+                <!-- Gráfico: Dias mais Movimentados -->
+                <div style="background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.03); border: 1px solid #f1f5f9; display: flex; flex-direction: column;">
+                    <h4 style="margin-bottom: 20px; color: #334155; font-size: 15px; font-weight: 700;">🔥 Pico de Movimento por Dia</h4>
+                    <div style="width: 100%; height: 250px; flex-grow: 1;"><canvas id="graficoDiasPopulares"></canvas></div>
+                </div>
+
+                <!-- KPIs de Alta Gestão -->
+                <div style="display: flex; flex-direction: column; gap: 20px;">
+                    <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 25px rgba(16, 185, 129, 0.3); display: flex; flex-direction: column; justify-content: center; flex-grow: 1;">
+                        <p style="font-size: 13px; text-transform: uppercase; font-weight: 700; opacity: 0.9; letter-spacing: 0.5px;">Ticket Médio por Cliente</p>
+                        <h3 id="fin-ticket-medio" style="font-size: 36px; margin-top: 8px; color: white;">R$ 0,00</h3>
+                        <p style="font-size: 12px; margin-top: 10px; opacity: 0.8;">Média gasta por cada atendimento</p>
+                    </div>
+
+                    <div style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 25px rgba(59, 130, 246, 0.3); display: flex; flex-direction: column; justify-content: center; flex-grow: 1;">
+                        <p style="font-size: 13px; text-transform: uppercase; font-weight: 700; opacity: 0.9; letter-spacing: 0.5px;">Média de Venda Semanal</p>
+                        <h3 id="fin-media-semanal" style="font-size: 36px; margin-top: 8px; color: white;">R$ 0,00</h3>
+                        <p style="font-size: 12px; margin-top: 10px; opacity: 0.8;">Projeção de faturamento por semana</p>
+                    </div>
+                </div>
+
             </div>
         </div>
     </div>
@@ -627,6 +952,8 @@
         let acaoAoFecharModal = null;
         let emailParaVerificar = "";
         let chartTendencia = null;
+        let chartTopServicos = null;
+        let chartDiasPopulares = null;
 
 
 
@@ -639,12 +966,13 @@
             dateFormat: "Y-m-d\\TH:i",
             minDate: "today",
             minTime: "09:00",
-            maxTime: "20:00",
+            maxTime: "19:00", // Último horário para marcar (o serviço dura 1h e acaba às 20h)
             time_24hr: true,
             minuteIncrement: 60,
+            defaultMinute: 0, // 👈 ESSA É A TRAVA MESTRA DOS MINUTOS
             locale: "pt",
             disable: [
-                function(date) { return (date.getDay() === 1); }
+                function(date) { return (date.getDay() === 1); } // Bloqueia Segundas
             ],
             onChange: function(selectedDates, dateStr, instance) {
                 if (!dateStr) return;
@@ -716,12 +1044,38 @@
             }
         }
 
-        function exibirNotificacaoSpa(titulo, texto, icone = '🌿') {
-            document.getElementById('notificacaoIcone').innerText = icone;
-            document.getElementById('notificacaoTitulo').innerText = titulo;
-            document.getElementById('notificacaoTexto').innerText = texto;
-            abrirModal('notificacaoModal');
-        }
+        function exibirNotificacaoSpa(titulo, mensagem, tipo = 'info') {
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+
+    const icones = {
+        sucesso: '✨',
+        erro: '❌',
+        aviso: '⚠️',
+        info: 'ℹ️'
+    };
+
+    // Suporte caso passe um emoji direto no terceiro parâmetro
+    let classeTipo = ['sucesso', 'erro', 'aviso', 'info'].includes(tipo) ? tipo : 'info';
+    let iconeExibido = icones[classeTipo] || tipo;
+
+    const toast = document.createElement('div');
+    toast.className = `spa-toast ${classeTipo}`;
+    toast.innerHTML = `
+        <div style="font-size: 24px; line-height: 1;">${iconeExibido}</div>
+        <div style="flex-grow: 1;">
+            <strong style="display: block; font-size: 14px; margin-bottom: 2px; font-family: 'Poppins', sans-serif;">${titulo}</strong>
+            <span style="font-size: 13px; color: #64748b; line-height: 1.3; display: block;">${mensagem}</span>
+        </div>
+    `;
+
+    container.appendChild(toast);
+
+    setTimeout(() => {
+        toast.classList.add('toast-fechar');
+        setTimeout(() => toast.remove(), 300);
+    }, 4000);
+}
 
         function alternarAbas(aba) {
             modoAbas = aba;
@@ -1379,81 +1733,103 @@
             }
         }
  
+        let filtroStatusAtual = 'todos';
+        let cacheAgendamentosAdmin = [];
+
         async function carregarAgendamentosAdmin() {
             const container = document.getElementById('container-admin-agendamentos'); 
-            
             if (!usuarioLogado || !usuarioLogado.is_admin) return;
 
             try {
                 const response = await fetch(`${BACKEND_URL}/api/admin/agendamentos?admin_email=${usuarioLogado.email}`);
                 const agendamentos = await response.json(); 
                 
-                if (container) container.innerHTML = '';
-
                 if (!response.ok || agendamentos.error) {
                     if (container) container.innerHTML = `<tr><td colspan="7" style="text-align: center; color: red; font-weight: bold;">❌ Anomalia Detectada: ${agendamentos.error || 'Desconhecida'}</td></tr>`;
                     return;
                 }
 
-                let faturamento = 0;
-                let faturamentoPendente = 0; // Novo cálculo de inteligência
-                let totalContratos = agendamentos.length;
-                let pendentes = 0;
-                let concluidos = 0;
-                let cancelados = 0; 
-                let avalBom = 0;
-                let avalMedio = 0;
-                let avalRuim = 0;
+                cacheAgendamentosAdmin = agendamentos; // Guarda em cache para filtrar rápido sem travar o servidor
+                processarDadosAdminERenderizar(agendamentos);
 
-                if (agendamentos.length === 0) {
-                    if (container) container.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 30px;">O vácuo predomina. Não há registros a exibir.</td></tr>';
-                    return;
+            } catch (error) {
+                console.error("Distúrbio na injeção de dados gráficos:", error);
+            }
+        }
+
+        // Função do Filtro
+        function filtrarAdmin(status) {
+            filtroStatusAtual = status;
+            
+            const botoes = document.querySelectorAll('.btn-filtro');
+            botoes.forEach(btn => {
+                btn.classList.remove('ativo');
+                if (btn.innerText.toLowerCase().includes(status.toLowerCase()) || (status === 'todos' && btn.innerText === 'Todos')) {
+                    btn.classList.add('ativo');
                 }
+            });
 
-                agendamentos.forEach((ag, idx) => {
-                    const dataFormatada = new Date(ag.data_atendimento).toLocaleString('pt-BR');
+            processarDadosAdminERenderizar(cacheAgendamentosAdmin);
+        }
+
+        // Motor unificado que renderiza a tabela filtrada e atualiza os gráficos
+        function processarDadosAdminERenderizar(agendamentos) {
+            const container = document.getElementById('container-admin-agendamentos'); 
+            if (container) container.innerHTML = '';
+
+            let faturamento = 0; let faturamentoPendente = 0; let totalContratos = agendamentos.length;
+            let pendentes = 0; let concluidos = 0; let cancelados = 0; 
+            let avalBom = 0; let avalMedio = 0; let avalRuim = 0;
+            let contagemServicos = {}; let contagemDias = { 'Dom': 0, 'Seg': 0, 'Ter': 0, 'Qua': 0, 'Qui': 0, 'Sex': 0, 'Sáb': 0 };
+
+            agendamentos.forEach((ag) => {
+                const dataObj = new Date(ag.data_atendimento);
+                const valorNumerico = parseFloat(ag.servico?.valor || 0);
+                const agendStatus = ag.status || 'Pendente';
+                
+                if (agendStatus === 'Concluido') { concluidos++; faturamento += valorNumerico; }
+                else if (agendStatus === 'Cancelado') { cancelados++; }
+                else { pendentes++; faturamentoPendente += valorNumerico; }
+
+                if (ag.avaliacao === 'Bom') avalBom++;
+                else if (ag.avaliacao === 'Médio') avalMedio++;
+                else if (ag.avaliacao === 'Ruim') avalRuim++;
+
+                const servicoNome = ag.servico ? ag.servico.tipo : 'Dados Ocultos';
+                if (servicoNome !== 'Dados Ocultos') contagemServicos[servicoNome] = (contagemServicos[servicoNome] || 0) + 1;
+                
+                const diasDaSemanaNomes = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+                const nomeDoDiaAtual = diasDaSemanaNomes[dataObj.getDay()];
+                if (contagemDias[nomeDoDiaAtual] !== undefined) contagemDias[nomeDoDiaAtual]++;
+            });
+
+            // Aplica o filtro selecionado na tabela
+            const agendamentosFiltrados = agendamentos.filter(ag => {
+                if (filtroStatusAtual === 'todos') return true;
+                return (ag.status || 'Pendente') === filtroStatusAtual;
+            });
+
+            if (agendamentosFiltrados.length === 0) {
+                if (container) container.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 30px; color: #64748b;">Nenhum registro encontrado para o filtro "${filtroStatusAtual}".</td></tr>`;
+            } else {
+                agendamentosFiltrados.forEach((ag) => {
+                    const dataObj = new Date(ag.data_atendimento);
+                    const dataFormatada = dataObj.toLocaleString('pt-BR');
                     const servicoNome = ag.servico ? ag.servico.tipo : 'Dados Ocultos';
                     const valorNumerico = parseFloat(ag.servico?.valor || 0);
                     const servicoValor = ag.servico ? `R$ ${valorNumerico.toFixed(2).replace('.', ',')}` : 'N/A';
                     const agendStatus = ag.status || 'Pendente';
-                    
-                    if (agendStatus === 'Concluido') { 
-                        concluidos++; 
-                        faturamento += valorNumerico; 
-                    }
-                    else if (agendStatus === 'Cancelado') { 
-                        cancelados++; 
-                    }
-                    else { 
-                        pendentes++; 
-                        faturamentoPendente += valorNumerico; // Acumula o valor que ainda vai entrar
-                    }
 
-                    if (ag.avaliacao === 'Bom') avalBom++;
-                    else if (ag.avaliacao === 'Médio') avalMedio++;
-                    else if (ag.avaliacao === 'Ruim') avalRuim++;
+                    let badgeAvaliacao = "<i style='color: #94a3b8;'>Ausente</i>";
+                    if (ag.avaliacao === "Bom") badgeAvaliacao = `<span class="badge-status badge-bom">😊</span>`;
+                    else if (ag.avaliacao === "Médio") badgeAvaliacao = `<span class="badge-status badge-medio">😐</span>`;
+                    else if (ag.avaliacao === "Ruim") badgeAvaliacao = `<span class="badge-status badge-ruim">🙁</span>`;
+
+                    let botaoAcao = agendStatus === 'Concluido' ? `<span style="color: #059669; font-weight: 800;">✓ Ok</span>` :
+                                    agendStatus === 'Cancelado' ? `<span style="color: #b91c1c; font-weight: 800;">✕ X</span>` :
+                                    `<button class="btn-concluir" onclick="concluirAgendamentoAdmin(${ag.id})">Finalizar</button>`;
 
                     if (container) {
-                        let badgeAvaliacao = "<i style='color: #94a3b8;'>Ausente</i>";
-                        
-                        if (ag.avaliacao) {
-                            if (ag.avaliacao === "Bom") badgeAvaliacao = `<span class="badge-status badge-bom">😊</span>`;
-                            else if (ag.avaliacao === "Médio") badgeAvaliacao = `<span class="badge-status badge-medio">😐</span>`;
-                            else if (ag.avaliacao === "Ruim") badgeAvaliacao = `<span class="badge-status badge-ruim">🙁</span>`;
-                        }
-
-                        let botaoAcao = '';
-                        
-                        if (agendStatus === 'Concluido') { 
-                            botaoAcao = `<span style="color: #059669; font-weight: 800;">✓ Ok</span>`; 
-                        }
-                        else if (agendStatus === 'Cancelado') { 
-                            botaoAcao = `<span style="color: #b91c1c; font-weight: 800;">✕ X</span>`; 
-                        }
-                        else { 
-                            botaoAcao = `<button class="btn-concluir" onclick="concluirAgendamentoAdmin(${ag.id})">Finalizar</button>`; 
-                        }
-
                         container.innerHTML += `
                             <tr>
                                 <td>${ag.email_cliente.split('@')[0]}</td>
@@ -1467,135 +1843,133 @@
                         `;
                     }
                 });
-
-                const cardFaturamento = document.getElementById('fin-faturamento');
-                if (cardFaturamento) {
-                    // 1. Atualiza a Barra de Meta Mensal
-                    const metaMensal = 10000;
-                    const porcMeta = Math.min((faturamento / metaMensal) * 100, 100).toFixed(1);
-                    
-                    const elTextoMeta = document.getElementById('texto-meta');
-                    if (elTextoMeta) elTextoMeta.innerText = `R$ ${faturamento.toFixed(2).replace('.', ',')} / R$ 10.000,00`;
-                    
-                    const elBarraMeta = document.getElementById('barra-meta');
-                    if (elBarraMeta) elBarraMeta.style.width = `${porcMeta}%`;
-                    
-                    const elPercMeta = document.getElementById('percentual-meta');
-                    if (elPercMeta) elPercMeta.innerText = `${porcMeta}% alcançado`;
-
-                    // 2. Previsão Preditiva e Valores Pendentes
-                    const projecao = faturamento > 0 ? (faturamento + faturamentoPendente) * 1.10 : 0;
-                    
-                    const elPrevisao = document.getElementById('fin-previsao');
-                    if (elPrevisao) elPrevisao.innerText = `R$ ${projecao.toFixed(2).replace('.', ',')}`;
-                    
-                    const elPendentesValor = document.getElementById('fin-pendentes-valor');
-                    if (elPendentesValor) elPendentesValor.innerText = `R$ ${faturamentoPendente.toFixed(2).replace('.', ',')}`;
-
-                    // 3. Atualiza os dados bases
-                    cardFaturamento.innerText = `R$ ${faturamento.toFixed(2).replace('.', ',')}`;
-                    document.getElementById('fin-total').innerText = totalContratos;
-                    
-                    const elPendentes = document.getElementById('fin-pendentes');
-                    if (elPendentes) elPendentes.innerText = pendentes;
-                    
-                    const elConcluidos = document.getElementById('fin-concluidos');
-                    if (elConcluidos) elConcluidos.innerText = concluidos;
-                }
-
-                // INICIALIZA O NOVO GRÁFICO: CURVA DE TENDÊNCIA
-                const ctxTendencia = document.getElementById('graficoTendencia');
-                if (ctxTendencia) {
-                    if (typeof chartTendencia !== 'undefined' && chartTendencia !== null) {
-                        chartTendencia.destroy();
-                    } else if (window.chartTendencia) {
-                        window.chartTendencia.destroy();
-                    }
-
-                    window.chartTendencia = new Chart(ctxTendencia, {
-                        type: 'line',
-                        data: {
-                            labels: ['Sem 1', 'Sem 2', 'Sem 3', 'Sem 4 (Atual)', 'Projeção'],
-                            datasets: [{
-                                label: 'Receita (R$)',
-                                data: [faturamento * 0.2, faturamento * 0.45, faturamento * 0.7, faturamento, (faturamento + faturamentoPendente) * 1.10],
-                                borderColor: '#6a11cb',
-                                backgroundColor: 'rgba(106, 17, 203, 0.1)',
-                                borderWidth: 3,
-                                fill: true,
-                                tension: 0.4,
-                                pointBackgroundColor: '#8b5cf6',
-                                pointRadius: 5
-                            }]
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            plugins: { legend: { display: false } },
-                            scales: { y: { beginAtZero: true } }
-                        }
-                    });
-                }
-
-                const ctxContratos = document.getElementById('graficoContratos');
-                if (ctxContratos) {
-                    if (typeof chartContratos !== 'undefined' && chartContratos !== null) chartContratos.destroy();
-                    chartContratos = new Chart(ctxContratos, {
-                        type: 'doughnut',
-                        data: {
-                            labels: ['Pendentes', 'Concluídos', 'Cancelados'],
-                            datasets: [{ 
-                                data: [pendentes, concluidos, cancelados], 
-                                backgroundColor: ['#f59e0b', '#10b981', '#ef4444'], 
-                                borderWidth: 0, 
-                                hoverOffset: 4 
-                            }]
-                        },
-                        options: { 
-                            responsive: true, 
-                            maintainAspectRatio: false, 
-                            plugins: { 
-                                legend: { 
-                                    position: 'bottom', 
-                                    labels: { 
-                                        boxWidth: 12, 
-                                        font: { family: "'Plus Jakarta Sans', sans-serif", size: 11 } 
-                                    } 
-                                } 
-                            } 
-                        }
-                    });
-                }
-
-                const ctxAvaliacoes = document.getElementById('graficoAvaliacoes');
-                if (ctxAvaliacoes) {
-                    if (typeof chartAvaliacoes !== 'undefined' && chartAvaliacoes !== null) chartAvaliacoes.destroy();
-                    chartAvaliacoes = new Chart(ctxAvaliacoes, {
-                        type: 'bar',
-                        data: {
-                            labels: ['😊 Bom', '😐 Médio', '🙁 Ruim'],
-                            datasets: [{ 
-                                data: [avalBom, avalMedio, avalRuim], 
-                                backgroundColor: ['#10b981', '#f59e0b', '#ef4444'], 
-                                borderRadius: 6 
-                            }]
-                        },
-                        options: { 
-                            indexAxis: 'y', 
-                            responsive: true, 
-                            maintainAspectRatio: false, 
-                            plugins: { legend: { display: false } }, 
-                            scales: { 
-                                x: { ticks: { stepSize: 1 } }, 
-                                y: { grid: { display: false } } 
-                            } 
-                        }
-                    });
-                }
-
-            } catch (error) {
-                console.error("Distúrbio na injeção de dados gráficos:", error);
             }
+
+            // ATUALIZA KPIs FINANCEIROS (Se estiverem na tela)
+            const cardFaturamento = document.getElementById('fin-faturamento');
+            if (cardFaturamento) {
+                const metaMensal = 10000;
+                const porcMeta = Math.min((faturamento / metaMensal) * 100, 100).toFixed(1);
+                
+                document.getElementById('texto-meta').innerText = `R$ ${faturamento.toFixed(2).replace('.', ',')} / R$ 10.000,00`;
+                document.getElementById('barra-meta').style.width = `${porcMeta}%`;
+                document.getElementById('percentual-meta').innerText = `${porcMeta}% alcançado`;
+
+                const projecao = faturamento > 0 ? (faturamento + faturamentoPendente) * 1.10 : 0;
+                document.getElementById('fin-previsao').innerText = `R$ ${projecao.toFixed(2).replace('.', ',')}`;
+                document.getElementById('fin-pendentes-valor').innerText = `R$ ${faturamentoPendente.toFixed(2).replace('.', ',')}`;
+                
+                cardFaturamento.innerText = `R$ ${faturamento.toFixed(2).replace('.', ',')}`;
+                document.getElementById('fin-total').innerText = totalContratos;
+                
+                const ticketMedio = concluidos > 0 ? (faturamento / concluidos) : 0;
+                const mediaSemanal = faturamento / 4; 
+                document.getElementById('fin-ticket-medio').innerText = `R$ ${ticketMedio.toFixed(2).replace('.', ',')}`;
+                document.getElementById('fin-media-semanal').innerText = `R$ ${mediaSemanal.toFixed(2).replace('.', ',')}`;
+            }
+
+            // RECONSTRÓI OS GRÁFICOS
+            Chart.defaults.font.family = "'Inter', sans-serif";
+            
+            const ctxTendencia = document.getElementById('graficoTendencia');
+            if (ctxTendencia) {
+                if (window.chartTendencia) window.chartTendencia.destroy();
+                window.chartTendencia = new Chart(ctxTendencia, { type: 'line', data: { labels: ['Sem 1', 'Sem 2', 'Sem 3', 'Sem 4 (Atual)', 'Projeção'], datasets: [{ label: 'Receita (R$)', data: [faturamento * 0.2, faturamento * 0.45, faturamento * 0.7, faturamento, (faturamento + faturamentoPendente) * 1.10], borderColor: '#6a11cb', backgroundColor: 'rgba(106, 17, 203, 0.1)', borderWidth: 3, fill: true, tension: 0.4 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } });
+            }
+
+            const ctxContratos = document.getElementById('graficoContratos');
+            if (ctxContratos) {
+                if (window.chartContratos) window.chartContratos.destroy();
+                window.chartContratos = new Chart(ctxContratos, { type: 'doughnut', data: { labels: ['Pendentes', 'Concluídos', 'Cancelados'], datasets: [{ data: [pendentes, concluidos, cancelados], backgroundColor: ['#f59e0b', '#10b981', '#ef4444'], borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } } });
+            }
+
+            const ctxAvaliacoes = document.getElementById('graficoAvaliacoes');
+            if (ctxAvaliacoes) {
+                if (window.chartAvaliacoes) window.chartAvaliacoes.destroy();
+                window.chartAvaliacoes = new Chart(ctxAvaliacoes, { type: 'bar', data: { labels: ['😊 Bom', '😐 Médio', '🙁 Ruim'], datasets: [{ data: [avalBom, avalMedio, avalRuim], backgroundColor: ['#10b981', '#f59e0b', '#ef4444'], borderRadius: 6 }] }, options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } });
+            }
+
+            const topServicosOrd = Object.entries(contagemServicos).sort((a, b) => b[1] - a[1]).slice(0, 5);
+            const ctxTopServicos = document.getElementById('graficoTopServicos');
+            if (ctxTopServicos) {
+                if (window.chartTopServicos) window.chartTopServicos.destroy();
+                window.chartTopServicos = new Chart(ctxTopServicos, { type: 'bar', data: { labels: topServicosOrd.map(i => i[0]), datasets: [{ label: 'Vendas', data: topServicosOrd.map(i => i[1]), backgroundColor: '#8b5cf6', borderRadius: 4 }] }, options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } });
+            }
+
+            const ctxDias = document.getElementById('graficoDiasPopulares');
+            if (ctxDias) {
+                if (window.chartDiasPopulares) window.chartDiasPopulares.destroy();
+                window.chartDiasPopulares = new Chart(ctxDias, { type: 'bar', data: { labels: ['Dom', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'], datasets: [{ label: 'Agendamentos', data: [contagemDias['Dom'], contagemDias['Ter'], contagemDias['Qua'], contagemDias['Qui'], contagemDias['Sex'], contagemDias['Sáb']], backgroundColor: '#10b981', borderRadius: 6 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } });
+            }
+        }
+
+        // 📥 Exportar Tabela para Excel (CSV)
+        function exportarCSV() {
+            if (!cacheAgendamentosAdmin || cacheAgendamentosAdmin.length === 0) {
+                exibirNotificacaoSpa("Aviso", "Não há dados na matriz para exportar.", "⚠️");
+                return;
+            }
+
+            let csvContent = "data:text/csv;charset=utf-8,Cliente,Servico,Data,Valor,Status\r\n";
+            cacheAgendamentosAdmin.forEach(ag => {
+                const cliente = ag.email_cliente.split('@')[0];
+                const servico = ag.servico ? ag.servico.tipo : 'N/A';
+                const data = ag.data_atendimento.replace('T', ' ');
+                const valor = ag.servico ? ag.servico.valor : 0;
+                const status = ag.status || 'Pendente';
+                csvContent += `"${cliente}","${servico}","${data}",${valor},"${status}"\r\n`;
+            });
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "relatorio_spa_panaceia.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            exibirNotificacaoSpa("Exportação Concluída", "Planilha gerada e baixada com sucesso!", "✨");
+        }
+
+        // 📄 Gerar Relatório PDF (Download Direto com Correção de Tema)
+        function exportarPDF() {
+            const elementoTabela = document.querySelector('.tabela-admin');
+
+            if (!elementoTabela || cacheAgendamentosAdmin.length === 0) {
+                exibirNotificacaoSpa("Aviso", "Não há dados na tabela para exportar.", "⚠️");
+                return;
+            }
+
+            exibirNotificacaoSpa("Processando...", "O PDF está sendo gerado em alta resolução...", "⏳");
+
+            // 1. Guarda na memória se estava no modo escuro e desativa ele temporariamente
+            const body = document.body;
+            const estavaModoEscuro = body.classList.contains('dark-mode');
+            
+            if (estavaModoEscuro) {
+                body.classList.remove('dark-mode');
+            }
+
+            const opcoes = {
+                margin:       10,
+                filename:     'relatorio_spa_panaceia.pdf',
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2 }, // Deixa a imagem com qualidade HD
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'landscape' } 
+            };
+
+            // 2. Espera 100ms só para o navegador repintar as letras de preto, tira a "foto" e baixa
+            setTimeout(() => {
+                html2pdf().set(opcoes).from(elementoTabela).save().then(() => {
+                    
+                    // 3. Devolve o modo escuro imediatamente após gerar o arquivo
+                    if (estavaModoEscuro) {
+                        body.classList.add('dark-mode');
+                    }
+                    
+                    exibirNotificacaoSpa("Download Concluído", "Relatório PDF salvo no seu computador com sucesso!", "📄");
+                });
+            }, 150);
         }
         
         async function concluirAgendamentoAdmin(id) {
@@ -1911,6 +2285,49 @@
             carregarServicos();
             carregarHorariosBloqueados();
         }
+
+// ... suas outras funções anteriores (concluirAgendamentoAdmin, abrirModalRemarcar, etc.) ...
+
+        // 🌓 SISTEMA DE MODO ESCURO
+        function toggleTema() {
+            const body = document.body;
+            body.classList.toggle('dark-mode');
+            const isDark = body.classList.contains('dark-mode');
+            
+            const btn = document.getElementById('btn-theme-toggle');
+            if (btn) {
+                btn.innerText = isDark ? '☀️' : '🌙';
+                btn.style.transform = 'rotate(360deg)';
+                setTimeout(() => btn.style.transform = 'rotate(0deg)', 300);
+            }
+            
+            localStorage.setItem('spa_tema', isDark ? 'escuro' : 'claro');
+
+            if (window.Chart) {
+                Chart.defaults.color = isDark ? '#94a3b8' : '#64748b';
+                for (let id in Chart.instances) {
+                    Chart.instances[id].update();
+                }
+            }
+        }
+
+        // Verifica a memória ao carregar a página
+        document.addEventListener('DOMContentLoaded', () => {
+            const temaSalvo = localStorage.getItem('spa_tema');
+            if (temaSalvo === 'escuro') {
+                document.body.classList.add('dark-mode');
+                const btn = document.getElementById('btn-theme-toggle');
+                if (btn) btn.innerText = '☀️';
+            }
+        });
+    </script>
+
+    <!-- Container de Toasts Flutuantes (SEMPRE FORA DO SCRIPT) -->
+    <div id="toast-container" style="position: fixed; top: 20px; right: 20px; z-index: 999999; display: flex; flex-direction: column; gap: 10px; pointer-events: none;"></div>
+
+</body>
+</html>
+
     </script>
 </body>
 </html>
