@@ -13,7 +13,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Spa Panaceia - Serviços e Estoque</title>
+    <title>Spa Panaceia | Bem-Estar e Relaxamento</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- Adicione esta linha logo abaixo do Chart.js 👇 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
@@ -24,6 +24,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://npmcdn.com/flatpickr/dist/l10n/pt.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <style>
         /* 1. IMPORTAÇÃO DAS FONTES (Garante que o CSS puxe a fonte nova direto do Google) */
@@ -541,7 +542,207 @@ body.dark-mode .spa-toast {
             /* 8. Inteligência Financeira e Fidelidade */
             #cardFidelidade { flex-direction: column; text-align: center; gap: 15px; }
             #cardFidelidade div { text-align: center !important; width: 100%; }
-        }    
+        }   
+        
+
+        /* ======================================= */
+        /* 🔥 ESTILOS PREMIUM DO HEATMAP           */
+        /* ======================================= */
+        
+        #tabela-heatmap {
+            border-spacing: 10px; /* Dá mais "respiro" entre os blocos */
+            border-collapse: separate;
+        }
+
+        .heatmap-cell {
+            padding: 12px 0;
+            border-radius: 12px; /* Deixa bem redondinho */
+            font-size: 14px;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 45px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+        }
+
+        /* Efeito de flutuar e brilhar ao passar o mouse em dias com movimento */
+        .heatmap-cell:not([data-nivel="0"]):hover {
+            transform: translateY(-4px) scale(1.1);
+            box-shadow: 0 10px 20px rgba(139, 92, 246, 0.4);
+            z-index: 10;
+        }
+
+        /* Células VAZIAS no Modo Claro (discretas) */
+        .heatmap-cell[data-nivel="0"] {
+            background: #f8fafc;
+            border: 1px dashed #cbd5e1;
+            color: transparent !important; /* Esconde o texto */
+        }
+
+        /* Células VAZIAS no Modo Escuro (Efeito Vidro muito elegante) */
+        body.dark-mode .heatmap-cell[data-nivel="0"] {
+            background: rgba(255, 255, 255, 0.03) !important;
+            border: 1px solid rgba(255, 255, 255, 0.05) !important;
+            box-shadow: none !important;
+        }
+
+        /* Títulos (Horários e Dias) no Modo Escuro */
+        body.dark-mode #tabela-heatmap th,
+        body.dark-mode #tabela-heatmap td:first-child {
+            color: #94a3b8 !important;
+        }
+
+        /* Cards de Detalhes do Heatmap */
+        .card-detalhe-cliente {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 16px;
+            text-align: left;
+            transition: transform 0.2s;
+        }
+        .card-detalhe-cliente:hover {
+            transform: translateX(4px);
+            border-left: 4px solid #8b5cf6;
+        }
+        
+        body.dark-mode .card-detalhe-cliente {
+            background: #1e293b;
+            border-color: #334155;
+        }
+        body.dark-mode .card-detalhe-cliente strong {
+            color: #cbd5e1 !important;
+        }
+
+        /* ========================================== */
+        /* 📅 NAVEGADOR DE MÊS (ESTILO APP/CALENDÁRIO) */
+        /* ========================================== */
+        .btn-seta-mes {
+            background: #f1f5f9;
+            border: none;
+            border-radius: 50%;
+            width: 34px;
+            height: 34px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #64748b;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .btn-seta-mes:hover {
+            background: #6a11cb;
+            color: white;
+            transform: scale(1.15);
+            box-shadow: 0 4px 10px rgba(106, 17, 203, 0.3);
+        }
+        
+        /* Ajustes do Calendário no Modo Escuro */
+        body.dark-mode #container-filtro-mes { background: #1e293b !important; border-color: #334155 !important; box-shadow: 0 4px 15px rgba(0,0,0,0.2) !important; }
+        body.dark-mode .btn-seta-mes { background: #334155; color: #cbd5e1; }
+        body.dark-mode .btn-seta-mes:hover { background: #a78bfa; color: #1e293b; }
+        body.dark-mode #texto-mes-bi { color: #a78bfa !important; }
+
+
+        /* ======================================= */
+        /* 📉 ESTILOS DO MÓDULO DE DRE             */
+        /* ======================================= */
+        body.dark-mode #container-dre {
+            background: #1e293b !important;
+            border-color: #334155 !important;
+        }
+        body.dark-mode #container-dre > div > div:nth-child(1) { background: rgba(16, 185, 129, 0.1) !important; } /* Fundo Faturamento */
+        body.dark-mode #container-dre > div > div:nth-child(3) { background: rgba(239, 68, 68, 0.1) !important; }  /* Fundo Custos */
+        body.dark-mode #container-dre > div > div:nth-child(5) { background: rgba(5, 150, 105, 0.1) !important; }  /* Fundo Lucro */
+
+
+        /* ======================================= */
+        /* 🛠️ ESTILOS DA TABELA GERENCIAL          */
+        /* ======================================= */
+        
+        /* Botões de Ação Premium */
+        .btn-acao {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .btn-acao:hover { transform: scale(1.1); }
+        
+        .btn-concluir { background: rgba(16, 185, 129, 0.15); color: #10b981; }
+        .btn-concluir:hover { background: #10b981; color: white; box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3); }
+        
+        .btn-cancelar { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
+        .btn-cancelar:hover { background: #ef4444; color: white; box-shadow: 0 4px 10px rgba(239, 68, 68, 0.3); }
+
+        .btn-contato { background: rgba(59, 130, 246, 0.15); color: #3b82f6; }
+        .btn-contato:hover { background: #3b82f6; color: white; box-shadow: 0 4px 10px rgba(59, 130, 246, 0.3); }
+
+        /* Estilo para a linha da tabela quando o serviço já foi concluído */
+        .linha-concluida {
+            opacity: 0.5;
+            background: rgba(16, 185, 129, 0.03) !important;
+            transition: all 0.3s;
+        }
+        .linha-concluida:hover { opacity: 0.8; }
+        
+        /* Badges de Status (Se você ainda não tiver) */
+        .badge-pendente { background: rgba(245, 158, 11, 0.15); color: #f59e0b; padding: 4px 10px; border-radius: 20px; font-weight: 700; font-size: 12px; }
+        .badge-concluido { background: rgba(16, 185, 129, 0.15); color: #10b981; padding: 4px 10px; border-radius: 20px; font-weight: 700; font-size: 12px; }
+        .badge-cancelado { background: rgba(239, 68, 68, 0.15); color: #ef4444; padding: 4px 10px; border-radius: 20px; font-weight: 700; font-size: 12px; }
+
+
+
+        /* ======================================= */
+        /* 🎛️ BOTÕES DE AÇÃO DA TABELA             */
+        /* ======================================= */
+        .btn-moderno {
+            padding: 6px 14px;
+            border-radius: 8px;
+            border: none;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-moderno-finalizar {
+            background-color: rgba(16, 185, 129, 0.1);
+            color: #10b981;
+            border: 1px solid rgba(16, 185, 129, 0.2);
+        }
+        .btn-moderno-finalizar:hover {
+            background-color: #10b981;
+            color: white;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .btn-moderno-cancelar {
+            background-color: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+        .btn-moderno-cancelar:hover {
+            background-color: #ef4444;
+            color: white;
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+            transform: translateY(-2px);
+        }
+        
+
 
 </style>
  
@@ -709,9 +910,29 @@ body.dark-mode .spa-toast {
 
     <!-- DASHBOARD FINANCEIRO COM INTELIGÊNCIA ANALÍTICA -->
     <div id="secao-financeiro" class="secao-conteudo">
-        <header style="margin-bottom: 40px;">
-            <h1 style="font-family: 'Playfair Display', serif;">📊 Inteligência Financeira</h1>
-            <p>Monitoramento avançado de receita, metas e análise preditiva do Spa</p>
+        <header style="margin-bottom: 40px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+            <div>
+                <h1 style="font-family: 'Playfair Display', serif;">📊 Inteligência Financeira</h1>
+                <p>Monitoramento avançado de receita, metas e análise preditiva do Spa</p>
+            </div>
+            
+            <!-- 📅 NAVEGADOR DE MÊS ESTILO CALENDÁRIO (APP) -->
+            <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 8px;">
+                <div id="container-filtro-mes" style="background: white; padding: 6px 12px; border-radius: 50px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; display: flex; align-items: center; gap: 15px; transition: all 0.3s;">
+                    <!-- Seta para voltar -->
+                    <button onclick="mudarMesBI(-1)" class="btn-seta-mes" title="Mês anterior">&#10094;</button>
+                    
+                    <!-- Mês e Ano -->
+                    <div style="text-align: center; min-width: 140px;">
+                        <span id="texto-mes-bi" style="font-weight: 800; color: #6a11cb; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">CARREGANDO...</span>
+                    </div>
+                    
+                    <!-- Seta para avançar -->
+                    <button onclick="mudarMesBI(1)" class="btn-seta-mes" title="Próximo mês">&#10095;</button>
+                </div>
+                <!-- Link discreto para ver tudo -->
+                <button onclick="mostrarTodosOsMeses()" style="background: none; border: none; color: #64748b; font-size: 12px; cursor: pointer; text-decoration: underline; font-weight: 600; padding: 0;">Ver todos os meses</button>
+            </div>
         </header>
 
         <!-- NOVO: BARRA DINÂMICA DE META DO MÊS -->
@@ -806,7 +1027,90 @@ body.dark-mode .spa-toast {
                 </div>
 
             </div>
+
+            <!-- 💸 NOVO: MÓDULO DE DRE E LUCRO LÍQUIDO -->
+            <div style="background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.03); margin-top: 25px; border: 1px solid #edf2f7; animation: fadeInUp 1.3s ease-out;" id="container-dre">
+                <div style="margin-bottom: 20px;">
+                    <h4 style="margin: 0; color: #1e293b; font-size: 16px; font-weight: 700;">📉 DRE Sintético (Demonstração de Resultados)</h4>
+                    <p style="margin: 4px 0 0 0; font-size: 13px; color: #64748b;">Simulador de rentabilidade e margem de lucro real da operação</p>
+                </div>
+
+                <div style="display: flex; flex-wrap: wrap; gap: 15px; align-items: center; justify-content: space-between;">
+                    
+                    <!-- Faturamento Bruto -->
+                    <div style="flex: 1; min-width: 200px; padding: 15px; background: #f8fafc; border-radius: 12px; border-left: 4px solid #10b981;">
+                        <p style="font-size: 12px; color: #64748b; font-weight: 700; text-transform: uppercase; margin: 0;">(+) Faturamento Bruto</p>
+                        <h3 id="dre-faturamento" style="color: #10b981; font-size: 22px; margin: 5px 0 0 0;">R$ 0,00</h3>
+                    </div>
+
+                    <!-- SINAL DE MENOS ELEGANTE -->
+                    <div style="color: #64748b; font-size: 32px; font-weight: 300;">-</div>
+
+                    <!-- Custos Operacionais -->
+                    <div style="flex: 1; min-width: 200px; padding: 15px; background: #fff1f2; border-radius: 12px; border-left: 4px solid #ef4444;">
+                        <p style="font-size: 12px; color: #64748b; font-weight: 700; text-transform: uppercase; margin: 0;">(-) Custos e Despesas</p>
+                        <div style="display: flex; align-items: center; margin-top: 5px;">
+                            <span style="color: #ef4444; font-weight: 700; font-size: 18px; margin-right: 5px;">R$</span>
+                            <input type="text" id="input-custos-dre" value="0" oninput="calcularDRE()" style="width: 100%; border: none; background: transparent; color: #ef4444; font-size: 22px; font-weight: 800; outline: none; border-bottom: 2px dashed #fca5a5;">
+                        </div>
+                    </div>
+
+                    <!-- SINAL DE IGUAL ELEGANTE -->
+                    <div style="color: #64748b; font-size: 32px; font-weight: 300;">=</div>
+
+                    <!-- Lucro Líquido -->
+                    <div style="flex: 1; min-width: 200px; padding: 15px; background: #f0fdf4; border-radius: 12px; border-left: 4px solid #059669; position: relative; overflow: hidden;">
+                        <p style="font-size: 12px; color: #64748b; font-weight: 700; text-transform: uppercase; margin: 0;">(➔) Lucro Líquido</p>
+                        <h3 id="dre-lucro" style="color: #059669; font-size: 26px; margin: 5px 0 0 0; font-weight: 900;">R$ 0,00</h3>
+                        
+                        <!-- Badge da Margem -->
+                        <div id="dre-margem-badge" style="position: absolute; top: 15px; right: 15px; background: #dcfce7; color: #15803d; padding: 4px 8px; border-radius: 8px; font-size: 12px; font-weight: 800;">
+                            0% Margem
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 📊 MATRIZ OPERACIONAL: HEATMAP DE HORÁRIOS -->
+            <div style="background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.03); margin-top: 25px; border: 1px solid #edf2f7;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
+                    <div>
+                        <h4 style="margin: 0; color: #1e293b; font-size: 16px; font-weight: 700;">🔥 Matriz de Ocupação por Faixa de Horário</h4>
+                        <p style="margin: 4px 0 0 0; font-size: 13px; color: #64748b;">Densidade de demanda para alocação de capacidade e salas</p>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600; color: #64748b;">
+                        <span>Baixa</span>
+                        <div style="width: 14px; height: 14px; border-radius: 4px; background: #f1f5f9;"></div>
+                        <div style="width: 14px; height: 14px; border-radius: 4px; background: #ddd6fe;"></div>
+                        <div style="width: 14px; height: 14px; border-radius: 4px; background: #8b5cf6;"></div>
+                        <div style="width: 14px; height: 14px; border-radius: 4px; background: #5b21b6;"></div>
+                        <span>Alta</span>
+                    </div>
+                </div>
+
+                <!-- Tabela da Matriz -->
+                <div style="overflow-x: auto;">
+                    <table id="tabela-heatmap" style="width: 100%; border-collapse: separate; border-spacing: 6px; text-align: center; min-width: 550px;">
+                        <thead>
+                            <tr>
+                                <th style="padding: 8px; font-size: 12px; color: #64748b; font-weight: 700;">Horário</th>
+                                <th style="padding: 8px; font-size: 12px; color: #64748b; font-weight: 700;">Dom</th>
+                                <th style="padding: 8px; font-size: 12px; color: #64748b; font-weight: 700;">Ter</th>
+                                <th style="padding: 8px; font-size: 12px; color: #64748b; font-weight: 700;">Qua</th>
+                                <th style="padding: 8px; font-size: 12px; color: #64748b; font-weight: 700;">Qui</th>
+                                <th style="padding: 8px; font-size: 12px; color: #64748b; font-weight: 700;">Sex</th>
+                                <th style="padding: 8px; font-size: 12px; color: #64748b; font-weight: 700;">Sáb</th>
+                            </tr>
+                        </thead>
+                        <tbody id="corpo-heatmap">
+                            <tr><td colspan="7" style="padding: 20px; color: #64748b;">Aguardando dados da base...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
         </div>
+    </div>
     </div>
 
     <!-- PAINEL DE USUÁRIOS -->
@@ -835,6 +1139,19 @@ body.dark-mode .spa-toast {
             <input type="text" id="modalData" placeholder="📅 Clique para abrir o calendário..." readonly style="cursor: pointer; background-color: #fff; font-family: 'Plus Jakarta Sans', sans-serif;">
             <button class="btn-confirmar" style="background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);" onclick="enviarAgendamento()">Confirmar Reserva</button>
             <p id="modalStatus" style="margin-top: 15px; font-weight: 600; font-size: 14px;"></p>
+        </div>
+    </div>
+
+    <!-- 🔍 NOVO: MODAL DE DETALHES DO HEATMAP (DRILL-DOWN) -->
+    <div class="modal-overlay" id="modalDetalhesHeatmap">
+        <div class="modal-box" style="max-width: 500px;">
+            <button class="btn-fechar" onclick="document.getElementById('modalDetalhesHeatmap').style.display = 'none'">&times;</button>
+            <h3 id="tituloDetalhesHeatmap" style="margin-bottom: 5px;">Detalhes do Horário</h3>
+            <p style="font-size: 13px; color: #64748b; margin-top: 0; margin-bottom: 20px;">Listagem de clientes com reservas ativas nesta faixa.</p>
+            
+            <!-- Aqui é onde os cards dos clientes vão aparecer -->
+            <div id="conteudoDetalhesHeatmap" style="display: flex; flex-direction: column; gap: 12px; max-height: 400px; overflow-y: auto; padding-right: 5px;">
+            </div>
         </div>
     </div>
  
@@ -1089,24 +1406,31 @@ body.dark-mode .spa-toast {
 
             if(aba === 'catalogo') {
                 document.getElementById('secao-catalogo').classList.add('ativa');
+                document.title = "Spa Panaceia | Bem-Estar e Relaxamento"; // 👈 Título Aba
                 carregarServicos();
             } else if(aba === 'agendamentos') {
                 document.getElementById('secao-agendamentos').classList.add('ativa');
+                document.title = "Spa Panaceia | Minhas Reservas"; // 👈 Título Aba
                 carregarMeusAgendamentos();
             } else if(aba === 'admin') {
                 document.getElementById('secao-admin').classList.add('ativa');
+                document.title = "Spa Panaceia | Painel Gerencial"; // 👈 Título Aba
                 carregarAgendamentosAdmin();
             } else if(aba === 'financeiro') {
                 document.getElementById('secao-financeiro').classList.add('ativa');
+                document.title = "Spa Panaceia | Inteligência Financeira"; // 👈 Título Aba
                 carregarAgendamentosAdmin();
             } else if(aba === 'usuarios') { 
                 document.getElementById('secao-usuarios').classList.add('ativa'); 
+                document.title = "Spa Panaceia | Base de Clientes"; // 👈 Título Aba
                 carregarUsuariosCadastrados();
             } else if(aba === 'login_tela') {
                 document.getElementById('authBox').classList.add('ativa');
+                document.title = "Spa Panaceia | Autenticação Segura"; // 👈 Título Aba
             } else if (aba === 'estoque') {
-                 document.getElementById('secao-estoque').classList.add('ativa');
-                 carregarEstoque();
+                document.getElementById('secao-estoque').classList.add('ativa');
+                document.title = "Spa Panaceia | Controle de Estoque"; // 👈 Título Aba
+                carregarEstoque();
             }
         }
  
@@ -1773,6 +2097,7 @@ body.dark-mode .spa-toast {
         }
 
         // Motor unificado que renderiza a tabela filtrada e atualiza os gráficos
+        // Motor unificado que renderiza a tabela filtrada e atualiza os gráficos
         function processarDadosAdminERenderizar(agendamentos) {
             const container = document.getElementById('container-admin-agendamentos'); 
             if (container) container.innerHTML = '';
@@ -1803,14 +2128,11 @@ body.dark-mode .spa-toast {
                 if (contagemDias[nomeDoDiaAtual] !== undefined) contagemDias[nomeDoDiaAtual]++;
             });
 
-            // Aplica o filtro selecionado na tabela
-            const agendamentosFiltrados = agendamentos.filter(ag => {
-                if (filtroStatusAtual === 'todos') return true;
-                return (ag.status || 'Pendente') === filtroStatusAtual;
-            });
+            // CORREÇÃO: Mostra TUDO no painel (Concluídos, Pendentes e Cancelados) sem depender de filtros externos restritos
+            const agendamentosFiltrados = agendamentos;
 
             if (agendamentosFiltrados.length === 0) {
-                if (container) container.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 30px; color: #64748b;">Nenhum registro encontrado para o filtro "${filtroStatusAtual}".</td></tr>`;
+                if (container) container.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 30px; color: #64748b;">Nenhum registro encontrado para este período.</td></tr>`;
             } else {
                 agendamentosFiltrados.forEach((ag) => {
                     const dataObj = new Date(ag.data_atendimento);
@@ -1820,32 +2142,45 @@ body.dark-mode .spa-toast {
                     const servicoValor = ag.servico ? `R$ ${valorNumerico.toFixed(2).replace('.', ',')}` : 'N/A';
                     const agendStatus = ag.status || 'Pendente';
 
+                    // Classes visuais e linha estilizada
+                    const classeLinha = agendStatus === 'Concluido' ? 'linha-concluida' : '';
+
                     let badgeAvaliacao = "<i style='color: #94a3b8;'>Ausente</i>";
                     if (ag.avaliacao === "Bom") badgeAvaliacao = `<span class="badge-status badge-bom">😊</span>`;
                     else if (ag.avaliacao === "Médio") badgeAvaliacao = `<span class="badge-status badge-medio">😐</span>`;
                     else if (ag.avaliacao === "Ruim") badgeAvaliacao = `<span class="badge-status badge-ruim">🙁</span>`;
 
-                    let botaoAcao = agendStatus === 'Concluido' ? `<span style="color: #059669; font-weight: 800;">✓ Ok</span>` :
-                                    agendStatus === 'Cancelado' ? `<span style="color: #b91c1c; font-weight: 800;">✕ X</span>` :
-                                    `<button class="btn-concluir" onclick="concluirAgendamentoAdmin(${ag.id})">Finalizar</button>`;
+                    // Botões modernos ou selo de status blindado
+                    let botaoAcao = '';
+                    if (agendStatus === 'Pendente' || !agendStatus) {
+                        botaoAcao = `
+                            <div style="display: flex; gap: 6px; justify-content: center;">
+                                <button onclick="concluirAgendamentoAdmin(${ag.id})" class="btn-moderno btn-moderno-finalizar" style="padding: 4px 10px; font-size: 12px;">✔ Finalizar</button>
+                                <button onclick="alterarStatusAdmin ? alterarStatusAdmin(${ag.id}, 'Cancelado') : alert('Função indisponível')" class="btn-moderno btn-moderno-cancelar" style="padding: 4px 10px; font-size: 12px;">✖ Cancelar</button>
+                            </div>
+                        `;
+                    } else {
+                        let corSelo = agendStatus === 'Concluido' ? '#10b981' : '#ef4444';
+                        botaoAcao = `<span style="color: ${corSelo}; font-size: 12px; font-weight: 700; background: ${corSelo}20; padding: 4px 10px; border-radius: 20px;">🔒 ${agendStatus}</span>`;
+                    }
 
                     if (container) {
                         container.innerHTML += `
-                            <tr>
+                            <tr class="${classeLinha}">
                                 <td>${ag.email_cliente.split('@')[0]}</td>
                                 <td style="font-weight: 600;">${servicoNome}</td>
                                 <td>${dataFormatada}</td>
-                                <td style="color: #6a11cb; font-weight: 700;">${servicoValor}</td>
+                                <td style="color: #a78bfa; font-weight: 700;">${servicoValor}</td>
                                 <td><span class="badge-status ${agendStatus === 'Concluido' ? 'badge-concluido' : agendStatus === 'Cancelado' ? 'badge-cancelado' : 'badge-pendente'}">${agendStatus}</span></td>
                                 <td>${badgeAvaliacao}</td>
-                                <td>${botaoAcao}</td>
+                                <td style="text-align: center;">${botaoAcao}</td>
                             </tr>
                         `;
                     }
                 });
             }
 
-            // ATUALIZA KPIs FINANCEIROS (Se estiverem na tela)
+            // ATUALIZA KPIs FINANCEIROS
             const cardFaturamento = document.getElementById('fin-faturamento');
             if (cardFaturamento) {
                 const metaMensal = 10000;
@@ -1900,7 +2235,11 @@ body.dark-mode .spa-toast {
             if (ctxDias) {
                 if (window.chartDiasPopulares) window.chartDiasPopulares.destroy();
                 window.chartDiasPopulares = new Chart(ctxDias, { type: 'bar', data: { labels: ['Dom', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'], datasets: [{ label: 'Agendamentos', data: [contagemDias['Dom'], contagemDias['Ter'], contagemDias['Qua'], contagemDias['Qui'], contagemDias['Sex'], contagemDias['Sáb']], backgroundColor: '#10b981', borderRadius: 6 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } });
+                renderizarHeatmapOperacional(agendamentosFiltrados);
             }
+
+            // ATUALIZA TAMBÉM O DRE QUE CRIAMOS ANTES
+            if (typeof calcularDRE === 'function') calcularDRE();
         }
 
         // 📥 Exportar Tabela para Excel (CSV)
@@ -2124,6 +2463,7 @@ body.dark-mode .spa-toast {
 
             const chatMensagens = document.getElementById('chatMensagens');
             
+            // Exibe a mensagem do usuário no chat
             chatMensagens.innerHTML += `
                 <div style="background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%); color: white; padding: 14px 18px; border-radius: 18px; border-bottom-right-radius: 4px; max-width: 85%; align-self: flex-end; font-size: 14px; line-height: 1.5; box-shadow: 0 4px 15px rgba(106, 17, 203, 0.2); font-weight: 500;">
                     ${mensagem}
@@ -2131,6 +2471,7 @@ body.dark-mode .spa-toast {
             input.value = '';
             chatMensagens.scrollTop = chatMensagens.scrollHeight;
 
+            // Mostra o "Sintonizando..."
             const idDigitando = "digitando-" + Date.now();
             chatMensagens.innerHTML += `
                 <div id="${idDigitando}" style="background: #f1f5f9; color: #64748b; padding: 14px 18px; border-radius: 18px; border-bottom-left-radius: 4px; max-width: 85%; align-self: flex-start; font-size: 14px; font-style: italic; display: flex; align-items: center; gap: 8px;">
@@ -2139,6 +2480,7 @@ body.dark-mode .spa-toast {
             chatMensagens.scrollTop = chatMensagens.scrollHeight;
 
             try {
+                // Chama a Inteligência Artificial no seu backend Python
                 const response = await fetch(`${BACKEND_URL}/api/chat`, {
                     method: 'POST', 
                     headers: { 'Content-Type': 'application/json' }, 
@@ -2149,9 +2491,54 @@ body.dark-mode .spa-toast {
                 document.getElementById(idDigitando).remove(); 
 
                 if (response.ok) {
+                    let respostaIA = data.resposta;
+                    let acaoExtra = '';
+
+                    // 🧠 LÓGICA DE INTELIGÊNCIA: Verifica se o usuário quer agendar
+                    const msgLower = mensagem.toLowerCase();
+                    const respostaLower = respostaIA.toLowerCase();
+                    const intencaoAgendar = msgLower.includes('agendar') || msgLower.includes('reservar') || msgLower.includes('marcar') || msgLower.includes('quero esse');
+
+                    if (intencaoAgendar) {
+                        // Varre os serviços para ver se a IA ou o usuário mencionou algum deles
+                        const servicoSugerido = servicosDados.find(s => 
+                            respostaLower.includes(s.tipo.toLowerCase()) || 
+                            msgLower.includes(s.tipo.toLowerCase())
+                        );
+
+                        if (servicoSugerido) {
+                            // Cria um botão direto no chat
+                            acaoExtra = `
+                                <div style="margin-top: 15px; border-top: 1px solid #e2e8f0; padding-top: 12px;">
+                                    <button onclick="abrirModalAgendamento(${servicoSugerido.id}, '${servicoSugerido.tipo}', '${servicoSugerido.descricao || ''}')" style="background: #10b981; color: white; border: none; padding: 10px 15px; border-radius: 12px; font-weight: bold; cursor: pointer; width: 100%; box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3); transition: transform 0.2s;">
+                                        📅 Agendar ${servicoSugerido.tipo} Agora
+                                    </button>
+                                </div>
+                            `;
+
+                            // EFEITO UAU: Espera 2 segundinhos pra pessoa ler e abre o Pop-up na cara dela automaticamente!
+                            setTimeout(() => {
+                                abrirModalAgendamento(servicoSugerido.id, servicoSugerido.tipo, servicoSugerido.descricao || '');
+                                toggleChat(); // Esconde a janela do chat para o Pop-up brilhar
+                            }, 2500);
+
+                        } else {
+                            // Se ele disse "quero agendar" mas o bot não sabe O QUE, manda pro catálogo!
+                            acaoExtra = `
+                                <div style="margin-top: 15px; border-top: 1px solid #e2e8f0; padding-top: 12px;">
+                                    <button onclick="alternarAbas('catalogo'); toggleChat();" style="background: #6a11cb; color: white; border: none; padding: 10px 15px; border-radius: 12px; font-weight: bold; cursor: pointer; width: 100%; box-shadow: 0 4px 10px rgba(106, 17, 203, 0.3); transition: transform 0.2s;">
+                                        🌸 Ver Catálogo de Serviços
+                                    </button>
+                                </div>
+                            `;
+                        }
+                    }
+
+                    // Imprime a resposta da IA junto com o botão mágico (se existir)
                     chatMensagens.innerHTML += `
                         <div style="background: white; color: #334155; padding: 14px 18px; border-radius: 18px; border-bottom-left-radius: 4px; max-width: 85%; align-self: flex-start; font-size: 14px; line-height: 1.5; border: 1px solid #e2e8f0; box-shadow: 0 4px 15px rgba(0,0,0,0.03); font-weight: 500;">
-                            ${data.resposta}
+                            ${respostaIA}
+                            ${acaoExtra}
                         </div>`;
                 } else {
                     chatMensagens.innerHTML += `<div style="background: #fee2e2; color: #b91c1c; padding: 10px 15px; border-radius: 12px; align-self: center; font-size: 13px;">${data.error}</div>`;
@@ -2320,10 +2707,342 @@ body.dark-mode .spa-toast {
                 if (btn) btn.innerText = '☀️';
             }
         });
+
+        // Variável global para guardar a memória do gráfico de calor
+        window.memoriaHeatmap = {};
+
+        // 📊 FUNÇÃO DA MATRIZ DE OCUPAÇÃO (COM DRILL-DOWN)
+        function renderizarHeatmapOperacional(agendamentos) {
+            const corpo = document.getElementById('corpo-heatmap');
+            if (!corpo) return;
+
+            const faixasHorarias = ["09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00", "19:00"];
+            const colunasDias = [0, 2, 3, 4, 5, 6]; 
+
+            // Inicializa a matriz guardando a lista de agendamentos por hora e dia
+            let matriz = {};
+            faixasHorarias.forEach(hora => {
+                matriz[hora] = { 0: [], 2: [], 3: [], 4: [], 5: [], 6: [] };
+            });
+
+            let maxOcorrencias = 1;
+
+            // Preenche a matriz com os dados reais dos agendamentos
+            if (agendamentos && Array.isArray(agendamentos)) {
+                agendamentos.forEach(ag => {
+                    if (!ag.data_atendimento) return;
+
+                    const dataObj = new Date(ag.data_atendimento);
+                    const diaSemana = dataObj.getUTCDay(); // Dia da semana (0 a 6)
+
+                    // Extrai a hora no formato "HH:00"
+                    const partesHora = ag.data_atendimento.split('T')[1] || ag.data_atendimento.split(' ')[1];
+                    if (!partesHora) return;
+                    const horaFormatada = partesHora.substring(0, 2) + ':00';
+
+                    // Se a coluna do dia existir na matriz, adiciona o agendamento
+                    if (matriz[horaFormatada] && matriz[horaFormatada][diaSemana] !== undefined) {
+                        matriz[horaFormatada][diaSemana].push(ag);
+                        
+                        // Controla o pico máximo para o cálculo de gradiente de cores
+                        const totalNoSlot = matriz[horaFormatada][diaSemana].length;
+                        if (totalNoSlot > maxOcorrencias) {
+                            maxOcorrencias = totalNoSlot;
+                        }
+                    }
+                });
+            }
+
+            // Salva na memória global para o modal de cliques funcionar
+            window.memoriaHeatmap = matriz; 
+
+            // Função interna para definir as cores do gradiente de calor
+            function obterEstiloCalor(valor) {
+                if (valor === 0) return { bg: 'transparent', texto: 'transparent', nivel: 0 };
+                const prop = valor / maxOcorrencias;
+                if (prop <= 0.33) return { bg: '#a78bfa', texto: '#4c1d95', nivel: 1 };
+                if (prop <= 0.66) return { bg: '#8b5cf6', texto: '#ffffff', nivel: 2 };
+                return { bg: '#6d28d9', texto: '#ffffff', nivel: 3 };
+            }
+
+            corpo.innerHTML = '';
+
+            // Desenha a tabela linha por linha (horários) e coluna por coluna (dias)
+            faixasHorarias.forEach(hora => {
+                let linhaHtml = `<tr><td style="font-weight: 700; color: #64748b; font-size: 13px; padding: 0 15px 0 0; text-align: right;">${hora}</td>`;
+                
+                colunasDias.forEach(dia => {
+                    // Proteção caso o dia não esteja mapeado na linha
+                    if (!matriz[hora] || matriz[hora][dia] === undefined) {
+                        linhaHtml += `<td></td>`;
+                        return;
+                    }
+
+                    const clientesNoHorario = matriz[hora][dia];
+                    const contagem = clientesNoHorario.length;
+                    const visual = obterEstiloCalor(contagem);
+                    const textoExibicao = contagem > 0 ? contagem : ''; 
+                    
+                    // Adiciona o evento de clique se houver agendamento no slot
+                    const acaoClique = contagem > 0 ? `onclick="abrirModalHeatmap('${hora}', ${dia})"` : '';
+
+                    linhaHtml += `
+                        <td>
+                            <div class="heatmap-cell" ${acaoClique} data-nivel="${visual.nivel}" style="background: ${visual.bg}; color: ${visual.texto};" title="${contagem > 0 ? 'Clique para ver os detalhes' : ''}">
+                                ${textoExibicao}
+                            </div>
+                        </td>
+                    `;
+                });
+                linhaHtml += `</tr>`;
+                corpo.innerHTML += linhaHtml;
+            });
+        }
+
+        // 🔍 FUNÇÃO QUE ABRE OS DETALHES DO CLIENTE AO CLICAR NA CÉLULA
+        function abrirModalHeatmap(hora, dia) {
+            const agendamentosSlot = window.memoriaHeatmap[hora][dia];
+            if (!agendamentosSlot || agendamentosSlot.length === 0) return;
+
+            const diasSemana = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+            document.getElementById('tituloDetalhesHeatmap').innerText = `${diasSemana[dia]} às ${hora}`;
+            
+            const container = document.getElementById('conteudoDetalhesHeatmap');
+            container.innerHTML = ''; // Limpa os dados anteriores
+
+            agendamentosSlot.forEach(ag => {
+                // Calcula quantas vezes esse cliente já veio no Spa usando o cache global
+                const historicoCliente = cacheAgendamentosAdmin.filter(a => a.email_cliente === ag.email_cliente);
+                const totalVindas = historicoCliente.length;
+                const perfilCliente = totalVindas > 2 ? '⭐ Frequente' : '🌱 Novo';
+
+                const servicoNome = ag.servico ? ag.servico.tipo : 'Dados Ocultos';
+                const valor = ag.servico ? parseFloat(ag.servico.valor).toFixed(2).replace('.', ',') : '0,00';
+                const statusStr = ag.status || 'Pendente';
+                const classeStatus = statusStr === 'Concluido' ? 'badge-concluido' : 'badge-pendente';
+                const dataFormatada = new Date(ag.data_atendimento).toLocaleDateString('pt-BR');
+
+                container.innerHTML += `
+                    <div class="card-detalhe-cliente">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <strong style="color: #1e293b; font-size: 15px;">👤 ${ag.email_cliente.split('@')[0]}</strong>
+                            <span class="badge-status ${classeStatus}">${statusStr}</span>
+                        </div>
+                        <div style="font-size: 13px; color: #64748b; margin-bottom: 6px; line-height: 1.5;">
+                            <strong>Serviço:</strong> ${servicoNome} (R$ ${valor})<br>
+                            <strong>Data Exata:</strong> ${dataFormatada}
+                        </div>
+                        <div style="font-size: 12px; color: #8b5cf6; font-weight: 700; background: rgba(139, 92, 246, 0.1); display: inline-block; padding: 4px 10px; border-radius: 6px;">
+                            Histórico: ${totalVindas} agendamento(s) | Perfil ${perfilCliente}
+                        </div>
+                    </div>
+                `;
+            });
+
+            // Mostra a janelinha
+            document.getElementById('modalDetalhesHeatmap').style.display = 'flex';
+        }
+
+
+        // ... (suas outras funções antigas de abrir modal, processar dados, etc)
+
+        // 🔍 FUNÇÃO QUE ABRE OS DETALHES DO CLIENTE AO CLICAR NA CÉLULA (Que fizemos antes)
+        function abrirModalHeatmap(hora, dia) {
+             // ...
+        }
+
+        // 👇 COLE O BLOCO NOVO EXATAMENTE AQUI 👇
+
+        // ==========================================
+        // 📅 CONTROLE DO CALENDÁRIO DE BI (SETINHAS)
+        // ==========================================
+        let dataFiltroBI = new Date(); // Começa no mês atual de hoje
+        let mostrandoTodos = false;
+
+        function atualizarTextoCalendarioBI() {
+            if (mostrandoTodos) {
+                document.getElementById('texto-mes-bi').innerText = "TODOS OS MESES";
+                return;
+            }
+            const meses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+            const nomeMes = meses[dataFiltroBI.getMonth()];
+            const ano = dataFiltroBI.getFullYear();
+            
+            document.getElementById('texto-mes-bi').innerText = `${nomeMes} ${ano}`;
+        }
+
+        function mudarMesBI(direcao) {
+            mostrandoTodos = false;
+            // Avança ou volta o mês matematicamente (ele muda o ano sozinho se passar de dezembro)
+            dataFiltroBI.setMonth(dataFiltroBI.getMonth() + direcao); 
+            atualizarTextoCalendarioBI();
+            executarFiltroDoCalendario();
+        }
+
+        function mostrarTodosOsMeses() {
+            mostrandoTodos = true;
+            atualizarTextoCalendarioBI();
+            processarDadosAdminERenderizar(cacheAgendamentosAdmin);
+        }
+
+        function executarFiltroDoCalendario() {
+            if (mostrandoTodos) return;
+
+            // Pega o número do mês com 2 dígitos (Ex: 09)
+            const mesSelecionado = String(dataFiltroBI.getMonth() + 1).padStart(2, '0');
+            const anoSelecionado = String(dataFiltroBI.getFullYear());
+
+            const dadosFiltrados = cacheAgendamentosAdmin.filter(ag => {
+                if (!ag.data_atendimento) return false;
+                
+                // Quebra a data do banco (YYYY-MM-DD) para comparar
+                const partesData = ag.data_atendimento.split('-'); 
+                if (partesData.length >= 2) {
+                    return partesData[0] === anoSelecionado && partesData[1] === mesSelecionado;
+                }
+                return false;
+            });
+
+            processarDadosAdminERenderizar(dadosFiltrados);
+        }
+
+        // Dá a partida no texto inicial assim que a tela abre
+        setTimeout(atualizarTextoCalendarioBI, 500); 
+
+
+// 🔍 FUNÇÃO BLINDADA PARA ABRIR O MODAL DO HEATMAP
+        window.abrirModalHeatmap = function(hora, dia) {
+            const agendamentosSlot = window.memoriaHeatmap[hora][dia];
+            if (!agendamentosSlot || agendamentosSlot.length === 0) return;
+
+            const diasSemana = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+            document.getElementById('tituloDetalhesHeatmap').innerText = `${diasSemana[dia]} às ${hora}`;
+            
+            const container = document.getElementById('conteudoDetalhesHeatmap');
+            container.innerHTML = ''; // Limpa os dados anteriores
+
+            agendamentosSlot.forEach(ag => {
+                // Calcula o histórico de vindas do cliente
+                const historicoCliente = cacheAgendamentosAdmin.filter(a => a.email_cliente === ag.email_cliente);
+                const totalVindas = historicoCliente.length;
+                const perfilCliente = totalVindas > 2 ? '⭐ Frequente' : '🌱 Novo';
+
+                const servicoNome = ag.servico ? ag.servico.tipo : 'Dados Ocultos';
+                const valor = ag.servico ? parseFloat(ag.servico.valor).toFixed(2).replace('.', ',') : '0,00';
+                const statusStr = ag.status || 'Pendente';
+                const classeStatus = statusStr === 'Concluido' ? 'badge-concluido' : 'badge-pendente';
+                
+                // Tratamento de data
+                const dataFormatada = new Date(ag.data_atendimento).toLocaleDateString('pt-BR', { timeZone: 'UTC' });
+
+                container.innerHTML += `
+                    <div class="card-detalhe-cliente">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <strong style="color: #1e293b; font-size: 15px;">👤 ${ag.email_cliente.split('@')[0]}</strong>
+                            <span class="badge-status ${classeStatus}">${statusStr}</span>
+                        </div>
+                        <div style="font-size: 13px; color: #64748b; margin-bottom: 6px; line-height: 1.5;">
+                            <strong>Serviço:</strong> ${servicoNome} (R$ ${valor})<br>
+                            <strong>Data Exata:</strong> ${dataFormatada}
+                        </div>
+                        <div style="font-size: 12px; color: #8b5cf6; font-weight: 700; background: rgba(139, 92, 246, 0.1); display: inline-block; padding: 4px 10px; border-radius: 6px;">
+                            Histórico: ${totalVindas} agendamento(s) | Perfil ${perfilCliente}
+                        </div>
+                    </div>
+                `;
+            });
+
+            // Força a exibição da tela
+            document.getElementById('modalDetalhesHeatmap').style.display = 'flex';
+        };
+
+
+
+        // 💸 FUNÇÃO DO DRE E LUCRO LÍQUIDO
+        window.faturamentoBrutoGlobal = 0; // Guarda o valor para usar na conta
+
+        // 💸 FUNÇÃO DO DRE E LUCRO LÍQUIDO (VERSÃO INTELIGENTE)
+        // 💸 FUNÇÃO DO DRE E LUCRO LÍQUIDO (VERSÃO BRASILEIRA CORRIGIDA)
+        function calcularDRE() {
+            // 1. Pega o faturamento direto do cartão "Faturamento Atual"
+            const elementoFaturamento = document.getElementById('fin-faturamento');
+            if (!elementoFaturamento) return;
+            
+            const textoFaturamento = elementoFaturamento.innerText;
+            let faturamentoBruto = parseFloat(textoFaturamento.replace('R$', '').replace(/\./g, '').replace(',', '.').trim()) || 0;
+
+            // 2. Pega os custos digitados e traduz do padrão BR para o JS
+            // Ex: "111.111,50" vira "111111.50"
+            const inputCustos = document.getElementById('input-custos-dre');
+            let textoCustos = inputCustos.value.replace(/\./g, '').replace(',', '.').trim();
+            let custos = parseFloat(textoCustos) || 0;
+
+            // 3. A matemática real
+            const lucroLiquido = faturamentoBruto - custos;
+            let margem = 0;
+            if (faturamentoBruto > 0) {
+                margem = (lucroLiquido / faturamentoBruto) * 100;
+            }
+
+            // 4. Formata para exibir na tela
+            const formatador = new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            
+            document.getElementById('dre-faturamento').innerText = `R$ ${formatador.format(faturamentoBruto)}`;
+            document.getElementById('dre-lucro').innerText = `R$ ${formatador.format(lucroLiquido)}`;
+            
+            const badgeMargem = document.getElementById('dre-margem-badge');
+            badgeMargem.innerText = `${margem.toFixed(1)}% Margem`;
+
+            // 5. Muda as cores dependendo do resultado (Lucro ou Prejuízo)
+            if (lucroLiquido < 0) {
+                document.getElementById('dre-lucro').style.color = '#ef4444'; 
+                badgeMargem.style.background = '#fee2e2';
+                badgeMargem.style.color = '#b91c1c';
+            } else {
+                document.getElementById('dre-lucro').style.color = '#059669'; 
+                badgeMargem.style.background = '#dcfce7';
+                badgeMargem.style.color = '#15803d';
+            }
+        }
+
+
+        // 🔄 FUNÇÃO PARA MUDAR STATUS DO ATENDIMENTO
+        window.alterarStatus = function(idAgendamento, novoStatus) {
+            // Encontra o agendamento no seu banco de dados/cache global
+            const index = cacheAgendamentosAdmin.findIndex(a => a.id == idAgendamento);
+            
+            if (index !== -1) {
+                // Altera o status
+                cacheAgendamentosAdmin[index].status = novoStatus;
+                
+                // Manda redesenhar a tela (aqui você chama a função que já usa no seu filtro)
+                // Isso vai fazer a linha ficar verde e o DRE recalcular imediatamente!
+                processarDadosAdminERenderizar(cacheAgendamentosAdmin);
+                
+                // Opcional: Aqui você pode colocar o código para salvar no Supabase também
+            }
+        };
+
+        window.abrirContato = function(email) {
+            alert(`Ação extra adicionada! Iniciar contato com: ${email}`);
+        };
+
+
+
+       
+
+
+    </script> 
+</body>
+</html>
+
+
     </script>
 
     <!-- Container de Toasts Flutuantes (SEMPRE FORA DO SCRIPT) -->
     <div id="toast-container" style="position: fixed; top: 20px; right: 20px; z-index: 999999; display: flex; flex-direction: column; gap: 10px; pointer-events: none;"></div>
+
+    
 
 </body>
 </html>

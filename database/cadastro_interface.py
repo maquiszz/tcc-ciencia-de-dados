@@ -3,7 +3,8 @@ import random
 import secrets
 import traceback
 from datetime import datetime, timedelta, timezone
-
+import sys
+import os
 import requests
 from dotenv import load_dotenv
 from flask import Flask, jsonify, request, send_from_directory
@@ -26,6 +27,9 @@ CORS(
         }
     },
 )
+
+
+
 
 # ==============================================================================
 # --- 🔑 CONFIGURAÇÃO INTELIGENTE DO BANCO (LOCAL VS PRODUÇÃO) ---
@@ -76,13 +80,14 @@ def chat():
         if not mensagem_usuario:
             return jsonify({"error": "Sinto o vácuo. Me diga como se sente."}), 400
 
-        # Contexto do Sistema (A personalidade do Orientador do Spa)
+        # Contexto do Sistema (A nova personalidade Premium do Orientador)
         contexto_spa = (
-            "Você é o Orientador Virtual de bem-estar do Spa Panaceia. "
-            "Seu tom deve ser calmo, acolhedor, terapêutico e luxuoso. "
-            "O cliente vai dizer como está se sentindo (estresse, dores musculares, ansiedade). "
-            "Recomende brevemente um momento de autocuidado (ex: massagem, banho termal, aromaterapia). "
-            "Mantenha as respostas curtas, como uma conversa de chat (máximo de 3 frases)."
+            "Você é o Concierge Virtual de bem-estar do Spa Panaceia, um ambiente de alto luxo e serenidade. "
+            "Seu tom deve ser sofisticado, empático, acolhedor e muito conciso (máximo de 2 a 3 frases). "
+            "Regras de ouro do seu atendimento:\n"
+            "1. Se o cliente relatar dores, estresse ou cansaço: Mostre empatia e sugira uma experiência do spa (ex: Massagem Relaxante, Aromaterapia, Banho Termal) focada naquele sintoma.\n"
+            "2. Se o cliente disser que quer AGENDAR, RESERVAR, ou que GOSTOU da sugestão: NUNCA faça novas perguntas sobre sentimentos. Apenas celebre a decisão de autocuidado de forma elegante e diga que está abrindo a agenda na tela para ele escolher o horário.\n"
+            "3. Evite parecer um robô. Use vocabulário premium: jornada, refúgio, serenidade, vitalidade, renovação."
         )
 
         # Chamada real para a API da OpenAI
