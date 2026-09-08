@@ -5,12 +5,13 @@ import re
 import secrets
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
+from functools import wraps
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
 import requests
 from dotenv import load_dotenv
-from flask import Flask, jsonify, request, send_from_directory
+from flask import Flask, g, jsonify, request, send_from_directory, session
 from flask_cors import CORS
 from supabase import Client, create_client
 from werkzeug.security import check_password_hash, generate_password_hash
@@ -46,6 +47,19 @@ PASSWORD_PATTERN = re.compile(r"^(?=.*[a-z])(?=.*[A-Z])(?=.*[@$!%*?&#,.]).{8,}$"
 EMAIL_PATTERN = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
 
 app = Flask(__name__)
+secret_key = os.getenv("FLASK_SECRET_KEY")
+if not secret_key:
+    secret_key = secrets.token_hex(32)
+    logger.warning("FLASK_SECRET_KEY não configurada; as sessões serão encerradas ao reiniciar o servidor.")
+
+app.config.update(
+    SECRET_KEY=secret_key,
+    SESSION_COOKIE_NAME="spa_panaceia_session",
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SAMESITE=os.getenv("SESSION_COOKIE_SAMESITE", "Lax"),
+    SESSION_COOKIE_SECURE=os.getenv("SESSION_COOKIE_SECURE", "false").lower() == "true",
+    PERMANENT_SESSION_LIFETIME=timedelta(hours=int(os.getenv("SESSION_TTL_HOURS", "12"))),
+)
 cors_origins = [
     origin.strip()
     for origin in os.getenv(
@@ -54,7 +68,11 @@ cors_origins = [
     ).split(",")
     if origin.strip()
 ]
-CORS(app, resources={r"/api/*": {"origins": cors_origins}, r"/cadastrar": {"origins": cors_origins}})
+CORS(
+    app,
+    resources={r"/api/*": {"origins": cors_origins}, r"/cadastrar": {"origins": cors_origins}},
+    supports_credentials=True,
+)
 
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
@@ -86,13 +104,82 @@ def buscar_usuario(email, campos="*"):
     return resposta.data[0] if resposta.data else None
 
 
-def admin_autorizado(email):
-    """Mantém o contrato atual baseado em e-mail; migre para sessão/JWT antes de produção."""
-    email = normalizar_email(email)
+def usuario_publico(usuario):
+    return {
+        "id": usuario.get("id"),
+        "nome": usuario.get("nome"),
+        "email": usuario.get("email"),
+        "is_admin": bool(usuario.get("is_admin")),
+        "pontos": usuario.get("pontos") or 0,
+    }
+
+
+def usuario_da_sessao():
+    email = normalizar_email(session.get("usuario_email"))
     if not email:
-        return False
-    usuario = buscar_usuario(email, "is_admin")
-    return bool(usuario and usuario.get("is_admin"))
+        return None
+
+    usuario = buscar_usuario(email, "id, nome, email, email_verificado, is_admin, pontos")
+    if not usuario or not usuario.get("email_verificado"):
+        session.clear()
+        return None
+    return usuario
+
+
+def login_obrigatorio(funcao):
+    @wraps(funcao)
+    def protegida(*args, **kwargs):
+        try:
+            usuario = usuario_da_sessao()
+        except Exception:
+            logger.exception("Erro ao validar a sessão do usuário")
+            return jsonify({"error": "Não foi possível validar sua sessão."}), 500
+        if not usuario:
+            return jsonify({"error": "Faça login para continuar."}), 401
+        g.usuario = usuario
+        return funcao(*args, **kwargs)
+
+    return protegida
+
+
+def admin_obrigatorio(funcao):
+    @wraps(funcao)
+    def protegida(*args, **kwargs):
+        try:
+            usuario = usuario_da_sessao()
+        except Exception:
+            logger.exception("Erro ao validar a sessão administrativa")
+            return jsonify({"error": "Não foi possível validar sua sessão."}), 500
+        if not usuario:
+            return jsonify({"error": "Faça login para continuar."}), 401
+        if not usuario.get("is_admin"):
+            return jsonify({"error": "Acesso restrito a administradores."}), 403
+        g.usuario = usuario
+        return funcao(*args, **kwargs)
+
+    return protegida
+
+
+def buscar_agendamento(agendamento_id, campos="id, email_cliente, status"):
+    resposta = (
+        supabase.table("agendamentos")
+        .select(campos)
+        .eq("id", agendamento_id)
+        .limit(1)
+        .execute()
+    )
+    return resposta.data[0] if resposta.data else None
+
+
+def usuario_pode_alterar_agendamento(usuario, agendamento):
+    return bool(
+        usuario
+        and agendamento
+        and (
+            usuario.get("is_admin")
+            or normalizar_email(agendamento.get("email_cliente")) == normalizar_email(usuario.get("email"))
+        )
+    )
 
 
 def validar_data_agendamento(value):
@@ -296,10 +383,27 @@ def login():
         if not usuario.get("email_verificado"):
             return jsonify({"error": "Conta não verificada. Verifique seu e-mail antes de entrar."}), 403
 
-        return jsonify({"message": "Login realizado com sucesso!", "usuario": {"id": usuario.get("id"), "nome": usuario.get("nome"), "email": usuario.get("email"), "is_admin": bool(usuario.get("is_admin")), "pontos": usuario.get("pontos") or 0}}), 200
+        session.clear()
+        session.permanent = True
+        session["usuario_id"] = usuario.get("id")
+        session["usuario_email"] = usuario.get("email")
+
+        return jsonify({"message": "Login realizado com sucesso!", "usuario": usuario_publico(usuario)}), 200
     except Exception:
         logger.exception("Erro no login")
         return jsonify({"error": "Erro interno no servidor."}), 500
+
+
+@app.route("/api/me", methods=["GET"])
+@login_obrigatorio
+def usuario_atual():
+    return jsonify({"usuario": usuario_publico(g.usuario)}), 200
+
+
+@app.route("/api/logout", methods=["POST"])
+def logout():
+    session.clear()
+    return jsonify({"message": "Sessão encerrada com sucesso."}), 200
 
 
 @app.route("/api/esqueci-senha", methods=["POST"])
@@ -343,6 +447,8 @@ def redefinir_senha():
             return jsonify({"error": "Código de verificação incorreto."}), 400
 
         supabase.table("usuarios").update({"senha": generate_password_hash(nova_senha, method="pbkdf2:sha256"), "token_recuperacao": None}).eq("email", email).execute()
+        if normalizar_email(session.get("usuario_email")) == email:
+            session.clear()
         return jsonify({"message": "Senha redefinida com sucesso! Faça login para continuar."}), 200
     except Exception:
         logger.exception("Erro ao redefinir senha")
@@ -360,23 +466,19 @@ def listar_servicos():
 
 
 @app.route("/api/agendar", methods=["POST"])
+@login_obrigatorio
 def criar_agendamento():
     dados = json_body()
-    email = normalizar_email(dados.get("email"))
+    email = g.usuario["email"]
     try:
         servico_id = int(dados.get("servico_id"))
     except (TypeError, ValueError):
         servico_id = 0
-    if not email or servico_id <= 0:
-        return jsonify({"error": "E-mail e serviço válidos são obrigatórios."}), 400
+    if servico_id <= 0:
+        return jsonify({"error": "Serviço inválido."}), 400
 
     try:
         data_atendimento = validar_data_agendamento(dados.get("data"))
-        usuario = buscar_usuario(email, "email_verificado")
-        if not usuario:
-            return jsonify({"error": "Usuário inexistente. Crie uma conta antes de agendar."}), 404
-        if not usuario.get("email_verificado"):
-            return jsonify({"error": "Verifique seu e-mail antes de agendar."}), 403
         if not supabase.table("servico").select("id").eq("id", servico_id).limit(1).execute().data:
             return jsonify({"error": "Serviço não encontrado."}), 404
         if horario_esta_ocupado(data_atendimento):
@@ -397,12 +499,10 @@ def criar_agendamento():
 
 
 @app.route("/api/meus-agendamentos", methods=["GET"])
+@login_obrigatorio
 def meus_agendamentos():
-    email = normalizar_email(request.args.get("email"))
-    if not email:
-        return jsonify({"error": "E-mail do usuário não informado."}), 400
     try:
-        resposta = supabase.table("agendamentos").select("id, data_atendimento, status, avaliacao, servico_id, servico(tipo, valor)").eq("email_cliente", email).order("data_atendimento").execute()
+        resposta = supabase.table("agendamentos").select("id, data_atendimento, status, avaliacao, servico_id, servico(tipo, valor)").eq("email_cliente", g.usuario["email"]).order("data_atendimento").execute()
         return jsonify(resposta.data or []), 200
     except Exception:
         logger.exception("Erro ao buscar agendamentos do usuário")
@@ -419,7 +519,10 @@ def horarios_ocupados():
             .neq("status", "Cancelado")
         )
         if ignorar_id:
-            consulta = consulta.neq("id", ignorar_id)
+            usuario = usuario_da_sessao()
+            agendamento = buscar_agendamento(ignorar_id)
+            if usuario_pode_alterar_agendamento(usuario, agendamento):
+                consulta = consulta.neq("id", ignorar_id)
 
         resposta = consulta.order("data_atendimento").execute()
         return jsonify([agendamento["data_atendimento"] for agendamento in resposta.data or []]), 200
@@ -429,8 +532,15 @@ def horarios_ocupados():
 
 
 @app.route("/api/agendamentos/<int:agendamento_id>", methods=["PUT"])
+@login_obrigatorio
 def alterar_horario(agendamento_id):
     try:
+        agendamento = buscar_agendamento(agendamento_id)
+        if not agendamento:
+            return jsonify({"error": "Agendamento não encontrado."}), 404
+        if not usuario_pode_alterar_agendamento(g.usuario, agendamento):
+            return jsonify({"error": "Você não pode alterar este agendamento."}), 403
+
         nova_data = validar_data_agendamento(json_body().get("data"))
         if horario_esta_ocupado(nova_data, agendamento_id):
             return jsonify({"error": "Este horário já está reservado por outro cliente."}), 409
@@ -444,8 +554,15 @@ def alterar_horario(agendamento_id):
 
 
 @app.route("/api/agendamentos/<int:agendamento_id>", methods=["DELETE"])
+@login_obrigatorio
 def cancelar_agendamento(agendamento_id):
     try:
+        agendamento = buscar_agendamento(agendamento_id)
+        if not agendamento:
+            return jsonify({"error": "Agendamento não encontrado."}), 404
+        if not usuario_pode_alterar_agendamento(g.usuario, agendamento):
+            return jsonify({"error": "Você não pode cancelar este agendamento."}), 403
+
         supabase.table("agendamentos").update({"status": "Cancelado"}).eq("id", agendamento_id).execute()
         return jsonify({"message": "Agendamento cancelado com sucesso."}), 200
     except Exception:
@@ -454,11 +571,20 @@ def cancelar_agendamento(agendamento_id):
 
 
 @app.route("/api/agendamentos/<int:agendamento_id>/avaliar", methods=["POST"])
+@login_obrigatorio
 def avaliar_agendamento(agendamento_id):
     avaliacao = json_body().get("avaliacao")
     if avaliacao not in {"Bom", "Médio", "Ruim"}:
         return jsonify({"error": "Avaliação inválida."}), 400
     try:
+        agendamento = buscar_agendamento(agendamento_id)
+        if not agendamento:
+            return jsonify({"error": "Agendamento não encontrado."}), 404
+        if not usuario_pode_alterar_agendamento(g.usuario, agendamento):
+            return jsonify({"error": "Você não pode avaliar este agendamento."}), 403
+        if agendamento.get("status") != "Concluido":
+            return jsonify({"error": "A avaliação é liberada após a conclusão do atendimento."}), 409
+
         supabase.table("agendamentos").update({"avaliacao": avaliacao}).eq("id", agendamento_id).execute()
         return jsonify({"message": "Avaliação registrada!"}), 200
     except Exception:
@@ -467,9 +593,8 @@ def avaliar_agendamento(agendamento_id):
 
 
 @app.route("/api/admin/agendamentos", methods=["GET"])
+@admin_obrigatorio
 def admin_agendamentos():
-    if not admin_autorizado(request.args.get("admin_email")):
-        return jsonify({"error": "Acesso não autorizado."}), 403
     try:
         resposta = supabase.table("agendamentos").select("id, email_cliente, data_atendimento, status, avaliacao, servico(tipo, valor)").order("data_atendimento", desc=True).execute()
         return jsonify(resposta.data or []), 200
@@ -479,9 +604,8 @@ def admin_agendamentos():
 
 
 @app.route("/api/admin/agendamentos/<int:agendamento_id>/concluir", methods=["POST"])
+@admin_obrigatorio
 def concluir_agendamento(agendamento_id):
-    if not admin_autorizado(json_body().get("admin_email")):
-        return jsonify({"error": "Acesso não autorizado."}), 403
     try:
         resposta = supabase.table("agendamentos").select("email_cliente, status, servico_id").eq("id", agendamento_id).limit(1).execute()
         if not resposta.data:
@@ -511,12 +635,10 @@ def concluir_agendamento(agendamento_id):
 
 
 @app.route("/api/usuario/pontos", methods=["GET"])
+@login_obrigatorio
 def obter_pontos():
-    email = normalizar_email(request.args.get("email"))
-    if not email:
-        return jsonify({"error": "E-mail é obrigatório."}), 400
     try:
-        cliente = buscar_usuario(email, "pontos")
+        cliente = buscar_usuario(g.usuario["email"], "pontos")
         if not cliente:
             return jsonify({"error": "Usuário não encontrado."}), 404
         return jsonify({"pontos": cliente.get("pontos") or 0}), 200
@@ -526,9 +648,8 @@ def obter_pontos():
 
 
 @app.route("/api/admin/usuarios", methods=["GET"])
+@admin_obrigatorio
 def admin_usuarios():
-    if not admin_autorizado(request.args.get("admin_email")):
-        return jsonify({"error": "Acesso não autorizado."}), 403
     try:
         usuarios = supabase.table("usuarios").select("nome, email").order("nome").execute().data or []
         agendamentos = supabase.table("agendamentos").select("email_cliente, status, servico(valor)").execute().data or []
@@ -569,6 +690,7 @@ def quantidade_inteira(value, campo):
 
 
 @app.route("/api/estoque", methods=["GET"])
+@admin_obrigatorio
 def listar_estoque():
     try:
         resposta = supabase.table("estoque").select("id, nome, quantidade, quantidade_minima, unidade").order("id").execute()
@@ -579,6 +701,7 @@ def listar_estoque():
 
 
 @app.route("/api/estoque", methods=["POST"])
+@admin_obrigatorio
 def adicionar_estoque():
     dados = json_body()
     nome = str(dados.get("nome") or "").strip()
@@ -597,6 +720,7 @@ def adicionar_estoque():
 
 
 @app.route("/api/estoque/<int:item_id>", methods=["PUT"])
+@admin_obrigatorio
 def atualizar_estoque(item_id):
     dados = json_body()
     try:
@@ -611,6 +735,7 @@ def atualizar_estoque(item_id):
 
 
 @app.route("/api/estoque/<int:item_id>", methods=["DELETE"])
+@admin_obrigatorio
 def deletar_estoque(item_id):
     try:
         supabase.table("estoque").delete().eq("id", item_id).execute()
