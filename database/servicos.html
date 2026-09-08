@@ -1,44 +1,32 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <!-- Ícone da aba do navegador (Favicon) -->
-    <link rel="icon" type="image/png" href="/static/img/logo_panaceia.png?v=2">
-
-    <!-- Fontes Premium do Google -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <!-- Mantivemos a fonte chique (Playfair) só para os títulos principais, e a Plus Jakarta para os dados e painéis -->
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#6a11cb">
     <title>Spa Panaceia | Bem-Estar e Relaxamento</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- Adicione esta linha logo abaixo do Chart.js 👇 -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-
-    
-    
-    <!-- Flatpickr (Calendário Customizado) -->
+    <link rel="icon" type="image/png" href="/static/img/logo_panaceia.png?v=2">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Poppins:wght@500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-    <script src="https://npmcdn.com/flatpickr/dist/l10n/pt.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
+    <script defer src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/pt.js"></script>
     <style>
-        /* 1. IMPORTAÇÃO DAS FONTES (Garante que o CSS puxe a fonte nova direto do Google) */
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Poppins:wght@500;600;700;800&display=swap');
 
-        /* 2. FORÇA BRUTA PARA LIMPAR FONTES VELHAS E APLICAR 'INTER' EM TUDO */
-        * { 
-            margin: 0; padding: 0; box-sizing: border-box; 
-            font-family: 'Inter', sans-serif !important;
+        *, *::before, *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
 
-        /* 3. APLICA 'POPPINS' (Arredondada/Premium) APENAS NOS TÍTULOS E DESTAQUES */
+        body, button, input, select, textarea {
+            font-family: 'Inter', sans-serif;
+        }
+
         h1, h2, h3, h4, h5, h6, 
-        .titulo-spa, 
         .card-titulo, 
         .logo-spa, 
         .card-preco, 
@@ -435,44 +423,7 @@ body.dark-mode .spa-toast {
             font-weight: 800 !important;
         }
 
-/* 🌙 MODO ESCURO (DARK MODE) PREMIUM */
-        body.dark-mode {
-            background: radial-gradient(circle at top left, #0f172a 0%, #1e293b 50%, #0f172a 100%) !important;
-            color: #f1f5f9 !important;
-        }
-
-        /* Textos e Títulos */
-        body.dark-mode h1, body.dark-mode h2, body.dark-mode h3, body.dark-mode h4, body.dark-mode h5, 
-        body.dark-mode p:not(.badge-status), body.dark-mode label, body.dark-mode span:not(.badge-status):not([style*="color: white"]) {
-            color: #f1f5f9 !important;
-        }
-
-        /* Cards, Modais e Paineis */
-        body.dark-mode .card, body.dark-mode .modal-box, body.dark-mode .admin-container, 
-        body.dark-mode .auth-container, body.dark-mode .item-agendamento,
-        body.dark-mode div[style*="background: white"] {
-            background: #1e293b !important;
-            border-color: #334155 !important;
-            box-shadow: 0 15px 35px rgba(0,0,0,0.3) !important;
-        }
-
-        /* Navbar e Dropdown Vidro Escuro */
-        body.dark-mode .navbar-topo, body.dark-mode .dropdown-menu-spa {
-            background: rgba(15, 23, 42, 0.85) !important;
-            border-color: rgba(255, 255, 255, 0.05) !important;
-        }
-
-        /* Inputs, Botão Tema e Tabelas */
-        body.dark-mode input, body.dark-mode #btn-theme-toggle, body.dark-mode .dropdown-item:hover, 
-        body.dark-mode .btn-fechar, body.dark-mode .card-contratos {
-            background: #334155 !important;
-            color: #f1f5f9 !important;
-            border-color: #475569 !important;
-        }
-
-        body.dark-mode .tabela-admin th { background-color: #334155 !important; color: #cbd5e1 !important; border-bottom: 1px solid #475569 !important;}
-        body.dark-mode .tabela-admin td { border-bottom: 1px solid #334155 !important; }
-        body.dark-mode .tabela-admin tr:hover td { background-color: #334155 !important; }
+        /* O tema escuro é consolidado no design system no final deste estilo. */
 
 
     /* Estilos dos botões de filtro */
@@ -664,28 +615,9 @@ body.dark-mode .spa-toast {
         /* ======================================= */
         
         /* Botões de Ação Premium */
-        .btn-acao {
-            width: 32px;
-            height: 32px;
-            border-radius: 8px;
-            border: none;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 14px;
-            cursor: pointer;
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        .btn-acao:hover { transform: scale(1.1); }
-        
-        .btn-concluir { background: rgba(16, 185, 129, 0.15); color: #10b981; }
-        .btn-concluir:hover { background: #10b981; color: white; box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3); }
         
         .btn-cancelar { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
         .btn-cancelar:hover { background: #ef4444; color: white; box-shadow: 0 4px 10px rgba(239, 68, 68, 0.3); }
-
-        .btn-contato { background: rgba(59, 130, 246, 0.15); color: #3b82f6; }
-        .btn-contato:hover { background: #3b82f6; color: white; box-shadow: 0 4px 10px rgba(59, 130, 246, 0.3); }
 
         /* Estilo para a linha da tabela quando o serviço já foi concluído */
         .linha-concluida {
@@ -729,22 +661,827 @@ body.dark-mode .spa-toast {
             box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
             transform: translateY(-2px);
         }
-
-        .btn-moderno-cancelar {
-            background-color: rgba(239, 68, 68, 0.1);
-            color: #ef4444;
-            border: 1px solid rgba(239, 68, 68, 0.2);
-        }
-        .btn-moderno-cancelar:hover {
-            background-color: #ef4444;
-            color: white;
-            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
-            transform: translateY(-2px);
-        }
         
 
 
-</style>
+
+
+        /* ==================================================================
+           DESIGN SYSTEM — SPA PANACEIA
+           ================================================================== */
+        :root {
+            --ink: #282038;
+            --ink-soft: #6e657d;
+            --paper: #fffdf9;
+            --canvas: #f7f4fb;
+            --line: rgba(40, 32, 56, 0.10);
+            --brand: #6a11cb;
+            --brand-deep: #43108d;
+            --brand-pale: #eee4ff;
+            --gold: #b88948;
+            --gold-pale: #f6ebd9;
+            --danger: #c54b4b;
+            --shadow-sm: 0 8px 24px rgba(52, 20, 96, 0.07);
+            --shadow-md: 0 20px 55px rgba(52, 20, 96, 0.12);
+            --shadow-lg: 0 35px 80px rgba(40, 8, 83, 0.22);
+            --radius-sm: 14px;
+            --radius-md: 22px;
+            --radius-lg: 32px;
+        }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            position: relative;
+            min-height: 100vh;
+            overflow-x: hidden;
+            padding: 18px 24px 56px;
+            color: var(--ink);
+            background:
+                radial-gradient(circle at 7% 2%, rgba(235, 222, 255, 0.95) 0, transparent 30rem),
+                radial-gradient(circle at 94% 24%, rgba(246, 235, 217, 0.90) 0, transparent 28rem),
+                var(--canvas);
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            z-index: -1;
+            opacity: 0.32;
+            pointer-events: none;
+            background-image: linear-gradient(rgba(67, 16, 141, 0.028) 1px, transparent 1px), linear-gradient(90deg, rgba(67, 16, 141, 0.028) 1px, transparent 1px);
+            background-size: 32px 32px;
+            mask-image: linear-gradient(to bottom, black, transparent 70%);
+        }
+
+        body, button, input, select, textarea { font-family: 'Inter', sans-serif; }
+        button, input { -webkit-tap-highlight-color: transparent; }
+        button:focus-visible, input:focus-visible { outline: 3px solid rgba(106, 17, 203, 0.28); outline-offset: 3px; }
+
+        h1, h2, h3, h4, h5, h6,
+        .card-titulo, .logo-spa, .card-preco,
+        .item-agendamento-info h4 {
+            font-family: 'Poppins', sans-serif !important;
+            color: var(--ink);
+            letter-spacing: -0.045em !important;
+        }
+
+        .navbar-topo {
+            width: min(100%, 1280px);
+            min-height: 70px;
+            margin: 0 auto 34px;
+            padding: 11px 14px 11px 22px;
+            border: 1px solid rgba(255, 255, 255, 0.86);
+            border-radius: 18px;
+            background: rgba(255, 253, 249, 0.84);
+            box-shadow: var(--shadow-sm);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+        }
+
+        .logo-spa {
+            color: var(--brand-deep);
+            font-size: 19px;
+            font-weight: 700;
+            letter-spacing: -0.05em !important;
+        }
+
+        .logo-spa:hover { transform: none; color: var(--brand); }
+
+        #btn-theme-toggle {
+            width: 40px !important;
+            height: 40px !important;
+            border: 1px solid var(--line) !important;
+            color: var(--ink) !important;
+            background: rgba(255, 255, 255, 0.70) !important;
+            box-shadow: none !important;
+        }
+
+        #btn-theme-toggle:hover { transform: translateY(-2px) rotate(8deg) !important; border-color: rgba(106, 17, 203, 0.35) !important; }
+
+        .btn-perfil-gatilho {
+            min-height: 42px;
+            padding: 9px 15px;
+            color: var(--paper);
+            border-radius: 11px;
+            background: var(--brand-deep);
+            box-shadow: none;
+        }
+
+        .btn-perfil-gatilho:hover { transform: translateY(-2px); background: var(--brand); box-shadow: 0 8px 18px rgba(67, 16, 141, 0.24); }
+
+        .dropdown-menu-spa {
+            top: calc(100% + 10px);
+            min-width: 245px;
+            padding: 7px;
+            border: 1px solid rgba(23, 33, 43, 0.09);
+            border-radius: 16px;
+            background: rgba(255, 253, 249, 0.97);
+            box-shadow: var(--shadow-md);
+            backdrop-filter: blur(20px);
+        }
+
+        .dropdown-item { padding: 12px 13px; color: var(--ink-soft); border-radius: 10px; }
+        .dropdown-item:hover { padding-left: 13px; color: var(--brand-deep); background: var(--brand-pale); }
+        .dropdown-item.btn-sair { border-top: 1px solid var(--line); color: var(--danger); }
+
+        .secao-conteudo { width: min(100%, 1280px); margin: 0 auto; }
+        .secao-conteudo > header:not(.cabecalho-catalogo) { margin: 25px 0 34px !important; text-align: left; }
+        .secao-conteudo > header:not(.cabecalho-catalogo) h1 { font-size: clamp(28px, 3vw, 42px); }
+        .secao-conteudo > header:not(.cabecalho-catalogo) p { max-width: 650px; color: var(--ink-soft); }
+
+        .hero-spa {
+            position: relative;
+            display: grid;
+            grid-template-columns: minmax(0, 1.25fr) minmax(300px, 0.75fr);
+            gap: 40px;
+            min-height: 485px;
+            margin: 0 0 90px;
+            padding: clamp(34px, 5vw, 72px);
+            overflow: hidden;
+            isolation: isolate;
+            border: 1px solid rgba(255, 255, 255, 0.75);
+            border-radius: var(--radius-lg);
+            color: #f9f9f6;
+            background:
+                linear-gradient(112deg, rgba(40, 8, 83, 0.99) 0%, rgba(67, 16, 141, 0.97) 55%, rgba(106, 17, 203, 0.90) 100%);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .hero-spa::before {
+            content: '';
+            position: absolute;
+            z-index: -1;
+            width: 650px;
+            height: 650px;
+            right: -270px;
+            bottom: -390px;
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            border-radius: 50%;
+            box-shadow: 0 0 0 80px rgba(255, 255, 255, 0.025), 0 0 0 160px rgba(255, 255, 255, 0.025);
+        }
+
+        .hero-conteudo { display: flex; flex-direction: column; align-items: flex-start; justify-content: center; }
+        .hero-eyebrow, .secao-eyebrow { font-size: 11px; font-weight: 800; letter-spacing: 0.15em; }
+        .hero-eyebrow { color: #e4cda9; }
+
+        .hero-spa h1 {
+            max-width: 730px;
+            margin: 20px 0;
+            color: #fffdf8;
+            font-size: clamp(39px, 5vw, 66px);
+            font-weight: 600;
+            line-height: 1.05;
+            letter-spacing: -0.065em !important;
+        }
+
+        .hero-spa p { max-width: 560px; color: rgba(250, 249, 244, 0.75); font-size: 16px; line-height: 1.8; }
+        .hero-acoes { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 32px; }
+        .btn-hero-primario, .btn-hero-secundario { min-height: 50px; padding: 0 19px; border-radius: 10px; font-weight: 800; cursor: pointer; transition: transform 0.25s ease, background 0.25s ease; }
+        .btn-hero-primario { border: 1px solid #f3e3c8; color: #3a0d79; background: #f3e3c8; }
+        .btn-hero-primario span { margin-left: 8px; font-size: 18px; }
+        .btn-hero-secundario { border: 1px solid rgba(255, 255, 255, 0.3); color: #fffdf8; background: transparent; }
+        .btn-hero-primario:hover, .btn-hero-secundario:hover { transform: translateY(-3px); }
+        .btn-hero-primario:hover { background: #fff6e8; }
+        .btn-hero-secundario:hover { background: rgba(255, 255, 255, 0.10); }
+
+        .hero-sinais { display: flex; flex-wrap: wrap; gap: 9px 18px; margin-top: 32px; color: rgba(255, 255, 255, 0.68); font-size: 12px; font-weight: 600; }
+        .hero-destaque { position: relative; min-height: 100%; }
+        .hero-orbe { position: absolute; border-radius: 50%; filter: blur(1px); }
+        .hero-orbe-um { width: 300px; height: 300px; right: 8%; top: 0; background: linear-gradient(135deg, rgba(243, 227, 200, 0.92), rgba(207, 160, 102, 0.10)); }
+        .hero-orbe-dois { width: 185px; height: 185px; left: 0; bottom: 7%; border: 1px solid rgba(255, 255, 255, 0.24); background: rgba(255, 255, 255, 0.06); }
+        .hero-cartao-flutuante { position: absolute; right: 6%; bottom: 6%; width: min(100%, 315px); padding: 26px; border: 1px solid rgba(255, 255, 255, 0.25); border-radius: 18px; background: rgba(255, 255, 255, 0.12); box-shadow: 0 18px 45px rgba(0, 0, 0, 0.15); backdrop-filter: blur(16px); }
+        .hero-cartao-icone { display: grid; width: 38px; height: 38px; margin-bottom: 22px; place-items: center; border-radius: 50%; color: #3a0d79; background: #f3e3c8; }
+        .hero-cartao-flutuante p { margin-bottom: 8px; color: rgba(255, 255, 255, 0.65); font-size: 12px; }
+        .hero-cartao-flutuante strong { display: block; color: white; font-family: 'Poppins', sans-serif; font-size: 18px; font-weight: 600; line-height: 1.3; letter-spacing: -0.04em; }
+        .hero-cartao-flutuante small { display: block; margin-top: 16px; color: #e8d5b8; font-size: 11px; font-weight: 700; }
+
+        .cabecalho-catalogo { max-width: 680px; margin: 0 0 32px; text-align: left; }
+        .secao-eyebrow { display: block; margin-bottom: 10px; color: var(--brand); }
+        .cabecalho-catalogo h2 { max-width: 600px; font-size: clamp(28px, 3vw, 42px); line-height: 1.12; }
+        .cabecalho-catalogo p { margin-top: 12px; color: var(--ink-soft); font-size: 15px; }
+
+        .grid-servicos { gap: 22px; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+        .card { border: 1px solid var(--line); border-radius: var(--radius-md); background: rgba(255, 253, 249, 0.92); box-shadow: none; }
+        .card:hover { transform: translateY(-8px); border-color: rgba(106, 17, 203, 0.32); box-shadow: var(--shadow-md); }
+        .card-img-wrapper { height: 235px; }
+        .card-img-wrapper::after { height: 65%; background: linear-gradient(to top, rgba(67, 16, 141, 0.45), transparent); }
+        .card-conteudo { padding: 23px; gap: 20px; }
+        .card-titulo { margin-bottom: 9px; font-size: 22px; line-height: 1.2; }
+        .card-preco { margin-bottom: 12px; color: var(--brand-deep); font-size: 25px; }
+        .card-contratos { margin: 0; padding: 6px 10px; color: var(--brand-deep); background: var(--brand-pale); }
+        .btn-contratar { min-height: 48px; border-radius: 10px; background: var(--brand-deep); box-shadow: none; }
+        .btn-contratar:hover { transform: translateY(-2px); background: var(--brand); box-shadow: 0 8px 18px rgba(67, 16, 141, 0.24); }
+
+        .auth-container, .admin-container {
+            border: 1px solid rgba(255, 255, 255, 0.72);
+            border-radius: var(--radius-md);
+            background: rgba(255, 253, 249, 0.88);
+            box-shadow: var(--shadow-md);
+            backdrop-filter: blur(18px);
+        }
+
+        .auth-container { padding: 40px 34px; }
+        .auth-container h3 { margin-bottom: 22px; font-size: 30px; }
+        .auth-container input, .modal-box input { border: 1px solid rgba(23, 33, 43, 0.14); border-radius: 10px; background: rgba(255, 255, 255, 0.8); }
+        .auth-container input:focus, .modal-box input:focus { border-color: var(--brand); box-shadow: 0 0 0 4px rgba(106, 17, 203, 0.12); }
+        .auth-container button { border-radius: 10px; background: var(--brand-deep); box-shadow: none; }
+        .auth-container button:hover { background: var(--brand); box-shadow: 0 8px 18px rgba(67, 16, 141, 0.22); }
+        .auth-toggle { color: var(--brand); }
+
+        .lista-agendamentos { max-width: 860px; gap: 15px; }
+        .item-agendamento { border: 1px solid var(--line); border-radius: var(--radius-md); box-shadow: var(--shadow-sm); }
+        .item-agendamento:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); }
+        .btn-remarcar, .btn-cancelar { border-radius: 9px; }
+
+        .admin-container { padding: 24px; overflow: hidden; }
+        .tabela-admin { margin-top: 0; }
+        .tabela-admin th { color: var(--ink-soft); background: #f1edfa; }
+        .tabela-admin td { border-bottom-color: rgba(40, 32, 56, 0.07); }
+        .tabela-admin tr:hover td { background: rgba(238, 228, 255, 0.58); }
+        .badge-status { padding: 6px 10px; font-size: 11px; letter-spacing: 0.02em; }
+        .badge-pendente { color: #93631f; background: #fff1c9; }
+        .badge-concluido { color: #5d22a9; background: #eadcff; }
+        .badge-cancelado { color: #a43434; background: #fbe0e0; }
+
+        .modal-overlay { background: rgba(35, 9, 70, 0.60); }
+        .modal-box { border: 1px solid rgba(255, 255, 255, 0.72); border-radius: var(--radius-md); box-shadow: var(--shadow-lg); }
+        .btn-confirmar { border-radius: 10px; box-shadow: none; }
+        .btn-fechar { background: #eef2ef; }
+
+        .spa-toast { min-width: min(360px, calc(100vw - 32px)); border-left-color: var(--brand); border-radius: 14px; box-shadow: var(--shadow-md); }
+        .spa-toast.sucesso { border-left-color: var(--brand); }
+        .spa-toast.erro { border-left-color: var(--danger); }
+        .spa-toast.aviso { border-left-color: var(--gold); }
+
+        .chatbot-btn { width: 58px; height: 58px; right: 24px; bottom: 24px; border: 1px solid rgba(255, 255, 255, 0.55); background: var(--brand-deep); box-shadow: 0 13px 28px rgba(67, 16, 141, 0.28); }
+        .chatbot-btn:hover { background: var(--brand); }
+        #chatbotJanela { border: 1px solid rgba(255, 255, 255, 0.8) !important; box-shadow: var(--shadow-lg) !important; }
+
+        body.dark-mode {
+            --ink: #f5efff;
+            --ink-soft: #c5b9d4;
+            --paper: #1a1128;
+            --canvas: #100818;
+            --line: rgba(239, 226, 255, 0.14);
+            --brand-pale: rgba(132, 73, 207, 0.26);
+            background: radial-gradient(circle at 7% 2%, rgba(106, 17, 203, 0.30), transparent 28rem), #100818;
+        }
+
+        body.dark-mode .navbar-topo,
+        body.dark-mode .card,
+        body.dark-mode .auth-container,
+        body.dark-mode .admin-container,
+        body.dark-mode .modal-box,
+        body.dark-mode .item-agendamento,
+        body.dark-mode .dropdown-menu-spa {
+            border-color: rgba(239, 226, 255, 0.12);
+            background: rgba(26, 17, 40, 0.92);
+        }
+
+        body.dark-mode h1, body.dark-mode h2, body.dark-mode h3, body.dark-mode h4,
+        body.dark-mode .card-titulo, body.dark-mode .item-agendamento-info h4 { color: var(--ink) !important; }
+        body.dark-mode .card-preco, body.dark-mode .logo-spa { color: #cfaaff; }
+        body.dark-mode .dropdown-item:hover { color: #f1e6ff; background: rgba(132, 73, 207, 0.25); }
+        body.dark-mode .tabela-admin th { color: #ddcfed; background: rgba(132, 73, 207, 0.20); }
+        body.dark-mode .tabela-admin tr:hover td { background: rgba(132, 73, 207, 0.14); }
+        body.dark-mode #btn-theme-toggle { color: #f2f7f4 !important; background: rgba(255, 255, 255, 0.08) !important; }
+
+        @media (max-width: 760px) {
+            body { padding: 12px 14px 42px; }
+            .navbar-topo { margin-bottom: 20px; padding: 10px 11px 10px 15px; border-radius: 15px; }
+            .logo-spa { font-size: 17px; }
+            .btn-perfil-gatilho { max-width: 122px; padding: 8px 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+            .hero-spa { grid-template-columns: 1fr; min-height: auto; gap: 5px; margin-bottom: 55px; padding: 37px 26px; border-radius: 24px; }
+            .hero-spa h1 { font-size: clamp(36px, 10vw, 50px); }
+            .hero-destaque { min-height: 190px; }
+            .hero-cartao-flutuante { right: 0; bottom: 0; width: min(100%, 320px); }
+            .hero-orbe-um { width: 230px; height: 230px; right: -24px; top: -15px; }
+            .hero-sinais { display: none; }
+            .cabecalho-catalogo h2 { font-size: 30px; }
+            .grid-servicos { grid-template-columns: 1fr; gap: 16px; }
+            .card-img-wrapper { height: 215px; }
+            .auth-container, .modal-box { padding: 30px 22px; }
+            .admin-container { padding: 12px; overflow-x: auto; }
+            .chatbot-btn { right: 16px; bottom: 16px; }
+            #chatbotJanela { right: 14px !important; bottom: 88px !important; width: calc(100vw - 28px) !important; }
+        }
+
+        /* ================================================================
+           POLIMENTO FINAL — CONTROLES, CALENDÁRIO E TEMAS
+           Uma única linguagem visual para claro e escuro.
+           ================================================================ */
+        :root {
+            --surface: rgba(255, 253, 249, 0.94);
+            --surface-raised: #ffffff;
+            --surface-soft: #f4effb;
+            --field: #fffdf9;
+            --field-border: rgba(67, 16, 141, 0.16);
+            --focus-ring: rgba(106, 17, 203, 0.18);
+            --calendar-muted: #756b84;
+        }
+
+        body {
+            color: var(--ink);
+            color-scheme: light;
+            transition: background 0.28s ease, color 0.28s ease;
+        }
+
+        button {
+            transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+        }
+
+        button:not(:disabled):active { transform: translateY(1px) scale(0.985); }
+        button:disabled { cursor: not-allowed; opacity: 0.58; }
+
+        /* Botão da conta: só abre o menu, sem trocar de seção. */
+        #btnDropdownGatilho {
+            gap: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.14);
+        }
+        #btnDropdownGatilho::after {
+            content: '⌄';
+            font-size: 16px;
+            line-height: 1;
+            color: #fff;
+            transition: transform 0.2s ease;
+        }
+        #btnDropdownGatilho[aria-expanded="true"]::after { transform: rotate(180deg); }
+
+        /* Perfil: ícone neutro e texto branco para contrastar bem no roxo. */
+        #btnDropdownGatilho {
+            min-width: 118px;
+            padding: 0 12px;
+            color: #fff !important;
+            background: linear-gradient(135deg, #7d2bd9 0%, #53119e 100%) !important;
+            box-shadow: 0 8px 18px rgba(67, 16, 141, 0.26);
+        }
+        #btnDropdownGatilho:hover {
+            background: linear-gradient(135deg, #9141e4 0%, #6216b8 100%) !important;
+            box-shadow: 0 11px 22px rgba(67, 16, 141, 0.34);
+        }
+        #nome-usuario-logado { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .perfil-icone {
+            position: relative;
+            display: inline-block;
+            flex: 0 0 22px;
+            width: 22px;
+            height: 22px;
+            border: 1px solid rgba(255, 255, 255, 0.28);
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.15);
+        }
+        .perfil-icone::before,
+        .perfil-icone::after {
+            position: absolute;
+            left: 50%;
+            display: block;
+            content: '';
+            background: #fff;
+            transform: translateX(-50%);
+        }
+        .perfil-icone::before { top: 4px; width: 6px; height: 6px; border-radius: 50%; }
+        .perfil-icone::after { bottom: 4px; width: 12px; height: 6px; border-radius: 7px 7px 4px 4px; }
+
+        .dropdown-menu-spa { transform-origin: top right; }
+        .dropdown-item {
+            display: flex;
+            width: 100%;
+            align-items: center;
+            gap: 9px;
+            border: 1px solid transparent;
+            font-weight: 700;
+            text-align: left;
+        }
+        .dropdown-item:hover {
+            border-color: rgba(106, 17, 203, 0.12);
+            transform: translateX(2px);
+        }
+
+        /* Login: e-mail e senha usam exatamente a mesma superfície. */
+        .auth-container input {
+            min-height: 50px;
+            border: 1px solid var(--field-border) !important;
+            color: var(--ink) !important;
+            background: var(--field) !important;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+        }
+        .auth-container input::placeholder { color: var(--ink-soft); opacity: 0.82; }
+        .auth-container input:-webkit-autofill,
+        .auth-container input:-webkit-autofill:hover,
+        .auth-container input:-webkit-autofill:focus {
+            -webkit-text-fill-color: var(--ink) !important;
+            -webkit-box-shadow: 0 0 0 1000px var(--field) inset !important;
+            caret-color: var(--ink);
+            transition: background-color 9999s ease-out 0s;
+        }
+        .auth-container .wrapper-senha {
+            position: relative;
+            display: flex;
+            width: 100%;
+            align-items: center;
+        }
+        .auth-container .wrapper-senha #authSenha {
+            width: 100%;
+            margin: 5px 0;
+            padding-right: 52px;
+        }
+        .auth-container .btn-visibilidade-senha {
+            position: absolute;
+            right: 9px;
+            display: grid;
+            width: 34px;
+            min-height: 34px;
+            margin: 0;
+            padding: 0;
+            place-items: center;
+            border: 1px solid transparent;
+            border-radius: 9px;
+            color: var(--ink-soft) !important;
+            background: transparent !important;
+            box-shadow: none !important;
+            font-size: 16px;
+        }
+        .auth-container .btn-visibilidade-senha:hover,
+        .auth-container .btn-visibilidade-senha:focus-visible {
+            color: var(--brand-deep) !important;
+            background: var(--brand-pale) !important;
+            box-shadow: none !important;
+            transform: none;
+        }
+
+        .btn-contratar,
+        .btn-confirmar,
+        .btn-remarcar,
+        .btn-cancelar,
+        .btn-moderno,
+        .btn-filtro,
+        .btn-hero-primario,
+        .btn-hero-secundario {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            letter-spacing: -0.012em;
+        }
+
+        .btn-contratar,
+        .btn-confirmar {
+            border: 1px solid transparent;
+            background: linear-gradient(135deg, var(--brand-deep), var(--brand));
+            box-shadow: 0 10px 20px rgba(67, 16, 141, 0.18);
+        }
+        .btn-contratar:hover,
+        .btn-confirmar:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 14px 25px rgba(67, 16, 141, 0.26);
+        }
+        .btn-remarcar {
+            border: 1px solid rgba(184, 137, 72, 0.28);
+            background: #fff5e5;
+            color: #9a6423;
+            box-shadow: none;
+        }
+        .btn-remarcar:hover { background: #b88948; color: #fff; }
+        .btn-cancelar {
+            border: 1px solid rgba(197, 75, 75, 0.22);
+            background: #fff0f0;
+            color: var(--danger);
+            box-shadow: none;
+        }
+        .btn-cancelar:hover { background: var(--danger); color: #fff; }
+        .btn-moderno { min-height: 34px; border-radius: 9px; }
+        .btn-filtro {
+            min-height: 38px;
+            border: 1px solid var(--field-border) !important;
+            background: var(--surface-soft) !important;
+            color: var(--ink-soft) !important;
+            box-shadow: none !important;
+        }
+        .btn-filtro:hover { border-color: rgba(106, 17, 203, 0.40) !important; color: var(--brand-deep) !important; }
+        .btn-filtro.ativo {
+            border-color: transparent !important;
+            background: linear-gradient(135deg, var(--brand-deep), var(--brand)) !important;
+            color: #fff !important;
+            box-shadow: 0 8px 16px rgba(67, 16, 141, 0.22) !important;
+        }
+        .btn-acao {
+            display: inline-flex;
+            min-height: 42px;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 0 15px;
+            border: 1px solid transparent;
+            border-radius: 10px;
+            color: #fff;
+            font-size: 13px;
+            font-weight: 800;
+            cursor: pointer;
+            box-shadow: 0 8px 16px rgba(41, 22, 66, 0.14);
+        }
+        .btn-acao:hover { transform: translateY(-2px); box-shadow: 0 12px 20px rgba(41, 22, 66, 0.20); }
+        .btn-acao--primary { background: linear-gradient(135deg, var(--brand-deep), var(--brand)) !important; }
+        .btn-acao--success { background: linear-gradient(135deg, #168a6e, #10b981) !important; }
+        .btn-acao--danger { background: linear-gradient(135deg, #a93845, #d85b62) !important; }
+        .btn-acao--neutral { color: var(--ink-soft) !important; background: var(--surface-soft) !important; border-color: var(--field-border) !important; box-shadow: none; }
+        .btn-fechar {
+            border: 1px solid var(--field-border);
+            color: var(--ink-soft);
+            background: var(--surface-soft);
+        }
+        .btn-fechar:hover { background: var(--brand-pale); color: var(--brand-deep); }
+
+        /* Campos de data: leitura clara antes mesmo de abrir o calendário. */
+        .calendario-input,
+        #modalData,
+        #novaData {
+            min-height: 54px !important;
+            padding: 0 16px !important;
+            border: 1px solid var(--field-border) !important;
+            border-radius: 12px !important;
+            color: var(--ink) !important;
+            background: var(--field) !important;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55);
+        }
+        .calendario-input:hover,
+        #modalData:hover,
+        #novaData:hover { border-color: rgba(106, 17, 203, 0.46) !important; }
+        .calendario-input:focus,
+        #modalData:focus,
+        #novaData:focus {
+            border-color: var(--brand) !important;
+            box-shadow: 0 0 0 4px var(--focus-ring) !important;
+        }
+
+        /* Flatpickr refeito com os mesmos tokens da interface. */
+        .flatpickr-calendar {
+            overflow: hidden;
+            border: 1px solid var(--field-border) !important;
+            border-radius: 18px !important;
+            color: var(--ink) !important;
+            background: var(--surface-raised) !important;
+            box-shadow: 0 22px 52px rgba(45, 18, 82, 0.20) !important;
+            font-family: 'Inter', sans-serif;
+        }
+        .flatpickr-months { padding: 8px 8px 2px; }
+        .flatpickr-month,
+        .flatpickr-current-month,
+        .flatpickr-current-month input.cur-year,
+        .flatpickr-current-month .flatpickr-monthDropdown-months,
+        .flatpickr-weekday {
+            color: var(--ink) !important;
+            background: transparent !important;
+            font-weight: 700 !important;
+        }
+        .flatpickr-weekdays { background: transparent !important; }
+        .flatpickr-weekday { color: var(--calendar-muted) !important; font-size: 11px !important; }
+        .flatpickr-prev-month,
+        .flatpickr-next-month {
+            display: grid !important;
+            width: 32px !important;
+            height: 32px !important;
+            place-items: center;
+            border-radius: 9px;
+        }
+        .flatpickr-prev-month:hover,
+        .flatpickr-next-month:hover { background: var(--brand-pale); }
+        .flatpickr-prev-month svg,
+        .flatpickr-next-month svg { fill: var(--brand-deep) !important; }
+        .flatpickr-day {
+            max-width: 35px;
+            height: 35px;
+            margin: 1px 0;
+            border: 1px solid transparent;
+            border-radius: 10px;
+            color: var(--ink) !important;
+            line-height: 33px;
+        }
+        .flatpickr-day:hover,
+        .flatpickr-day:focus { border-color: transparent !important; background: var(--brand-pale) !important; color: var(--brand-deep) !important; }
+        .flatpickr-day.today { border-color: rgba(106, 17, 203, 0.46) !important; color: var(--brand-deep) !important; }
+        .flatpickr-day.selected,
+        .flatpickr-day.selected:hover,
+        .flatpickr-day.startRange,
+        .flatpickr-day.endRange {
+            border-color: transparent !important;
+            color: #fff !important;
+            background: linear-gradient(135deg, var(--brand-deep), var(--brand)) !important;
+            box-shadow: 0 6px 12px rgba(67, 16, 141, 0.24);
+        }
+        .flatpickr-day.prevMonthDay,
+        .flatpickr-day.nextMonthDay { color: var(--calendar-muted) !important; opacity: 0.44; }
+        .flatpickr-day.flatpickr-disabled,
+        .flatpickr-day.flatpickr-disabled:hover {
+            color: var(--calendar-muted) !important;
+            background: transparent !important;
+            opacity: 0.30;
+        }
+        .flatpickr-time {
+            height: 48px;
+            border-top: 1px solid var(--field-border) !important;
+            background: var(--surface-soft) !important;
+        }
+        .flatpickr-time input,
+        .flatpickr-time .flatpickr-time-separator {
+            color: var(--ink) !important;
+            font-weight: 800 !important;
+        }
+        .numInputWrapper span { border-color: var(--field-border) !important; }
+        .numInputWrapper span:hover { background: var(--brand-pale) !important; }
+
+        .seletor-horario {
+            margin-top: 18px;
+            padding: 15px;
+            border: 1px solid var(--field-border);
+            border-radius: 14px;
+            background: var(--surface-soft);
+        }
+        .seletor-horario-cabecalho {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 12px;
+            color: var(--ink);
+            font-size: 13px;
+            font-weight: 800;
+        }
+        .seletor-horario-cabecalho small { color: var(--ink-soft); font-size: 11px; font-weight: 600; }
+        .grade-horarios {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 8px;
+        }
+        .mensagem-horarios {
+            grid-column: 1 / -1;
+            padding: 9px 2px;
+            color: var(--ink-soft);
+            font-size: 13px;
+            line-height: 1.45;
+        }
+        .btn-tentar-horarios {
+            grid-column: 1 / -1;
+            justify-self: start;
+            padding: 7px 10px;
+            border: 1px solid var(--field-border);
+            border-radius: 8px;
+            color: var(--brand-deep);
+            background: var(--field);
+            font-size: 12px;
+            font-weight: 800;
+            cursor: pointer;
+        }
+        .btn-tentar-horarios:hover { border-color: var(--brand); background: var(--brand-pale); }
+        .btn-horario {
+            min-height: 38px;
+            border: 1px solid var(--field-border);
+            border-radius: 9px;
+            color: var(--ink);
+            background: var(--field);
+            font-size: 13px;
+            font-weight: 800;
+            cursor: pointer;
+        }
+        .btn-horario:hover:not(:disabled) {
+            border-color: rgba(106, 17, 203, 0.48);
+            color: var(--brand-deep);
+            background: var(--brand-pale);
+            transform: translateY(-1px);
+        }
+        .btn-horario.ativo {
+            border-color: transparent;
+            color: #fff;
+            background: linear-gradient(135deg, var(--brand-deep), var(--brand));
+            box-shadow: 0 7px 14px rgba(67, 16, 141, 0.22);
+        }
+        .btn-horario:disabled {
+            border-color: transparent;
+            color: var(--calendar-muted);
+            background: transparent;
+            text-decoration: line-through;
+        }
+
+        /* Tema escuro: roxo profundo, sem restos azul-marinho do tema antigo. */
+        body.dark-mode {
+            --ink: #f6f0ff;
+            --ink-soft: #c9bdd9;
+            --paper: #181021;
+            --canvas: #0e0814;
+            --line: rgba(236, 219, 255, 0.14);
+            --brand-pale: rgba(142, 83, 224, 0.25);
+            --surface: rgba(27, 18, 39, 0.94);
+            --surface-raised: #21162e;
+            --surface-soft: #2a1c3a;
+            --field: #170f21;
+            --field-border: rgba(224, 198, 255, 0.20);
+            --focus-ring: rgba(169, 108, 244, 0.24);
+            --calendar-muted: #ab9abf;
+            color: var(--ink);
+            color-scheme: dark;
+            background:
+                radial-gradient(circle at 8% 0%, rgba(106, 17, 203, 0.30), transparent 30rem),
+                radial-gradient(circle at 94% 24%, rgba(141, 75, 219, 0.13), transparent 26rem),
+                var(--canvas) !important;
+        }
+        body.dark-mode::before { opacity: 0.15; }
+        body.dark-mode .navbar-topo,
+        body.dark-mode .card,
+        body.dark-mode .auth-container,
+        body.dark-mode .admin-container,
+        body.dark-mode .modal-box,
+        body.dark-mode .item-agendamento,
+        body.dark-mode .dropdown-menu-spa,
+        body.dark-mode div[style*="background: white"] {
+            border-color: var(--line) !important;
+            background: var(--surface) !important;
+            box-shadow: 0 20px 45px rgba(0, 0, 0, 0.23) !important;
+        }
+        body.dark-mode div[style*="background: #f8fafc"],
+        body.dark-mode div[style*="background: #f1f5f9"] { background: var(--surface-soft) !important; }
+        body.dark-mode h1,
+        body.dark-mode h2,
+        body.dark-mode h3,
+        body.dark-mode h4,
+        body.dark-mode h5,
+        body.dark-mode h6,
+        body.dark-mode label,
+        body.dark-mode .card-titulo,
+        body.dark-mode .item-agendamento-info h4 { color: var(--ink) !important; }
+        body.dark-mode .secao-conteudo > header p,
+        body.dark-mode .cabecalho-catalogo p,
+        body.dark-mode .item-agendamento-info p,
+        body.dark-mode [style*="color: #4a5568"],
+        body.dark-mode [style*="color: #64748b"] { color: var(--ink-soft) !important; }
+        body.dark-mode .tabela-admin th {
+            color: #e6d9f7 !important;
+            background: rgba(142, 83, 224, 0.18) !important;
+            border-bottom-color: var(--line) !important;
+        }
+        body.dark-mode .tabela-admin td { border-bottom-color: var(--line) !important; }
+        body.dark-mode .tabela-admin tr:hover td { background: rgba(142, 83, 224, 0.11) !important; }
+        body.dark-mode .card-contratos { color: #e4d4ff; background: var(--brand-pale) !important; }
+        body.dark-mode #btn-theme-toggle,
+        body.dark-mode .btn-fechar { color: var(--ink) !important; background: var(--surface-soft) !important; border-color: var(--field-border) !important; }
+        body.dark-mode .btn-filtro:not(.ativo) { color: var(--ink-soft) !important; background: var(--surface-soft) !important; }
+        body.dark-mode .btn-remarcar { background: rgba(184, 137, 72, 0.14); color: #f2c986; border-color: rgba(242, 201, 134, 0.22); }
+        body.dark-mode .btn-cancelar { background: rgba(197, 75, 75, 0.16); color: #ffaaa7; border-color: rgba(255, 170, 167, 0.20); }
+        body.dark-mode .btn-acao--neutral { color: var(--ink) !important; background: var(--surface-soft) !important; border-color: var(--field-border) !important; }
+        body.dark-mode #chatbotJanela { background: var(--surface) !important; border-color: var(--line) !important; }
+        body.dark-mode #chatMensagens > div { background: var(--surface-soft) !important; color: var(--ink) !important; }
+        body.dark-mode #chatInput { color: var(--ink) !important; background: var(--field) !important; border-color: var(--field-border) !important; }
+        body.dark-mode .spa-toast,
+        body.dark-mode #container-filtro-mes,
+        body.dark-mode #container-dre,
+        body.dark-mode .card-detalhe-cliente {
+            color: var(--ink) !important;
+            border-color: var(--line) !important;
+            background: var(--surface) !important;
+        }
+        body.dark-mode .btn-seta-mes { color: var(--ink) !important; background: var(--surface-soft) !important; }
+        body.dark-mode .btn-seta-mes:hover { color: #fff !important; background: var(--brand) !important; }
+        body.dark-mode #texto-mes-bi { color: #d9c0ff !important; }
+        body.dark-mode .heatmap-cell[data-nivel="0"] { border-color: var(--line) !important; background: var(--surface-soft) !important; }
+        body.dark-mode .flatpickr-calendar { color: var(--ink) !important; background: var(--surface-raised) !important; border-color: var(--field-border) !important; }
+        body.dark-mode .flatpickr-month,
+        body.dark-mode .flatpickr-current-month,
+        body.dark-mode .flatpickr-current-month input.cur-year,
+        body.dark-mode .flatpickr-current-month .flatpickr-monthDropdown-months,
+        body.dark-mode .flatpickr-weekday,
+        body.dark-mode .flatpickr-day,
+        body.dark-mode .flatpickr-time input,
+        body.dark-mode .flatpickr-time .flatpickr-time-separator { color: var(--ink) !important; }
+        body.dark-mode .flatpickr-weekday,
+        body.dark-mode .flatpickr-day.prevMonthDay,
+        body.dark-mode .flatpickr-day.nextMonthDay { color: var(--calendar-muted) !important; }
+        body.dark-mode .flatpickr-day:hover,
+        body.dark-mode .flatpickr-day:focus { color: #f5eeff !important; background: var(--brand-pale) !important; border-color: transparent !important; }
+        body.dark-mode .flatpickr-day.selected,
+        body.dark-mode .flatpickr-day.selected:hover,
+        body.dark-mode .flatpickr-day.startRange,
+        body.dark-mode .flatpickr-day.endRange { color: #fff !important; background: linear-gradient(135deg, var(--brand-deep), var(--brand)) !important; border-color: transparent !important; }
+        body.dark-mode .flatpickr-day.flatpickr-disabled,
+        body.dark-mode .flatpickr-day.flatpickr-disabled:hover { color: var(--calendar-muted) !important; background: transparent !important; }
+        body.dark-mode .flatpickr-time { border-top-color: var(--field-border) !important; background: var(--surface-soft) !important; }
+        body.dark-mode [style*="background: #fff1f2"] { background: rgba(197, 75, 75, 0.13) !important; }
+        body.dark-mode [style*="background: #f0fdf4"],
+        body.dark-mode [style*="background: #ecfdf5"] { background: rgba(16, 185, 129, 0.12) !important; }
+        body.dark-mode [style*="background: #fffbeb"] { background: rgba(245, 158, 11, 0.13) !important; }
+
+        @media (max-width: 760px) {
+            .item-agendamento { flex-direction: column; align-items: stretch; gap: 18px; }
+            .item-agendamento-acoes { width: 100%; flex-wrap: wrap; }
+            .item-agendamento-acoes .btn-remarcar,
+            .item-agendamento-acoes .btn-cancelar { flex: 1 1 145px; min-height: 42px; }
+            .flatpickr-calendar { max-width: calc(100vw - 28px); }
+            .grade-horarios { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+            .seletor-horario-cabecalho { align-items: flex-start; flex-direction: column; gap: 3px; }
+        }
+
+    </style>
+</head>
+<body>
  
     <div class="navbar-topo">
         <div class="logo-spa" onclick="alternarAbas('catalogo')">✨ Spa Panaceia</div>
@@ -759,8 +1496,9 @@ body.dark-mode .spa-toast {
             
             <!-- Menu do Usuário / Perfil -->
             <div class="menu-usuario-container">
-                <button class="btn-perfil-gatilho" onclick="toggleDropdownMenu(event)" id="btnDropdownGatilho">
-                    <span id="nome-usuario-logado">👤 Acessar Conta</span>
+                <button class="btn-perfil-gatilho" type="button" onclick="alternarConta(event)" id="btnDropdownGatilho" aria-haspopup="true" aria-expanded="false" title="Acessar conta">
+                    <span class="perfil-icone" aria-hidden="true"></span>
+                    <span id="nome-usuario-logado">Acessar conta</span>
                 </button>
 
                 <div class="dropdown-menu-spa" id="menuDropdownSpa">
@@ -777,37 +1515,13 @@ body.dark-mode .spa-toast {
     </div>
 
 
-    <!-- ... (resto da navbar) ... -->
-        <!-- Lado direito da Navbar: Tema ao lado do Perfil -->
-        <div style="display: flex; align-items: center; gap: 12px;">
-            <!-- Botão de Alternar Modo (Claro/Escuro) -->
-            <button id="btn-theme-toggle" onclick="toggleTema()" style="background: #f1f5f9; border: none; width: 42px; height: 42px; border-radius: 50%; font-size: 18px; cursor: pointer; transition: all 0.3s; display: flex; justify-content: center; align-items: center; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
-                🌙
-            </button>
-            
-            <!-- Menu do Usuário / Perfil (sem o texto fixo 'Entrar') -->
-            <div class="menu-usuario-container">
-                <button class="btn-perfil-gatilho" onclick="toggleDropdown()">
-                    <span id="nome-usuario-logado"></span>
-                </button>
-
-                <div id="menu-dropdown-spa" class="dropdown-menu-spa">
-                    <button class="dropdown-item" onclick="mostrarSecao('secao-servicos')">💆 Serviços</button>
-                    <button class="dropdown-item" onclick="mostrarSecao('secao-agendamentos')">📅 Meus Agendamentos</button>
-                    <button id="item-admin-menu" class="dropdown-item" style="display: none;" onclick="mostrarSecao('secao-admin')">⚙️ Painel Admin</button>
-                    <button id="item-fin-menu" class="dropdown-item" style="display: none;" onclick="mostrarSecao('secao-financeiro')">📊 Financeiro & BI</button>
-                    <button class="dropdown-item btn-sair" onclick="logout()">Sair</button>
-                </div>
-            </div>
-        </div>
- 
     <div id="authBox" class="auth-container">
         <h3 id="authTitulo">Fazer Login</h3>
         <input type="text" id="authNome" placeholder="Seu Nome Completo (apenas para cadastro)" style="display: none;">
-        <input type="email" id="authEmail" placeholder="seuemail@gmail.com">
-        <div class="wrapper-senha" style="position: relative; display: flex; align-items: center; width: 100%;">
-            <input type="password" id="authSenha" placeholder="Sua Senha" style="padding-right: 40px; width: 100%; margin: 5px 0;">
-            <button type="button" onclick="toggleVisibilidadeSenha()" style="position: absolute; right: 10px; background: none; border: none; cursor: pointer; width: auto; margin: 0; padding: 5px; color: #64748b; font-size: 16px;">👁️</button>
+        <input type="email" id="authEmail" placeholder="seuemail@gmail.com" autocomplete="email">
+        <div class="wrapper-senha">
+            <input type="password" id="authSenha" placeholder="Sua senha" autocomplete="current-password">
+            <button class="btn-visibilidade-senha" type="button" onclick="toggleVisibilidadeSenha()" aria-label="Mostrar ou ocultar senha" title="Mostrar ou ocultar senha">👁️</button>
         </div>
         <button id="btnAuth" onclick="processarAutenticacao()">Entrar</button>
         <span style="font-size: 13px; color: #e53e3e; cursor: pointer; margin-top: 15px; display: block; font-weight: 600;" onclick="abrirModalEsqueciSenha()">Esqueceu sua senha?</span>
@@ -815,9 +1529,37 @@ body.dark-mode .spa-toast {
     </div>
  
     <div id="secao-catalogo" class="secao-conteudo ativa">
-        <header>
-            <h1>✨ Nossos Serviços</h1>
-            <p>Escolha a melhor experiência para o seu dia de bem-estar</p>
+        <section class="hero-spa" aria-labelledby="hero-titulo">
+            <div class="hero-conteudo">
+                <span class="hero-eyebrow">SPA PANACEIA · BEM-ESTAR ESSENCIAL</span>
+                <h1 id="hero-titulo">Seu tempo de pausa merece ser extraordinário.</h1>
+                <p>Tratamentos pensados para restaurar o ritmo, renovar a energia e transformar autocuidado em um ritual memorável.</p>
+                <div class="hero-acoes">
+                    <button class="btn-hero-primario" type="button" onclick="document.getElementById('container-servicos').scrollIntoView({ behavior: 'smooth', block: 'start' })">Explorar experiências <span>→</span></button>
+                    <button class="btn-hero-secundario" type="button" onclick="abrirMinhaConta(event)">Minha conta</button>
+                </div>
+                <div class="hero-sinais" aria-label="Diferenciais do Spa Panaceia">
+                    <span>✦ Atendimento personalizado</span>
+                    <span>✦ Ambiente de privacidade</span>
+                    <span>✦ Pausas que restauram</span>
+                </div>
+            </div>
+            <aside class="hero-destaque" aria-label="Destaque do Spa Panaceia">
+                <div class="hero-orbe hero-orbe-um"></div>
+                <div class="hero-orbe hero-orbe-dois"></div>
+                <div class="hero-cartao-flutuante">
+                    <span class="hero-cartao-icone">✦</span>
+                    <p>Um convite para desacelerar</p>
+                    <strong>Seu próximo ritual começa aqui.</strong>
+                    <small>Segunda a domingo · 09h às 20h</small>
+                </div>
+            </aside>
+        </section>
+
+        <header class="cabecalho-catalogo">
+            <span class="secao-eyebrow">CURADORIA PANACEIA</span>
+            <h2>Escolha a experiência que o seu momento pede.</h2>
+            <p>Uma seleção de rituais para corpo, mente e pele.</p>
         </header>
         <main class="grid-servicos" id="container-servicos">
             <p style="text-align: center; grid-column: 1/-1;">⏳ Carregando experiências exclusivas...</p>
@@ -826,18 +1568,18 @@ body.dark-mode .spa-toast {
  
     <div id="secao-agendamentos" class="secao-conteudo">
         <header>
-            <h1 style="font-family: 'Playfair Display', serif;">📅 Seus Agendamentos</h1>
+            <h1 style="font-family: 'Poppins', sans-serif;">📅 Seus Agendamentos</h1>
             <p>Gerencie seus horários reservados no Spa Panaceia</p>
         </header>
         
         <div id="cardFidelidade" style="background: linear-gradient(135deg, #1a202c 0%, #2d3748 100%); color: white; padding: 25px; border-radius: 20px; max-width: 700px; margin: 0 auto 30px auto; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 15px 30px rgba(0,0,0,0.15); border: 1px solid rgba(255,255,255,0.1); animation: scaleIn 0.6s ease-out;">
             <div>
-                <h4 style="font-family: 'Playfair Display', serif; font-size: 22px; margin-bottom: 5px; color: #e2e8f0;">🌸 Clube de Fidelidade Panaceia</h4>
+                <h4 style="font-family: 'Poppins', sans-serif; font-size: 22px; margin-bottom: 5px; color: #e2e8f0;">🌸 Clube de Fidelidade Panaceia</h4>
                 <p style="font-size: 14px; opacity: 0.8; font-weight: 500;">Acumule pontos concluindo sessões e troque por benefícios!</p>
             </div>
             <div style="text-align: right; background: rgba(255,255,255,0.1); padding: 12px 20px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.1);">
                 <span style="font-size: 11px; display: block; text-transform: uppercase; font-weight: 800; letter-spacing: 1px; color: #cbd5e1;">Seus Pontos</span>
-                <strong id="contadorPontos" style="font-size: 26px; color: #10b981; font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800;">0 pts</strong>
+                <strong id="contadorPontos" style="font-size: 26px; color: #10b981; font-family: 'Inter', sans-serif; font-weight: 800;">0 pts</strong>
             </div>
         </div>
 
@@ -849,7 +1591,7 @@ body.dark-mode .spa-toast {
     <!-- PAINEL GERENCIAL -->
     <div id="secao-admin" class="secao-conteudo">
         <header style="margin-bottom: 40px;">
-            <h1 style="font-family: 'Playfair Display', serif;">👑 Painel Gerencial</h1>
+            <h1 style="font-family: 'Poppins', sans-serif;">👑 Painel Gerencial</h1>
             <p>Monitore os agendamentos globais e valide a realização das sessões</p>
         </header>
 
@@ -867,10 +1609,10 @@ body.dark-mode .spa-toast {
 
             <!-- Botões de Exportação -->
             <div style="display: flex; gap: 10px;">
-                <button onclick="exportarCSV()" style="background: #10b981; color: white; border: none; padding: 10px 18px; border-radius: 12px; font-weight: 700; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2); transition: transform 0.2s;">
+                <button class="btn-acao btn-acao--success" onclick="exportarCSV()">
                     📥 Exportar Excel (CSV)
                 </button>
-                <button onclick="exportarPDF()" style="background: #ef4444; color: white; border: none; padding: 10px 18px; border-radius: 12px; font-weight: 700; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2); transition: transform 0.2s;">
+                <button class="btn-acao btn-acao--danger" onclick="exportarPDF()">
                     📄 Gerar Relatório PDF
                 </button>
             </div>
@@ -887,17 +1629,17 @@ body.dark-mode .spa-toast {
     <!-- PAINEL DE ESTOQUE -->
     <div id="secao-estoque" class="secao-conteudo">
         <header style="margin-bottom: 40px;">
-            <h1 style="font-family: 'Playfair Display', serif;">📦 Controle de Estoque</h1>
+            <h1 style="font-family: 'Poppins', sans-serif;">📦 Controle de Estoque</h1>
             <p>Gerencie produtos, óleos, cremes e materiais do Spa</p>
         </header>
         <div style="background: white; padding: 25px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.03); margin-bottom: 30px; border: 1px solid #edf2f7; animation: fadeInUp 0.5s ease-out;">
             <h3 style="margin-bottom: 20px; color: #1a202c; font-size: 20px;">➕ Adicionar Novo Insumo</h3>
             <div style="display: flex; gap: 15px; flex-wrap: wrap;">
-                <input type="text" id="est-nome" placeholder="Nome do Produto" style="flex: 2; min-width: 200px; padding: 14px; border: 2px solid #e2e8f0; border-radius: 12px; outline: none; font-family: 'Plus Jakarta Sans', sans-serif;">
-                <input type="number" id="est-qtd" placeholder="Qtd Inicial" style="flex: 1; min-width: 100px; padding: 14px; border: 2px solid #e2e8f0; border-radius: 12px; outline: none; font-family: 'Plus Jakarta Sans', sans-serif;">
-                <input type="number" id="est-min" placeholder="Alerta Mín." style="flex: 1; min-width: 100px; padding: 14px; border: 2px solid #e2e8f0; border-radius: 12px; outline: none; font-family: 'Plus Jakarta Sans', sans-serif;">
-                <input type="text" id="est-unidade" placeholder="Un." value="un" style="flex: 1; min-width: 90px; padding: 14px; border: 2px solid #e2e8f0; border-radius: 12px; outline: none; font-family: 'Plus Jakarta Sans', sans-serif;">
-                <button onclick="adicionarItemEstoque()" style="background: #6a11cb; color: white; border: none; padding: 14px 25px; border-radius: 12px; font-weight: 700; cursor: pointer; transition: all 0.2s;">Cadastrar</button>
+                <input type="text" id="est-nome" placeholder="Nome do Produto" style="flex: 2; min-width: 200px; padding: 14px; border: 2px solid #e2e8f0; border-radius: 12px; outline: none; font-family: 'Inter', sans-serif;">
+                <input type="number" id="est-qtd" placeholder="Qtd Inicial" style="flex: 1; min-width: 100px; padding: 14px; border: 2px solid #e2e8f0; border-radius: 12px; outline: none; font-family: 'Inter', sans-serif;">
+                <input type="number" id="est-min" placeholder="Alerta Mín." style="flex: 1; min-width: 100px; padding: 14px; border: 2px solid #e2e8f0; border-radius: 12px; outline: none; font-family: 'Inter', sans-serif;">
+                <input type="text" id="est-unidade" placeholder="Un." value="un" style="flex: 1; min-width: 90px; padding: 14px; border: 2px solid #e2e8f0; border-radius: 12px; outline: none; font-family: 'Inter', sans-serif;">
+                <button class="btn-acao btn-acao--primary" onclick="adicionarItemEstoque()">Cadastrar</button>
             </div>
         </div>
         <div class="admin-container">
@@ -912,7 +1654,7 @@ body.dark-mode .spa-toast {
     <div id="secao-financeiro" class="secao-conteudo">
         <header style="margin-bottom: 40px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
             <div>
-                <h1 style="font-family: 'Playfair Display', serif;">📊 Inteligência Financeira</h1>
+                <h1 style="font-family: 'Poppins', sans-serif;">📊 Inteligência Financeira</h1>
                 <p>Monitoramento avançado de receita, metas e análise preditiva do Spa</p>
             </div>
             
@@ -938,7 +1680,7 @@ body.dark-mode .spa-toast {
         <!-- NOVO: BARRA DINÂMICA DE META DO MÊS -->
         <div style="background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.03); margin-bottom: 30px; border: 1px solid #edf2f7; animation: fadeInUp 0.3s ease-out;">
             <div style="display: flex; justify-content: space-between; margin-bottom: 12px;">
-                <h4 style="color: #1e293b; font-size: 16px; font-family: 'Plus Jakarta Sans', sans-serif;">🎯 Progresso da Meta Mensal</h4>
+                <h4 style="color: #1e293b; font-size: 16px; font-family: 'Inter', sans-serif;">🎯 Progresso da Meta Mensal</h4>
                 <span style="font-weight: 800; color: #6a11cb;" id="texto-meta">R$ 0,00 / R$ 10.000,00</span>
             </div>
             <div style="width: 100%; background-color: #f1f5f9; border-radius: 10px; height: 14px; overflow: hidden; box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);">
@@ -1116,7 +1858,7 @@ body.dark-mode .spa-toast {
     <!-- PAINEL DE USUÁRIOS -->
     <div id="secao-usuarios" class="secao-conteudo">
         <header>
-            <h1 style="font-family: 'Playfair Display', serif;">👥 Clientes da Base</h1>
+            <h1 style="font-family: 'Poppins', sans-serif;">👥 Clientes da Base</h1>
             <p>Visualize o perfil de consumo e histórico</p>
         </header>
         <div class="admin-container">
@@ -1134,9 +1876,18 @@ body.dark-mode .spa-toast {
             <h3 id="modalTitulo">Agendar Serviço</h3>
             <div id="modalServicoDescricao" style="font-size: 14px; color: #4a5568; line-height: 1.6; background: #f8fafc; padding: 15px; border-radius: 12px; margin-bottom: 20px; border-left: 4px solid #6a11cb; text-align: left;"></div>
             <input type="hidden" id="modalServicoId">
-            <label for="modalData">Escolha a Data e Horário:</label>
-            <!-- INPUT SUBSTITUIDO PELO FLATPICKR -->
-            <input type="text" id="modalData" placeholder="📅 Clique para abrir o calendário..." readonly style="cursor: pointer; background-color: #fff; font-family: 'Plus Jakarta Sans', sans-serif;">
+            <label for="modalDiaExibicao">1. Escolha a data:</label>
+            <input type="hidden" id="modalData">
+            <input type="text" id="modalDia" placeholder="📅 Escolha a data da sua experiência" readonly>
+            <div class="seletor-horario" aria-live="polite">
+                <div class="seletor-horario-cabecalho">
+                    <span>2. Escolha o horário</span>
+                    <small>Atendimento de 09h a 19h</small>
+                </div>
+                <div class="grade-horarios" id="horariosAgendamento">
+                    <span class="mensagem-horarios">Escolha uma data para ver os horários disponíveis.</span>
+                </div>
+            </div>
             <button class="btn-confirmar" style="background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);" onclick="enviarAgendamento()">Confirmar Reserva</button>
             <p id="modalStatus" style="margin-top: 15px; font-weight: 600; font-size: 14px;"></p>
         </div>
@@ -1160,9 +1911,18 @@ body.dark-mode .spa-toast {
             <button class="btn-fechar" onclick="fecharModal('reagendamentoModal')">&times;</button>
             <h3>Alterar Horário</h3>
             <input type="hidden" id="reagendarId">
-            <label for="novaData">Nova Data e Horário:</label>
-            <!-- INPUT SUBSTITUIDO PELO FLATPICKR -->
-            <input type="text" id="novaData" placeholder="📅 Clique para escolher a nova data..." readonly style="cursor: pointer; background-color: #fff; font-family: 'Plus Jakarta Sans', sans-serif;">
+            <label for="novaDiaExibicao">1. Escolha a nova data:</label>
+            <input type="hidden" id="novaData">
+            <input type="text" id="novaDia" placeholder="📅 Escolha uma nova data" readonly>
+            <div class="seletor-horario" aria-live="polite">
+                <div class="seletor-horario-cabecalho">
+                    <span>2. Escolha o novo horário</span>
+                    <small>Segundas-feiras não têm atendimento</small>
+                </div>
+                <div class="grade-horarios" id="horariosRemarcacao">
+                    <span class="mensagem-horarios">Escolha uma data para ver os horários disponíveis.</span>
+                </div>
+            </div>
             <button class="btn-confirmar" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);" onclick="salvarRemarcacao()">Atualizar Horário</button>
             <p id="reagendarStatus" style="margin-top: 15px; font-weight: 600;"></p>
         </div>
@@ -1184,8 +1944,8 @@ body.dark-mode .spa-toast {
             <p style="color: #4a5568; line-height: 1.6; margin-bottom: 25px;">Você está prestes a remover permanentemente esta reserva do seu histórico de autocuidado. Deseja prosseguir?</p>
             <input type="hidden" id="cancelarAgendamentoId">
             <div style="display: flex; gap: 15px;">
-                <button type="button" style="flex: 1; padding: 14px; border-radius: 12px; font-weight: bold; cursor: pointer; border: none; background: #e2e8f0; color: #475569; transition: all 0.2s;" onclick="fecharModal('confirmarCancelamentoModal')">Manter Reserva</button>
-                <button type="button" style="flex: 1; padding: 14px; border-radius: 12px; font-weight: bold; cursor: pointer; border: none; background: #ef4444; color: white; transition: all 0.2s; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);" onclick="ejecutarCancelamentoConfirmado()">Sim, Cancelar</button>
+                <button type="button" class="btn-acao btn-acao--neutral" style="flex: 1;" onclick="fecharModal('confirmarCancelamentoModal')">Manter Reserva</button>
+                <button type="button" class="btn-acao btn-acao--danger" style="flex: 1;" onclick="ejecutarCancelamentoConfirmado()">Sim, Cancelar</button>
             </div>
         </div>
     </div>
@@ -1224,12 +1984,12 @@ body.dark-mode .spa-toast {
             <h3>Verificação de Segurança</h3>
             <p style="color: #4a5568;">Digite o código enviado para <b id="email-destino-display" style="color: #6a11cb;">...</b></p>
             <div style="display: flex; justify-content: center; gap: 10px; margin: 25px 0;">
-                <input type="text" maxlength="1" class="otp-input" pattern="[0-9]*" inputmode="numeric" autofocus style="width: 45px; height: 55px; font-size: 24px; text-align: center; border: 2px solid #cbd5e1; border-radius: 12px; font-family: 'Plus Jakarta Sans', sans-serif;" />
-                <input type="text" maxlength="1" class="otp-input" pattern="[0-9]*" inputmode="numeric" style="width: 45px; height: 55px; font-size: 24px; text-align: center; border: 2px solid #cbd5e1; border-radius: 12px; font-family: 'Plus Jakarta Sans', sans-serif;" />
-                <input type="text" maxlength="1" class="otp-input" pattern="[0-9]*" inputmode="numeric" style="width: 45px; height: 55px; font-size: 24px; text-align: center; border: 2px solid #cbd5e1; border-radius: 12px; font-family: 'Plus Jakarta Sans', sans-serif;" />
-                <input type="text" maxlength="1" class="otp-input" pattern="[0-9]*" inputmode="numeric" style="width: 45px; height: 55px; font-size: 24px; text-align: center; border: 2px solid #cbd5e1; border-radius: 12px; font-family: 'Plus Jakarta Sans', sans-serif;" />
-                <input type="text" maxlength="1" class="otp-input" pattern="[0-9]*" inputmode="numeric" style="width: 45px; height: 55px; font-size: 24px; text-align: center; border: 2px solid #cbd5e1; border-radius: 12px; font-family: 'Plus Jakarta Sans', sans-serif;" />
-                <input type="text" maxlength="1" class="otp-input" pattern="[0-9]*" inputmode="numeric" style="width: 45px; height: 55px; font-size: 24px; text-align: center; border: 2px solid #cbd5e1; border-radius: 12px; font-family: 'Plus Jakarta Sans', sans-serif;" />
+                <input type="text" maxlength="1" class="otp-input" pattern="[0-9]*" inputmode="numeric" autofocus style="width: 45px; height: 55px; font-size: 24px; text-align: center; border: 2px solid #cbd5e1; border-radius: 12px; font-family: 'Inter', sans-serif;" />
+                <input type="text" maxlength="1" class="otp-input" pattern="[0-9]*" inputmode="numeric" style="width: 45px; height: 55px; font-size: 24px; text-align: center; border: 2px solid #cbd5e1; border-radius: 12px; font-family: 'Inter', sans-serif;" />
+                <input type="text" maxlength="1" class="otp-input" pattern="[0-9]*" inputmode="numeric" style="width: 45px; height: 55px; font-size: 24px; text-align: center; border: 2px solid #cbd5e1; border-radius: 12px; font-family: 'Inter', sans-serif;" />
+                <input type="text" maxlength="1" class="otp-input" pattern="[0-9]*" inputmode="numeric" style="width: 45px; height: 55px; font-size: 24px; text-align: center; border: 2px solid #cbd5e1; border-radius: 12px; font-family: 'Inter', sans-serif;" />
+                <input type="text" maxlength="1" class="otp-input" pattern="[0-9]*" inputmode="numeric" style="width: 45px; height: 55px; font-size: 24px; text-align: center; border: 2px solid #cbd5e1; border-radius: 12px; font-family: 'Inter', sans-serif;" />
+                <input type="text" maxlength="1" class="otp-input" pattern="[0-9]*" inputmode="numeric" style="width: 45px; height: 55px; font-size: 24px; text-align: center; border: 2px solid #cbd5e1; border-radius: 12px; font-family: 'Inter', sans-serif;" />
             </div>
             <button type="button" class="btn-confirmar" onclick="confirmarCodigoOTP()">Ativar Conta</button>
             <p style="margin-top: 20px;"><a href="#" onclick="return false;" style="color: #6a11cb; font-weight: 600; text-decoration: none;">Reenviar código de acesso</a></p>
@@ -1242,7 +2002,7 @@ body.dark-mode .spa-toast {
 
     <div id="chatbotJanela" style="display: none; position: fixed; bottom: 110px; right: 30px; width: 350px; height: 480px; background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(15px); border-radius: 24px; box-shadow: 0 20px 40px rgba(0,0,0,0.15); z-index: 10000; flex-direction: column; overflow: hidden; border: 1px solid rgba(255,255,255,0.8); animation: scaleIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);">
         <div style="background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%); color: white; padding: 20px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
-            <span style="font-size: 16px; font-family: 'Playfair Display', serif; display: flex; align-items: center; gap: 8px;">🌿 Orientador Panaceia</span>
+            <span style="font-size: 16px; font-family: 'Poppins', sans-serif; display: flex; align-items: center; gap: 8px;">🌿 Orientador Panaceia</span>
             <button onclick="toggleChat()" style="background: rgba(255,255,255,0.2); border: none; color: white; width: 30px; height: 30px; border-radius: 50%; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.2s;">&times;</button>
         </div>
         <div id="chatMensagens" style="flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; background: transparent;">
@@ -1251,83 +2011,257 @@ body.dark-mode .spa-toast {
             </div>
         </div>
         <div style="padding: 15px; background: white; border-top: 1px solid #e2e8f0; display: flex; gap: 10px; align-items: center;">
-            <input type="text" id="chatInput" placeholder="Como você se sente hoje?" style="flex: 1; padding: 14px 18px; border: 2px solid #e2e8f0; border-radius: 20px; font-size: 14px; font-family: 'Plus Jakarta Sans', sans-serif; outline: none; transition: border 0.3s;" onkeypress="if(event.key === 'Enter') enviarMensagemChat()">
+            <input type="text" id="chatInput" placeholder="Como você se sente hoje?" style="flex: 1; padding: 14px 18px; border: 2px solid #e2e8f0; border-radius: 20px; font-size: 14px; font-family: 'Inter', sans-serif; outline: none; transition: border 0.3s;" onkeypress="if(event.key === 'Enter') enviarMensagemChat()">
             <button onclick="enviarMensagemChat()" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; border: none; width: 45px; height: 45px; border-radius: 50%; cursor: pointer; font-weight: bold; font-size: 18px; display: flex; justify-content: center; align-items: center; box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3); transition: transform 0.2s;">
                 ➤
             </button>
         </div>
     </div>
 
+
+    <div id="toast-container" style="position: fixed; top: 20px; right: 20px; z-index: 999999; display: flex; flex-direction: column; gap: 10px; pointer-events: none;"></div>
     <script>
         let servicosDados = [];
-        let modoAbas = 'catalogo';
         let modoAuth = 'login';
-        let usuarioLogado = JSON.parse(localStorage.getItem('usuario_spa')) || null;
+        // A sessão é carregada de forma segura ao iniciar a página. Assim, um
+        // valor antigo ou inválido no navegador não interrompe o JavaScript.
+        let usuarioLogado = null;
         const BACKEND_URL = "";
-        let chartContratos = null;
-        let chartAvaliacoes = null;
         let acaoAoFecharModal = null;
         let emailParaVerificar = "";
-        let chartTendencia = null;
-        let chartTopServicos = null;
-        let chartDiasPopulares = null;
 
 
 
-        // --- CÓDIGO DO FLATPICKR AQUI ---
+        // --- CALENDÁRIO E HORÁRIOS DE AGENDAMENTO ---
+        const HORARIOS_ATENDIMENTO = ['09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00'];
         let horariosOcupados = [];
+        let disponibilidadeCalendarioCarregada = false;
+        let consultaDisponibilidadeFalhou = false;
+        let agendamentoIgnoradoNaConsulta = null;
+        let tentativasCalendario = 0;
         let calAgendamento, calRemarcacao;
 
-        const configCalendario = {
-            enableTime: true,
-            dateFormat: "Y-m-d\\TH:i",
-            minDate: "today",
-            minTime: "09:00",
-            maxTime: "19:00", // Último horário para marcar (o serviço dura 1h e acaba às 20h)
-            time_24hr: true,
-            minuteIncrement: 60,
-            defaultMinute: 0, // 👈 ESSA É A TRAVA MESTRA DOS MINUTOS
-            locale: "pt",
-            disable: [
-                function(date) { return (date.getDay() === 1); } // Bloqueia Segundas
-            ],
-            onChange: function(selectedDates, dateStr, instance) {
-                if (!dateStr) return;
-                const dataFormatada = dateStr.slice(0, 16);
-                const estaOcupado = horariosOcupados.some(h => h.startsWith(dataFormatada));
+        function detalhesDoCalendario(instance) {
+            return instance?.element?.id === 'modalDia'
+                ? { campoOculto: 'modalData', grade: 'horariosAgendamento' }
+                : { campoOculto: 'novaData', grade: 'horariosRemarcacao' };
+        }
 
-                if (estaOcupado) {
-                    setTimeout(() => instance.clear(), 10);
-                    exibirNotificacaoSpa("Horário Indisponível", "Este horário já foi agendado por outro cliente. Por favor, escolha outra hora.", "⚠️");
-                }
+        function normalizarDataHora(valor) {
+            return String(valor || '').trim().replace(' ', 'T').slice(0, 16);
+        }
+
+        function dataSelecionada(instance) {
+            const data = instance?.selectedDates?.[0];
+            return data ? instance.formatDate(data, 'Y-m-d') : '';
+        }
+
+        function horarioJaPassou(data, horario) {
+            return new Date(`${data}T${horario}:00`).getTime() <= Date.now();
+        }
+
+        function horarioEstaOcupado(data, horario) {
+            const alvo = `${data}T${horario}`;
+            return horariosOcupados.some((item) => normalizarDataHora(item) === alvo);
+        }
+
+        function renderizarHorariosDisponiveis(instance) {
+            const { campoOculto, grade } = detalhesDoCalendario(instance);
+            const container = document.getElementById(grade);
+            const campoFinal = document.getElementById(campoOculto);
+            if (!container || !campoFinal) return;
+
+            const data = dataSelecionada(instance);
+            campoFinal.value = '';
+
+            if (!data) {
+                container.innerHTML = '<span class="mensagem-horarios">Escolha uma data para ver os horários disponíveis.</span>';
+                return;
+            }
+
+            if (!disponibilidadeCalendarioCarregada) {
+                container.innerHTML = '<span class="mensagem-horarios">Consultando horários disponíveis…</span>';
+                return;
+            }
+
+            if (consultaDisponibilidadeFalhou) {
+                container.innerHTML = '<span class="mensagem-horarios">Não foi possível consultar a agenda agora.</span><button type="button" class="btn-tentar-horarios" onclick="carregarHorariosBloqueados(agendamentoIgnoradoNaConsulta)">Tentar novamente</button>';
+                return;
+            }
+
+            container.innerHTML = HORARIOS_ATENDIMENTO.map((horario) => {
+                const indisponivel = horarioJaPassou(data, horario) || horarioEstaOcupado(data, horario);
+                const motivo = horarioJaPassou(data, horario) ? 'Horário já passou' : 'Horário indisponível';
+                return `<button type="button" class="btn-horario" data-horario="${horario}" ${indisponivel ? `disabled title="${motivo}"` : ''} onclick="selecionarHorario('${campoOculto}', '${grade}', '${data}', '${horario}')">${horario}</button>`;
+            }).join('');
+        }
+
+        function selecionarHorario(campoOculto, grade, data, horario) {
+            if (horarioJaPassou(data, horario) || horarioEstaOcupado(data, horario)) return;
+
+            const campo = document.getElementById(campoOculto);
+            const container = document.getElementById(grade);
+            if (!campo || !container) return;
+
+            campo.value = `${data}T${horario}`;
+            container.querySelectorAll('.btn-horario').forEach((botao) => {
+                botao.classList.toggle('ativo', botao.dataset.horario === horario);
+            });
+        }
+
+        function atualizarGradesDeHorarios() {
+            [calAgendamento, calRemarcacao].forEach((calendario) => {
+                if (calendario) renderizarHorariosDisponiveis(calendario);
+            });
+        }
+
+        const configCalendario = {
+            dateFormat: 'Y-m-d',
+            altInput: true,
+            altInputClass: 'calendario-input',
+            altFormat: 'l, d F',
+            minDate: 'today',
+            locale: 'pt',
+            disableMobile: true,
+            disable: [
+                function(date) { return date.getDay() === 1; } // Segunda-feira
+            ],
+            onChange: function(_, __, instance) {
+                renderizarHorariosDisponiveis(instance);
+            },
+            onReady: function(_, __, instance) {
+                if (instance.altInput) instance.altInput.id = `${instance.element.id}Exibicao`;
+                instance.altInput?.setAttribute('aria-label', 'Escolha a data do agendamento');
+                renderizarHorariosDisponiveis(instance);
             }
         };
 
-        async function carregarHorariosBloqueados() {
+        async function carregarHorariosBloqueados(agendamentoIgnorado = null) {
+            disponibilidadeCalendarioCarregada = false;
+            consultaDisponibilidadeFalhou = false;
+            agendamentoIgnoradoNaConsulta = agendamentoIgnorado;
+            atualizarGradesDeHorarios();
+
             try {
-                const res = await fetch(`${BACKEND_URL}/api/horarios-ocupados`);
-                horariosOcupados = await res.json();
-            } catch(e) { console.error("Erro ao buscar horários ocupados:", e); }
+                const id = Number(agendamentoIgnorado);
+                const sufixo = Number.isInteger(id) && id > 0 ? `?ignorar_id=${id}` : '';
+                const res = await fetch(`${BACKEND_URL}/api/horarios-ocupados${sufixo}`);
+                if (!res.ok) throw new Error('Não foi possível consultar a agenda.');
+                const dados = await res.json();
+                horariosOcupados = Array.isArray(dados) ? dados.map(normalizarDataHora) : [];
+            } catch (erro) {
+                horariosOcupados = [];
+                consultaDisponibilidadeFalhou = true;
+                console.error('Erro ao buscar horários ocupados:', erro);
+            } finally {
+                disponibilidadeCalendarioCarregada = true;
+                atualizarGradesDeHorarios();
+            }
         }
 
-        document.addEventListener("DOMContentLoaded", function() {
-            calAgendamento = flatpickr("#modalData", configCalendario);
-            calRemarcacao = flatpickr("#novaData", configCalendario);
-        });
-        // --- FIM FLATPICKR ---
+        function inicializarCalendarios() {
+            if (!window.flatpickr) {
+                if (tentativasCalendario++ < 20) setTimeout(inicializarCalendarios, 100);
+                return;
+            }
 
-        function toggleDropdownMenu(event) {
-            event.stopPropagation();
-            if (!usuarioLogado) {
+            if (calAgendamento) calAgendamento.destroy();
+            if (calRemarcacao) calRemarcacao.destroy();
+
+            calAgendamento = flatpickr('#modalDia', { ...configCalendario });
+            calRemarcacao = flatpickr('#novaDia', { ...configCalendario });
+        }
+        // --- FIM DO CALENDÁRIO ---
+
+        function usuarioTemSessaoAtiva(usuario) {
+            const email = typeof usuario?.email === 'string' ? usuario.email.trim() : '';
+            return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+        }
+
+        function usuarioEhAdmin(usuario) {
+            return usuario?.is_admin === true || usuario?.is_admin === 1 || usuario?.is_admin === 'true';
+        }
+
+        function sincronizarSessaoUsuario() {
+            // Se a página já recebeu um usuário válido, não o sobrescreve com
+            // uma leitura vazia do armazenamento do navegador.
+            if (usuarioTemSessaoAtiva(usuarioLogado)) {
+                // Preserva uma sessão que já tenha sido entregue pela aplicação
+                // antes de o botão "Minha conta" ser usado.
+                localStorage.setItem('usuario_spa', JSON.stringify(usuarioLogado));
+                return usuarioLogado;
+            }
+
+            const chavesDeSessao = ['usuario_spa', 'usuario_logado', 'usuarioLogado', 'usuario'];
+            try {
+                for (const chave of chavesDeSessao) {
+                    const usuarioSalvo = JSON.parse(localStorage.getItem(chave) || 'null');
+                    if (usuarioTemSessaoAtiva(usuarioSalvo)) {
+                        usuarioLogado = usuarioSalvo;
+                        // Migra sessões de versões anteriores para a chave atual.
+                        localStorage.setItem('usuario_spa', JSON.stringify(usuarioLogado));
+                        return usuarioLogado;
+                    }
+                }
+                usuarioLogado = null;
+            } catch {
+            ['usuario_spa', 'usuario_logado', 'usuarioLogado', 'usuario'].forEach((chave) => {
+                localStorage.removeItem(chave);
+            });
+                usuarioLogado = null;
+            }
+            return usuarioLogado;
+        }
+
+        function abrirMinhaConta(event) {
+            event?.preventDefault();
+            event?.stopPropagation();
+            const dropdown = document.getElementById('menuDropdownSpa');
+            const botao = document.getElementById('btnDropdownGatilho');
+
+            if (!sincronizarSessaoUsuario()) {
+                if (dropdown) dropdown.classList.remove('ativo');
+                if (botao) botao.setAttribute('aria-expanded', 'false');
                 alternarAbas('login_tela');
                 return;
             }
-            document.getElementById('menuDropdownSpa').classList.toggle('ativo');
+
+            atualizarPainelUsuario();
+            if (dropdown) dropdown.classList.remove('ativo');
+            if (botao) botao.setAttribute('aria-expanded', 'false');
+
+            // A conta já autenticada vai diretamente para sua área adequada.
+            // Clientes veem seus agendamentos; administradores veem o painel.
+            alternarAbas(usuarioEhAdmin(usuarioLogado) ? 'admin' : 'agendamentos');
+        }
+
+        function alternarConta(event) {
+            event?.stopPropagation();
+            const dropdown = document.getElementById('menuDropdownSpa');
+            const botao = document.getElementById('btnDropdownGatilho');
+
+            if (!sincronizarSessaoUsuario()) {
+                if (dropdown) dropdown.classList.remove('ativo');
+                if (botao) botao.setAttribute('aria-expanded', 'false');
+                alternarAbas('login_tela');
+                return;
+            }
+
+            atualizarPainelUsuario();
+            const menuAberto = dropdown?.classList.toggle('ativo');
+            if (botao) botao.setAttribute('aria-expanded', String(Boolean(menuAberto)));
+        }
+
+        // Mantido para compatibilidade com chamadas antigas do HTML.
+        function toggleDropdownMenu(event) {
+            alternarConta(event);
         }
 
         window.addEventListener('click', function() {
             const dropdown = document.getElementById('menuDropdownSpa');
+            const botao = document.getElementById('btnDropdownGatilho');
             if (dropdown) dropdown.classList.remove('ativo');
+            if (botao) botao.setAttribute('aria-expanded', 'false');
         });
 
         function fecharTodosModais() {
@@ -1361,6 +2295,12 @@ body.dark-mode .spa-toast {
             }
         }
 
+        function escaparHtml(valor) {
+            return String(valor ?? '').replace(/[&<>'"]/g, caractere => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            })[caractere]);
+        }
+
         function exibirNotificacaoSpa(titulo, mensagem, tipo = 'info') {
     const container = document.getElementById('toast-container');
     if (!container) return;
@@ -1372,17 +2312,17 @@ body.dark-mode .spa-toast {
         info: 'ℹ️'
     };
 
-    // Suporte caso passe um emoji direto no terceiro parâmetro
-    let classeTipo = ['sucesso', 'erro', 'aviso', 'info'].includes(tipo) ? tipo : 'info';
-    let iconeExibido = icones[classeTipo] || tipo;
+    const tipoValido = Object.prototype.hasOwnProperty.call(icones, tipo);
+    const classeTipo = tipoValido ? tipo : 'info';
+    const iconeExibido = tipoValido ? icones[tipo] : tipo;
 
     const toast = document.createElement('div');
     toast.className = `spa-toast ${classeTipo}`;
     toast.innerHTML = `
         <div style="font-size: 24px; line-height: 1;">${iconeExibido}</div>
         <div style="flex-grow: 1;">
-            <strong style="display: block; font-size: 14px; margin-bottom: 2px; font-family: 'Poppins', sans-serif;">${titulo}</strong>
-            <span style="font-size: 13px; color: #64748b; line-height: 1.3; display: block;">${mensagem}</span>
+            <strong style="display: block; font-size: 14px; margin-bottom: 2px; font-family: 'Poppins', sans-serif;">${escaparHtml(titulo)}</strong>
+            <span style="font-size: 13px; color: #64748b; line-height: 1.3; display: block;">${escaparHtml(mensagem)}</span>
         </div>
     `;
 
@@ -1395,7 +2335,6 @@ body.dark-mode .spa-toast {
 }
 
         function alternarAbas(aba) {
-            modoAbas = aba;
             document.getElementById('secao-catalogo').classList.remove('ativa');
             document.getElementById('secao-agendamentos').classList.remove('ativa');
             document.getElementById('secao-admin').classList.remove('ativa');
@@ -1468,7 +2407,12 @@ body.dark-mode .spa-toast {
             const dropDeslogar = document.getElementById('drop-deslogar');
 
             if (!usuarioLogado) {
-                if(btnGatilho) btnGatilho.innerText = "👤 Acessar Conta";
+                if(btnGatilho) {
+                    btnGatilho.innerHTML = '<span class="perfil-icone" aria-hidden="true"></span><span id="nome-usuario-logado"></span>';
+                    btnGatilho.querySelector('#nome-usuario-logado').textContent = 'Acessar conta';
+                    btnGatilho.title = 'Acessar conta';
+                    btnGatilho.setAttribute('aria-expanded', 'false');
+                }
                 if(dropPerfil) dropPerfil.style.display = 'none';
                 if(dropAdmin) dropAdmin.style.display = 'none';
                 if(dropFinanceiro) dropFinanceiro.style.display = 'none';
@@ -1479,10 +2423,14 @@ body.dark-mode .spa-toast {
             }
 
             const primeiroNome = usuarioLogado.nome ? usuarioLogado.nome.split(' ')[0] : 'Usuário';
-            if(btnGatilho) btnGatilho.innerText = `👤 ${primeiroNome}`;
+            if(btnGatilho) {
+                btnGatilho.innerHTML = '<span class="perfil-icone" aria-hidden="true"></span><span id="nome-usuario-logado"></span>';
+                btnGatilho.querySelector('#nome-usuario-logado').textContent = primeiroNome;
+                btnGatilho.title = 'Abrir menu da sua conta';
+            }
             if(dropDeslogar) dropDeslogar.style.display = 'block';
 
-            if (usuarioLogado.is_admin) {
+            if (usuarioEhAdmin(usuarioLogado)) {
                 if(dropAdmin) dropAdmin.style.display = 'block';
                 if(dropFinanceiro) dropFinanceiro.style.display = 'block';
                 if(dropUsuarios) dropUsuarios.style.display = 'block';
@@ -1658,7 +2606,7 @@ body.dark-mode .spa-toast {
                     return;
                 }
  
-                container.innerHTML = '';
+                const itensHtml = [];
                 dados.forEach((agend, idx) => {
                     const dataFormatada = new Date(agend.data_atendimento).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
                     const servicoNome = agend.servico ? agend.servico.tipo : "Experiência SPA";
@@ -1720,8 +2668,9 @@ body.dark-mode .spa-toast {
                             ${blocoAvaliacao}
                         </div>
                     `;
-                    container.innerHTML += itemHtml;
+                    itensHtml.push(itemHtml);
                 });
+                container.innerHTML = itensHtml.join('');
             } catch (error) {
                 container.innerHTML = '<p style="text-align: center; color: red;">❌ Falha estrutural ao carregar agendamentos.</p>';
             }
@@ -1771,7 +2720,9 @@ body.dark-mode .spa-toast {
         function deslogar() {
             const nomeUsuario = usuarioLogado?.nome ? `, ${usuarioLogado.nome.split(' ')[0]}` : '';
             
-            localStorage.removeItem('usuario_spa');
+            ['usuario_spa', 'usuario_logado', 'usuarioLogado', 'usuario'].forEach((chave) => {
+                localStorage.removeItem(chave);
+            });
             usuarioLogado = null;
             atualizarPainelUsuario();
 
@@ -1847,7 +2798,7 @@ body.dark-mode .spa-toast {
                     localStorage.setItem('usuario_spa', JSON.stringify(usuarioLogado));
                     atualizarPainelUsuario();
 
-                    if (usuarioLogado.is_admin) {
+                    if (usuarioEhAdmin(usuarioLogado)) {
                         alternarAbas('admin');
                     } else {
                         alternarAbas('catalogo');
@@ -1957,7 +2908,7 @@ body.dark-mode .spa-toast {
                 if (!response.ok) throw new Error("Erro na requisição");
                 
                 servicosDados = await response.json();
-                container.innerHTML = '';
+                const cardsHtml = [];
  
                 if (servicosDados.length === 0) {
                     container.innerHTML = '<p style="text-align: center; grid-column: 1/-1;">Os salões de experiência estão sendo reparados, retorne mais tarde.</p>';
@@ -1982,8 +2933,9 @@ body.dark-mode .spa-toast {
                             </div>
                         </div>
                     `;
-                    container.innerHTML += cardHtml;
+                    cardsHtml.push(cardHtml);
                 });
+                container.innerHTML = cardsHtml.join('');
             } catch (error) {
                 container.innerHTML = '<p style="text-align: center; color: #e53e3e;">❌ Falha na conexão com a central de catálogo.</p>';
             }
@@ -2017,9 +2969,12 @@ body.dark-mode .spa-toast {
             if(calAgendamento) { 
                 calAgendamento.clear(); 
             }
+            document.getElementById('modalData').value = '';
+            document.getElementById('horariosAgendamento').innerHTML = '<span class="mensagem-horarios">Consultando horários disponíveis…</span>';
             
             document.getElementById('modalStatus').innerText = '';
             abrirModal('agendamentoModal');
+            carregarHorariosBloqueados();
         }
  
         async function enviarAgendamento() {
@@ -2029,7 +2984,13 @@ body.dark-mode .spa-toast {
  
             if (!data) {
                 status.style.color = "#e53e3e"; 
-                status.innerText = "⚠️ Precisamos saber em qual linha do tempo inserir seu momento."; 
+                status.innerText = "⚠️ Escolha uma data e um horário para sua experiência."; 
+                return;
+            }
+
+            if (!disponibilidadeCalendarioCarregada || consultaDisponibilidadeFalhou) {
+                status.style.color = "#9a6423";
+                status.innerText = "⏳ Ainda não foi possível confirmar os horários disponíveis. Tente atualizar a agenda.";
                 return;
             }
  
@@ -2062,7 +3023,7 @@ body.dark-mode .spa-toast {
 
         async function carregarAgendamentosAdmin() {
             const container = document.getElementById('container-admin-agendamentos'); 
-            if (!usuarioLogado || !usuarioLogado.is_admin) return;
+            if (!usuarioEhAdmin(usuarioLogado)) return;
 
             try {
                 const response = await fetch(`${BACKEND_URL}/api/admin/agendamentos?admin_email=${usuarioLogado.email}`);
@@ -2093,7 +3054,10 @@ body.dark-mode .spa-toast {
                 }
             });
 
-            processarDadosAdminERenderizar(cacheAgendamentosAdmin);
+            const agendamentosFiltrados = status === 'todos'
+                ? cacheAgendamentosAdmin
+                : cacheAgendamentosAdmin.filter(ag => (ag.status || 'Pendente') === status);
+            processarDadosAdminERenderizar(agendamentosFiltrados);
         }
 
         // Motor unificado que renderiza a tabela filtrada e atualiza os gráficos
@@ -2154,10 +3118,7 @@ body.dark-mode .spa-toast {
                     let botaoAcao = '';
                     if (agendStatus === 'Pendente' || !agendStatus) {
                         botaoAcao = `
-                            <div style="display: flex; gap: 6px; justify-content: center;">
-                                <button onclick="concluirAgendamentoAdmin(${ag.id})" class="btn-moderno btn-moderno-finalizar" style="padding: 4px 10px; font-size: 12px;">✔ Finalizar</button>
-                                <button onclick="alterarStatusAdmin ? alterarStatusAdmin(${ag.id}, 'Cancelado') : alert('Função indisponível')" class="btn-moderno btn-moderno-cancelar" style="padding: 4px 10px; font-size: 12px;">✖ Cancelar</button>
-                            </div>
+                            <button onclick="concluirAgendamentoAdmin(${ag.id})" class="btn-moderno btn-moderno-finalizar" style="padding: 4px 10px; font-size: 12px;">✔ Finalizar</button>
                         `;
                     } else {
                         let corSelo = agendStatus === 'Concluido' ? '#10b981' : '#ef4444';
@@ -2336,8 +3297,11 @@ body.dark-mode .spa-toast {
             document.getElementById('reagendarId').value = id;
             
             if(calRemarcacao) { calRemarcacao.clear(); }
+            document.getElementById('novaData').value = '';
+            document.getElementById('horariosRemarcacao').innerHTML = '<span class="mensagem-horarios">Consultando horários disponíveis…</span>';
             document.getElementById('reagendarStatus').innerText = '';
             abrirModal('reagendamentoModal');
+            carregarHorariosBloqueados(id);
         }
  
         async function salvarRemarcacao() {
@@ -2347,7 +3311,13 @@ body.dark-mode .spa-toast {
  
             if(!novaData) { 
                 status.style.color = "#e53e3e"; 
-                status.innerText = "⚠️ Indique o novo marcador temporal."; 
+                status.innerText = "⚠️ Escolha uma nova data e um horário."; 
+                return; 
+            }
+
+            if (!disponibilidadeCalendarioCarregada || consultaDisponibilidadeFalhou) {
+                status.style.color = "#9a6423";
+                status.innerText = "⏳ Ainda não foi possível confirmar os horários disponíveis. Tente atualizar a agenda.";
                 return; 
             }
  
@@ -2408,7 +3378,7 @@ body.dark-mode .spa-toast {
  
         async function carregarUsuariosCadastrados() {
             const containerUsuarios = document.getElementById('container-admin-usuarios');
-            if (!containerUsuarios || !usuarioLogado || !usuarioLogado.is_admin) return;
+            if (!containerUsuarios || !usuarioEhAdmin(usuarioLogado)) return;
 
             try {
                 const response = await fetch(`${BACKEND_URL}/api/admin/usuarios?admin_email=${usuarioLogado.email}`);
@@ -2424,7 +3394,7 @@ body.dark-mode .spa-toast {
                     const gastosFormatados = `R$ ${parseFloat(user.gastos || 0).toFixed(2).replace('.', ',')}`;
                     containerUsuarios.innerHTML += `
                         <tr>
-                            <td style="font-weight: 700; color: #1a202c; font-family: 'Playfair Display', serif;">👤 ${user.nome}</td>
+                            <td style="font-weight: 700; color: #1a202c; font-family: 'Poppins', sans-serif;">👤 ${user.nome}</td>
                             <td style="color: #64748b; font-size: 13px;">${user.email}</td>
                             <td style="text-align: center; font-weight: bold; font-size: 13px;">
                                 <span title="Geral" style="color: #64748b;">${user.total}</span> | 
@@ -2667,46 +3637,55 @@ body.dark-mode .spa-toast {
             }
         }
 
-        window.onload = function() {
+        document.addEventListener('DOMContentLoaded', () => {
+            inicializarCalendarios();
+            restaurarTemaSalvo();
+            sincronizarSessaoUsuario();
             atualizarPainelUsuario();
             carregarServicos();
             carregarHorariosBloqueados();
-        }
+            atualizarTextoCalendarioBI();
+        });
 
 // ... suas outras funções anteriores (concluirAgendamentoAdmin, abrirModalRemarcar, etc.) ...
 
-        // 🌓 SISTEMA DE MODO ESCURO
-        function toggleTema() {
-            const body = document.body;
-            body.classList.toggle('dark-mode');
-            const isDark = body.classList.contains('dark-mode');
-            
+        // 🌓 SISTEMA DE TEMA — uma única fonte de verdade para toda a interface.
+        function aplicarTema(escuro, salvarPreferencia = false) {
+            document.body.classList.toggle('dark-mode', escuro);
+            document.documentElement.style.colorScheme = escuro ? 'dark' : 'light';
+
             const btn = document.getElementById('btn-theme-toggle');
             if (btn) {
-                btn.innerText = isDark ? '☀️' : '🌙';
+                btn.innerText = escuro ? '☀️' : '🌙';
+                btn.setAttribute('aria-label', escuro ? 'Ativar modo claro' : 'Ativar modo escuro');
+                btn.setAttribute('aria-pressed', String(escuro));
+            }
+
+            const metaTema = document.querySelector('meta[name="theme-color"]');
+            if (metaTema) metaTema.setAttribute('content', escuro ? '#0e0814' : '#6a11cb');
+
+            if (window.Chart) {
+                Chart.defaults.color = escuro ? '#c9bdd9' : '#6e657d';
+                Object.values(Chart.instances || {}).forEach((chart) => chart?.update?.());
+            }
+
+            if (salvarPreferencia) localStorage.setItem('spa_tema', escuro ? 'escuro' : 'claro');
+        }
+
+        function toggleTema() {
+            const escuro = !document.body.classList.contains('dark-mode');
+            aplicarTema(escuro, true);
+
+            const btn = document.getElementById('btn-theme-toggle');
+            if (btn) {
                 btn.style.transform = 'rotate(360deg)';
                 setTimeout(() => btn.style.transform = 'rotate(0deg)', 300);
             }
-            
-            localStorage.setItem('spa_tema', isDark ? 'escuro' : 'claro');
-
-            if (window.Chart) {
-                Chart.defaults.color = isDark ? '#94a3b8' : '#64748b';
-                for (let id in Chart.instances) {
-                    Chart.instances[id].update();
-                }
-            }
         }
 
-        // Verifica a memória ao carregar a página
-        document.addEventListener('DOMContentLoaded', () => {
-            const temaSalvo = localStorage.getItem('spa_tema');
-            if (temaSalvo === 'escuro') {
-                document.body.classList.add('dark-mode');
-                const btn = document.getElementById('btn-theme-toggle');
-                if (btn) btn.innerText = '☀️';
-            }
-        });
+        function restaurarTemaSalvo() {
+            aplicarTema(localStorage.getItem('spa_tema') === 'escuro');
+        }
 
         // Variável global para guardar a memória do gráfico de calor
         window.memoriaHeatmap = {};
@@ -2799,60 +3778,6 @@ body.dark-mode .spa-toast {
             });
         }
 
-        // 🔍 FUNÇÃO QUE ABRE OS DETALHES DO CLIENTE AO CLICAR NA CÉLULA
-        function abrirModalHeatmap(hora, dia) {
-            const agendamentosSlot = window.memoriaHeatmap[hora][dia];
-            if (!agendamentosSlot || agendamentosSlot.length === 0) return;
-
-            const diasSemana = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
-            document.getElementById('tituloDetalhesHeatmap').innerText = `${diasSemana[dia]} às ${hora}`;
-            
-            const container = document.getElementById('conteudoDetalhesHeatmap');
-            container.innerHTML = ''; // Limpa os dados anteriores
-
-            agendamentosSlot.forEach(ag => {
-                // Calcula quantas vezes esse cliente já veio no Spa usando o cache global
-                const historicoCliente = cacheAgendamentosAdmin.filter(a => a.email_cliente === ag.email_cliente);
-                const totalVindas = historicoCliente.length;
-                const perfilCliente = totalVindas > 2 ? '⭐ Frequente' : '🌱 Novo';
-
-                const servicoNome = ag.servico ? ag.servico.tipo : 'Dados Ocultos';
-                const valor = ag.servico ? parseFloat(ag.servico.valor).toFixed(2).replace('.', ',') : '0,00';
-                const statusStr = ag.status || 'Pendente';
-                const classeStatus = statusStr === 'Concluido' ? 'badge-concluido' : 'badge-pendente';
-                const dataFormatada = new Date(ag.data_atendimento).toLocaleDateString('pt-BR');
-
-                container.innerHTML += `
-                    <div class="card-detalhe-cliente">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                            <strong style="color: #1e293b; font-size: 15px;">👤 ${ag.email_cliente.split('@')[0]}</strong>
-                            <span class="badge-status ${classeStatus}">${statusStr}</span>
-                        </div>
-                        <div style="font-size: 13px; color: #64748b; margin-bottom: 6px; line-height: 1.5;">
-                            <strong>Serviço:</strong> ${servicoNome} (R$ ${valor})<br>
-                            <strong>Data Exata:</strong> ${dataFormatada}
-                        </div>
-                        <div style="font-size: 12px; color: #8b5cf6; font-weight: 700; background: rgba(139, 92, 246, 0.1); display: inline-block; padding: 4px 10px; border-radius: 6px;">
-                            Histórico: ${totalVindas} agendamento(s) | Perfil ${perfilCliente}
-                        </div>
-                    </div>
-                `;
-            });
-
-            // Mostra a janelinha
-            document.getElementById('modalDetalhesHeatmap').style.display = 'flex';
-        }
-
-
-        // ... (suas outras funções antigas de abrir modal, processar dados, etc)
-
-        // 🔍 FUNÇÃO QUE ABRE OS DETALHES DO CLIENTE AO CLICAR NA CÉLULA (Que fizemos antes)
-        function abrirModalHeatmap(hora, dia) {
-             // ...
-        }
-
-        // 👇 COLE O BLOCO NOVO EXATAMENTE AQUI 👇
-
         // ==========================================
         // 📅 CONTROLE DO CALENDÁRIO DE BI (SETINHAS)
         // ==========================================
@@ -2906,36 +3831,25 @@ body.dark-mode .spa-toast {
             processarDadosAdminERenderizar(dadosFiltrados);
         }
 
-        // Dá a partida no texto inicial assim que a tela abre
-        setTimeout(atualizarTextoCalendarioBI, 500); 
 
-
-// 🔍 FUNÇÃO BLINDADA PARA ABRIR O MODAL DO HEATMAP
-        window.abrirModalHeatmap = function(hora, dia) {
-            const agendamentosSlot = window.memoriaHeatmap[hora][dia];
-            if (!agendamentosSlot || agendamentosSlot.length === 0) return;
+        function abrirModalHeatmap(hora, dia) {
+            const agendamentosSlot = window.memoriaHeatmap[hora]?.[dia];
+            if (!agendamentosSlot?.length) return;
 
             const diasSemana = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
             document.getElementById('tituloDetalhesHeatmap').innerText = `${diasSemana[dia]} às ${hora}`;
-            
+
             const container = document.getElementById('conteudoDetalhesHeatmap');
-            container.innerHTML = ''; // Limpa os dados anteriores
-
-            agendamentosSlot.forEach(ag => {
-                // Calcula o histórico de vindas do cliente
-                const historicoCliente = cacheAgendamentosAdmin.filter(a => a.email_cliente === ag.email_cliente);
-                const totalVindas = historicoCliente.length;
+            container.innerHTML = agendamentosSlot.map(ag => {
+                const totalVindas = cacheAgendamentosAdmin.filter(a => a.email_cliente === ag.email_cliente).length;
                 const perfilCliente = totalVindas > 2 ? '⭐ Frequente' : '🌱 Novo';
-
-                const servicoNome = ag.servico ? ag.servico.tipo : 'Dados Ocultos';
-                const valor = ag.servico ? parseFloat(ag.servico.valor).toFixed(2).replace('.', ',') : '0,00';
+                const servicoNome = ag.servico?.tipo || 'Dados Ocultos';
+                const valor = Number(ag.servico?.valor || 0).toFixed(2).replace('.', ',');
                 const statusStr = ag.status || 'Pendente';
                 const classeStatus = statusStr === 'Concluido' ? 'badge-concluido' : 'badge-pendente';
-                
-                // Tratamento de data
                 const dataFormatada = new Date(ag.data_atendimento).toLocaleDateString('pt-BR', { timeZone: 'UTC' });
 
-                container.innerHTML += `
+                return `
                     <div class="card-detalhe-cliente">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                             <strong style="color: #1e293b; font-size: 15px;">👤 ${ag.email_cliente.split('@')[0]}</strong>
@@ -2943,26 +3857,19 @@ body.dark-mode .spa-toast {
                         </div>
                         <div style="font-size: 13px; color: #64748b; margin-bottom: 6px; line-height: 1.5;">
                             <strong>Serviço:</strong> ${servicoNome} (R$ ${valor})<br>
-                            <strong>Data Exata:</strong> ${dataFormatada}
+                            <strong>Data exata:</strong> ${dataFormatada}
                         </div>
                         <div style="font-size: 12px; color: #8b5cf6; font-weight: 700; background: rgba(139, 92, 246, 0.1); display: inline-block; padding: 4px 10px; border-radius: 6px;">
                             Histórico: ${totalVindas} agendamento(s) | Perfil ${perfilCliente}
                         </div>
                     </div>
                 `;
-            });
+            }).join('');
 
-            // Força a exibição da tela
             document.getElementById('modalDetalhesHeatmap').style.display = 'flex';
-        };
+        }
 
-
-
-        // 💸 FUNÇÃO DO DRE E LUCRO LÍQUIDO
-        window.faturamentoBrutoGlobal = 0; // Guarda o valor para usar na conta
-
-        // 💸 FUNÇÃO DO DRE E LUCRO LÍQUIDO (VERSÃO INTELIGENTE)
-        // 💸 FUNÇÃO DO DRE E LUCRO LÍQUIDO (VERSÃO BRASILEIRA CORRIGIDA)
+        // 💸 DRE e lucro líquido
         function calcularDRE() {
             // 1. Pega o faturamento direto do cartão "Faturamento Atual"
             const elementoFaturamento = document.getElementById('fin-faturamento');
@@ -3006,46 +3913,10 @@ body.dark-mode .spa-toast {
         }
 
 
-        // 🔄 FUNÇÃO PARA MUDAR STATUS DO ATENDIMENTO
-        window.alterarStatus = function(idAgendamento, novoStatus) {
-            // Encontra o agendamento no seu banco de dados/cache global
-            const index = cacheAgendamentosAdmin.findIndex(a => a.id == idAgendamento);
-            
-            if (index !== -1) {
-                // Altera o status
-                cacheAgendamentosAdmin[index].status = novoStatus;
-                
-                // Manda redesenhar a tela (aqui você chama a função que já usa no seu filtro)
-                // Isso vai fazer a linha ficar verde e o DRE recalcular imediatamente!
-                processarDadosAdminERenderizar(cacheAgendamentosAdmin);
-                
-                // Opcional: Aqui você pode colocar o código para salvar no Supabase também
-            }
-        };
-
-        window.abrirContato = function(email) {
-            alert(`Ação extra adicionada! Iniciar contato com: ${email}`);
-        };
-
-
 
        
 
 
-    </script> 
-</body>
-</html>
-
-
-    </script>
-
-    <!-- Container de Toasts Flutuantes (SEMPRE FORA DO SCRIPT) -->
-    <div id="toast-container" style="position: fixed; top: 20px; right: 20px; z-index: 999999; display: flex; flex-direction: column; gap: 10px; pointer-events: none;"></div>
-
-    
-
-</body>
-</html>
 
     </script>
 </body>
