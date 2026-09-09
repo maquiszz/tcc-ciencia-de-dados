@@ -7,6 +7,7 @@ from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 from functools import wraps
 from pathlib import Path
+from threading import RLock
 from zoneinfo import ZoneInfo
 
 import requests
@@ -15,6 +16,10 @@ from flask import Flask, g, jsonify, request, send_from_directory, session
 from flask_cors import CORS
 from supabase import Client, create_client
 from werkzeug.security import check_password_hash, generate_password_hash
+if __package__:
+    from .spa_security import RateLimiter, SecurityTools
+else:
+    from spa_security import RateLimiter, SecurityTools
 
 try:
     from openai import OpenAI
@@ -59,6 +64,7 @@ app.config.update(
     SESSION_COOKIE_SAMESITE=os.getenv("SESSION_COOKIE_SAMESITE", "Lax"),
     SESSION_COOKIE_SECURE=os.getenv("SESSION_COOKIE_SECURE", "false").lower() == "true",
     PERMANENT_SESSION_LIFETIME=timedelta(hours=int(os.getenv("SESSION_TTL_HOURS", "12"))),
+    MAX_CONTENT_LENGTH=32 * 1024,
 )
 cors_origins = [
     origin.strip()
@@ -80,10 +86,76 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-3.5-turbo")
 openai_client = OpenAI(api_key=OPENAI_API_KEY) if OPENAI_API_KEY and OpenAI else None
 
+security = SecurityTools(secret_key)
+rate_limiter = RateLimiter()
+# Recuperação de senha serializada entre threads de UM processo, sem migrações.
+mutation_lock = RLock()
+PUBLIC_AUTH_PATHS = {"/cadastrar", "/api/login", "/api/validar-codigo", "/api/esqueci-senha", "/api/redefinir-senha"}
+
+
+@app.before_request
+def proteger_requisicao():
+    if request.method not in {"POST", "PUT", "PATCH", "DELETE"}:
+        return None
+    origin = request.headers.get("Origin")
+    if origin and origin not in {request.host_url.rstrip("/"), *cors_origins}:
+        return jsonify({"error": "Origem da requisição não permitida."}), 403
+    if request.method != "DELETE" and request.content_length and not request.is_json:
+        return jsonify({"error": "Envie os dados no formato JSON."}), 415
+    if session.get("usuario_email") and request.path not in PUBLIC_AUTH_PATHS:
+        expected = session.get("csrf_token", "")
+        provided = request.headers.get("X-CSRF-Token", "")
+        if not expected or not secrets.compare_digest(expected, provided):
+            return jsonify({"error": "Sua sessão precisa ser atualizada. Recarregue a página.", "code": "csrf_invalid"}), 403
+    limits = {
+        "/api/login": (20, 900, 10),
+        "/api/esqueci-senha": (10, 900, 3),
+        "/api/redefinir-senha": (20, 900, 5),
+        "/api/validar-codigo": (20, 900, 5),
+        "/cadastrar": (10, 3600, 3),
+        "/api/chat": (30, 60, None),
+    }
+    if request.path in limits:
+        ip_limit, window, account_limit = limits[request.path]
+        # Não confiar em X-Forwarded-For enviado diretamente pelo cliente.
+        keys = [(f"{request.path}:ip:{request.remote_addr}", ip_limit)]
+        email = normalizar_email(json_body().get("email"))
+        if account_limit and email:
+            keys.append((f"{request.path}:account:{security.fingerprint(email)}", account_limit))
+        for key, limit in keys:
+            allowed, retry = rate_limiter.allow(key, limit, window)
+            if not allowed:
+                return jsonify({"error": "Muitas tentativas. Aguarde antes de tentar novamente."}), 429, {"Retry-After": str(retry)}
+
+
+@app.after_request
+def proteger_resposta(response):
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["X-Frame-Options"] = "SAMEORIGIN"
+    if request.path.startswith("/api/"):
+        response.headers["Cache-Control"] = "no-store"
+    return response
+
+
+def csrf_token():
+    if not session.get("csrf_token"):
+        session["csrf_token"] = secrets.token_urlsafe(32)
+    return session["csrf_token"]
+
+
+def serializar_mutacao(funcao):
+    @wraps(funcao)
+    def protegida(*args, **kwargs):
+        with mutation_lock:
+            return funcao(*args, **kwargs)
+    return protegida
+
 
 def json_body():
     """Retorna um JSON seguro, inclusive quando o corpo está vazio ou malformado."""
-    return request.get_json(silent=True) or {}
+    dados = request.get_json(silent=True)
+    return dados if isinstance(dados, dict) else {}
 
 
 def normalizar_email(value):
@@ -92,7 +164,7 @@ def normalizar_email(value):
 
 
 def senha_valida(senha):
-    return isinstance(senha, str) and bool(PASSWORD_PATTERN.fullmatch(senha))
+    return isinstance(senha, str) and len(senha) <= 256 and bool(PASSWORD_PATTERN.fullmatch(senha))
 
 
 def gerar_otp():
@@ -119,8 +191,10 @@ def usuario_da_sessao():
     if not email:
         return None
 
-    usuario = buscar_usuario(email, "id, nome, email, email_verificado, is_admin, pontos")
-    if not usuario or not usuario.get("email_verificado"):
+    usuario = buscar_usuario(email, "id, nome, email, email_verificado, is_admin, pontos, senha")
+    if (not usuario or not usuario.get("email_verificado")
+            or str(usuario.get("id")) != str(session.get("usuario_id"))
+            or not secrets.compare_digest(session.get("password_version", ""), security.fingerprint(usuario.get("senha") or ""))):
         session.clear()
         return None
     return usuario
@@ -279,6 +353,7 @@ def email_de_recuperacao(codigo):
       <h3 style="color:#6a11cb">Recuperação de Senha — Spa Panaceia 🌸</h3>
       <p>Use o código abaixo para redefinir sua senha:</p>
       <h1 style="background:#f8fafc;padding:15px;border-radius:8px;letter-spacing:5px;color:#2575fc;display:inline-block">{codigo}</h1>
+      <p>O código expira em 15 minutos. Conclua a alteração na mesma página onde iniciou a recuperação.</p>
       <p>Se você não solicitou esta alteração, ignore este e-mail.</p>
     </div>
     """
@@ -286,12 +361,13 @@ def email_de_recuperacao(codigo):
 
 @app.route("/")
 def pagina_principal():
-    return send_from_directory(BASE_DIR, "servicos.html")
+    filename = os.getenv("SPA_FRONTEND_FILE") or ("spa-panaceia-profissional.html" if (BASE_DIR / "spa-panaceia-profissional.html").is_file() else "servicos.html")
+    return send_from_directory(BASE_DIR, filename)
 
 
 @app.route("/cadastro")
 def pagina_cadastro():
-    return send_from_directory(BASE_DIR, "index.html")
+    return pagina_principal()
 
 
 @app.route("/cadastrar", methods=["POST"])
@@ -373,7 +449,7 @@ def login():
     dados = json_body()
     email = normalizar_email(dados.get("email"))
     senha = dados.get("senha")
-    if not email or not isinstance(senha, str):
+    if not email or not isinstance(senha, str) or len(senha) > 256:
         return jsonify({"error": "E-mail e senha são obrigatórios."}), 400
 
     try:
@@ -387,8 +463,9 @@ def login():
         session.permanent = True
         session["usuario_id"] = usuario.get("id")
         session["usuario_email"] = usuario.get("email")
+        session["password_version"] = security.fingerprint(usuario.get("senha") or "")
 
-        return jsonify({"message": "Login realizado com sucesso!", "usuario": usuario_publico(usuario)}), 200
+        return jsonify({"message": "Login realizado com sucesso!", "usuario": usuario_publico(usuario), "csrf_token": csrf_token()}), 200
     except Exception:
         logger.exception("Erro no login")
         return jsonify({"error": "Erro interno no servidor."}), 500
@@ -397,7 +474,7 @@ def login():
 @app.route("/api/me", methods=["GET"])
 @login_obrigatorio
 def usuario_atual():
-    return jsonify({"usuario": usuario_publico(g.usuario)}), 200
+    return jsonify({"usuario": usuario_publico(g.usuario), "csrf_token": csrf_token()}), 200
 
 
 @app.route("/api/logout", methods=["POST"])
@@ -407,18 +484,22 @@ def logout():
 
 
 @app.route("/api/esqueci-senha", methods=["POST"])
+@serializar_mutacao
 def esqueci_senha():
     dados = json_body()
     email = normalizar_email(dados.get("email"))
     if not email:
         return jsonify({"error": "Informe um e-mail válido."}), 400
 
-    resposta_padrao = {"message": "Se o e-mail estiver cadastrado, você receberá o código de recuperação."}
+    codigo = gerar_otp()
+    resposta_padrao = {
+        "message": "Se o e-mail estiver cadastrado, você receberá o código de recuperação.",
+        "recuperacao_token": security.issue_recovery(email, codigo),
+    }
     try:
         if not buscar_usuario(email, "id"):
             return jsonify(resposta_padrao), 200
 
-        codigo = gerar_otp()
         supabase.table("usuarios").update({"token_recuperacao": codigo}).eq("email", email).execute()
         enviar_email_transacional(email, "Código de Recuperação de Senha", email_de_recuperacao(codigo))
         return jsonify(resposta_padrao), 200
@@ -428,6 +509,7 @@ def esqueci_senha():
 
 
 @app.route("/api/redefinir-senha", methods=["POST"])
+@serializar_mutacao
 def redefinir_senha():
     dados = json_body()
     email = normalizar_email(dados.get("email"))
@@ -437,16 +519,20 @@ def redefinir_senha():
         return jsonify({"error": "Preencha todos os campos corretamente."}), 400
     if not senha_valida(nova_senha):
         return jsonify({"error": "A senha deve ter 8 caracteres, com maiúscula, minúscula e caractere especial."}), 400
+    if not security.verify_recovery(dados.get("recuperacao_token"), email, codigo, max_age=OTP_TTL_MINUTES * 60):
+        return jsonify({"error": "Código inválido ou expirado. Solicite uma nova recuperação nesta página."}), 400
 
     try:
         usuario = buscar_usuario(email, "token_recuperacao")
         if not usuario:
-            return jsonify({"error": "Usuário não encontrado."}), 404
+            return jsonify({"error": "Código inválido ou expirado."}), 400
         token_salvo = str(usuario.get("token_recuperacao") or "")
         if not token_salvo or not secrets.compare_digest(token_salvo, codigo):
             return jsonify({"error": "Código de verificação incorreto."}), 400
 
-        supabase.table("usuarios").update({"senha": generate_password_hash(nova_senha, method="pbkdf2:sha256"), "token_recuperacao": None}).eq("email", email).execute()
+        resultado = supabase.table("usuarios").update({"senha": generate_password_hash(nova_senha, method="pbkdf2:sha256"), "token_recuperacao": None}).eq("email", email).eq("token_recuperacao", codigo).execute()
+        if not resultado.data:
+            return jsonify({"error": "Código já utilizado. Solicite uma nova recuperação."}), 409
         if normalizar_email(session.get("usuario_email")) == email:
             session.clear()
         return jsonify({"message": "Senha redefinida com sucesso! Faça login para continuar."}), 200
@@ -463,6 +549,12 @@ def listar_servicos():
     except Exception:
         logger.exception("Erro ao listar serviços")
         return jsonify({"error": "Erro ao ler a tabela de serviços."}), 500
+
+
+@app.route("/api/relogio", methods=["GET"])
+def relogio_spa():
+    """Hora do servidor, sem leitura nem alteração do banco."""
+    return jsonify({"agora": datetime.now(SPA_TIMEZONE).isoformat(), "fuso": str(SPA_TIMEZONE)})
 
 
 @app.route("/api/agendar", methods=["POST"])
@@ -758,8 +850,9 @@ def chat():
 
     contexto = (
         "Você é o Concierge Virtual do Spa Panaceia. Responda em português, com tom acolhedor, "
-        "sofisticado e conciso (no máximo três frases). Para dores, estresse ou cansaço, sugira "
-        "uma experiência do spa. Quando a pessoa quiser agendar, celebre e diga que a agenda será aberta."
+        "natural e conciso (no máximo três frases), sem emojis nem jargão. Apresente os cuidados "
+        "de bem-estar sem prometer benefícios médicos. Quando a pessoa quiser agendar, oriente "
+        "a escolher um tratamento no catálogo. Nunca afirme que uma reserva foi feita ou aberta."
     )
     try:
         resposta = openai_client.chat.completions.create(
