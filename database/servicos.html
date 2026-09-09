@@ -3448,26 +3448,17 @@ body.dark-mode .spa-toast {
                 return;
             }
 
-            // =========================================================
-            //  INÍCIO DA PARTE ADICIONADA: BUSCA OS PONTOS EM TEMPO REAL
-            // =========================================================
             try {
-                const resPontos = await apiFetch(`${BACKEND_URL}/api/usuario/pontos`);
-                if (resPontos.ok) {
-                    const dadosPontos = await resPontos.json();
+                const respostaPontos = await apiFetch(BACKEND_URL + '/api/usuario/pontos');
+                if (respostaPontos.ok) {
+                    const dadosPontos = await respostaPontos.json();
                     if (usuarioLogado !== usuarioDaConsulta) return;
                     usuarioLogado.pontos = dadosPontos.pontos;
                 }
-            } catch(e) {
-                console.warn("Sem conexão momentânea para atualizar os pontos.");
-            }
-            // =========================================================
-            //  FIM DA PARTE ADICIONADA
-            // =========================================================
-
-            // Imprime o número atualizado na tela
+            } catch (_) { /* A agenda continua disponível se o saldo não carregar. */ }
             if (!usuarioLogado || usuarioLogado !== usuarioDaConsulta) return;
-            document.getElementById('contadorPontos').innerText = `${usuarioLogado.pontos || 0} pts`;
+            document.getElementById('contadorPontos').textContent = String(usuarioLogado.pontos || 0) + ' pts';
+
             container.innerHTML = '<p style="text-align: center;"> Carregando seus agendamentos...</p>';
  
             try {

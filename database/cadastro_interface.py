@@ -8,6 +8,7 @@ from datetime import datetime, timedelta, timezone
 from functools import wraps
 from pathlib import Path
 from threading import RLock
+from urllib.parse import urlsplit
 from zoneinfo import ZoneInfo
 
 import requests
@@ -38,7 +39,7 @@ logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"))
 logger = logging.getLogger(__name__)
 
 SUPABASE_URL = os.getenv("SUPABASE_URL")
-SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY") or os.getenv("SUPABASE_KEY")
 if not SUPABASE_URL or not SUPABASE_KEY:
     raise RuntimeError("SUPABASE_URL e SUPABASE_KEY são obrigatórias.")
 
@@ -66,14 +67,59 @@ app.config.update(
     PERMANENT_SESSION_LIFETIME=timedelta(hours=int(os.getenv("SESSION_TTL_HOURS", "12"))),
     MAX_CONTENT_LENGTH=32 * 1024,
 )
-cors_origins = [
-    origin.strip()
-    for origin in os.getenv(
-        "CORS_ORIGINS",
-        "http://127.0.0.1:5500,http://localhost:5500,https://seu-site-hospedado.com",
-    ).split(",")
-    if origin.strip()
-]
+def normalizar_origem(valor):
+    """Normaliza uma origem completa, sem aceitar caminho, credenciais ou curingas."""
+    try:
+        partes = urlsplit(str(valor or "").strip())
+        if (partes.scheme not in {"http", "https"} or not partes.hostname
+                or partes.username or partes.password or partes.path not in {"", "/"}
+                or partes.query or partes.fragment):
+            return None
+        host = partes.hostname.lower()
+        if ":" in host:
+            host = f"[{host}]"
+        porta = partes.port
+        if porta and not ((partes.scheme == "http" and porta == 80) or (partes.scheme == "https" and porta == 443)):
+            host = f"{host}:{porta}"
+        return f"{partes.scheme}://{host}"
+    except (TypeError, ValueError):
+        return None
+
+
+# O domínio público fica explícito porque o Host visto pelo Flask pode ser o
+# endereço interno do proxy da hospedagem. CORS_ORIGINS apenas acrescenta
+# instalações próprias; nunca use "*" junto de cookies de sessão.
+origens_padrao = {
+    "https://spapanaceia.com.br",
+    "https://www.spapanaceia.com.br",
+    "http://127.0.0.1:5000",
+    "http://localhost:5000",
+    "http://127.0.0.1:5500",
+    "http://localhost:5500",
+    "http://192.168.18.220:5000",
+}
+origens_configuradas = {
+    origem
+    for valor in os.getenv("CORS_ORIGINS", "").split(",")
+    if (origem := normalizar_origem(valor))
+}
+cors_origins = sorted(origens_padrao | origens_configuradas)
+
+
+def origem_permitida():
+    recebida = request.headers.get("Origin")
+    if not recebida:
+        return True
+    origem = normalizar_origem(recebida)
+    if not origem:
+        return False
+    # Este cabeçalho é definido pelo navegador. Resolve o mesmo site público
+    # encaminhado para um Host interno pelo proxy, sem confiar em X-Forwarded-*.
+    if request.headers.get("Sec-Fetch-Site") == "same-origin":
+        return True
+    return origem in cors_origins or origem == normalizar_origem(request.host_url)
+
+
 CORS(
     app,
     resources={r"/api/*": {"origins": cors_origins}, r"/cadastrar": {"origins": cors_origins}},
@@ -97,9 +143,9 @@ PUBLIC_AUTH_PATHS = {"/cadastrar", "/api/login", "/api/validar-codigo", "/api/es
 def proteger_requisicao():
     if request.method not in {"POST", "PUT", "PATCH", "DELETE"}:
         return None
-    origin = request.headers.get("Origin")
-    if origin and origin not in {request.host_url.rstrip("/"), *cors_origins}:
-        return jsonify({"error": "Origem da requisição não permitida."}), 403
+    if not origem_permitida():
+        logger.warning("Origem bloqueada em %s: %r", request.path, request.headers.get("Origin", "")[:200])
+        return jsonify({"error": "Origem da requisição não permitida.", "code": "origin_blocked", "versao": "login-sem-sql-20260909"}), 403
     if request.method != "DELETE" and request.content_length and not request.is_json:
         return jsonify({"error": "Envie os dados no formato JSON."}), 415
     if session.get("usuario_email") and request.path not in PUBLIC_AUTH_PATHS:
@@ -130,6 +176,7 @@ def proteger_requisicao():
 
 @app.after_request
 def proteger_resposta(response):
+    response.headers["X-Spa-Version"] = "login-sem-sql-20260909"
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
     response.headers["X-Frame-Options"] = "SAMEORIGIN"
@@ -655,7 +702,11 @@ def cancelar_agendamento(agendamento_id):
         if not usuario_pode_alterar_agendamento(g.usuario, agendamento):
             return jsonify({"error": "Você não pode cancelar este agendamento."}), 403
 
-        supabase.table("agendamentos").update({"status": "Cancelado"}).eq("id", agendamento_id).execute()
+        # A condição também é verificada no UPDATE: não pode desfazer uma
+        # conclusão concorrente e permitir crédito de pontos pela segunda vez.
+        alterados = supabase.table("agendamentos").update({"status": "Cancelado"}).eq("id", agendamento_id).eq("status", "Pendente").execute().data
+        if not alterados:
+            return jsonify({"error": "Somente atendimentos pendentes podem ser cancelados. Atualize a lista."}), 409
         return jsonify({"message": "Agendamento cancelado com sucesso."}), 200
     except Exception:
         logger.exception("Erro ao cancelar agendamento")
