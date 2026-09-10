@@ -166,3 +166,135 @@ class RateLimiter:
             self._buckets.clear()
             self._expiry_heap.clear()
 
+
+@dataclass
+class _AdaptiveClient:
+    hits: deque[float] = field(default_factory=deque)
+    blocked_until: float = 0.0
+    strikes: int = 0
+    persisted_during_block: bool = False
+    last_seen: float = 0.0
+
+
+class AdaptiveIPBlocker:
+    """Thread-safe burst protection with an exponentially growing IP ban.
+
+    The first burst above ``limit`` is blocked for ``base_block_seconds``.
+    Requests made while blocked mark the client as persistent. Once the current
+    punishment has elapsed, a persistent client is immediately blocked again
+    for twice as long. This avoids multiplying the punishment for every packet
+    in the same millisecond while still escalating a continuing attack.
+
+    State lives in one Python process. For several workers or servers, the same
+    rule should also be configured at the reverse proxy/CDN edge.
+    """
+
+    _MAX_RETRY_AFTER = 2_147_483_647
+
+    def __init__(
+        self,
+        limit: int = 30,
+        window_seconds: float = 1.0,
+        base_block_seconds: int = 30,
+        max_keys: int = 20_000,
+        clock: Callable[[], float] | None = None,
+    ):
+        if not isinstance(limit, int) or isinstance(limit, bool) or limit <= 0:
+            raise ValueError("limit must be a positive integer.")
+        if (
+            not isinstance(window_seconds, (int, float))
+            or isinstance(window_seconds, bool)
+            or not math.isfinite(window_seconds)
+            or window_seconds <= 0
+        ):
+            raise ValueError("window_seconds must be finite and positive.")
+        if (
+            not isinstance(base_block_seconds, int)
+            or isinstance(base_block_seconds, bool)
+            or base_block_seconds <= 0
+        ):
+            raise ValueError("base_block_seconds must be a positive integer.")
+        if not isinstance(max_keys, int) or isinstance(max_keys, bool) or max_keys <= 0:
+            raise ValueError("max_keys must be a positive integer.")
+        self.limit = limit
+        self.window_seconds = float(window_seconds)
+        self.base_block_seconds = base_block_seconds
+        self._max_keys = max_keys
+        self._clock = clock or time.monotonic
+        self._lock = threading.Lock()
+        self._clients: dict[str, _AdaptiveClient] = {}
+
+    def _retry_after(self, blocked_until: float, now: float) -> int:
+        if math.isinf(blocked_until):
+            return self._MAX_RETRY_AFTER
+        return max(1, min(self._MAX_RETRY_AFTER, math.ceil(blocked_until - now)))
+
+    def _start_block(self, client: _AdaptiveClient, now: float) -> tuple[bool, int, int]:
+        client.strikes += 1
+        # Python integers do not overflow. If converting the exponentially large
+        # duration to the monotonic float eventually does, the ban becomes final.
+        duration = self.base_block_seconds * (1 << (client.strikes - 1))
+        try:
+            client.blocked_until = now + duration
+        except OverflowError:
+            client.blocked_until = math.inf
+        if not math.isfinite(client.blocked_until):
+            client.blocked_until = math.inf
+        client.persisted_during_block = False
+        client.hits.clear()
+        return False, self._retry_after(client.blocked_until, now), client.strikes
+
+    def _make_room(self, now: float) -> bool:
+        if len(self._clients) < self._max_keys:
+            return True
+        removable = [
+            (client.last_seen, key)
+            for key, client in self._clients.items()
+            if client.blocked_until <= now
+        ]
+        if not removable:
+            return False
+        _, oldest_key = min(removable)
+        del self._clients[oldest_key]
+        return True
+
+    def check(self, key: str) -> tuple[bool, int, int]:
+        """Return ``(allowed, retry_after_seconds, strike_number)``."""
+        if not isinstance(key, str) or not key or len(key) > 1024:
+            raise ValueError("Block key must be a non-empty string of at most 1024 characters.")
+        with self._lock:
+            now = self._clock()
+            client = self._clients.get(key)
+            if client is None:
+                if not self._make_room(now):
+                    return False, self.base_block_seconds, 1
+                client = _AdaptiveClient(last_seen=now)
+                self._clients[key] = client
+            client.last_seen = now
+
+            if client.blocked_until > now:
+                client.persisted_during_block = True
+                return False, self._retry_after(client.blocked_until, now), client.strikes
+
+            if client.blocked_until and client.persisted_during_block:
+                return self._start_block(client, now)
+
+            if client.blocked_until:
+                # The client respected the whole ban, so a later isolated burst
+                # starts again at 30 seconds instead of carrying a lifetime mark.
+                client.blocked_until = 0.0
+                client.strikes = 0
+                client.hits.clear()
+
+            cutoff = now - self.window_seconds
+            while client.hits and client.hits[0] <= cutoff:
+                client.hits.popleft()
+            if len(client.hits) >= self.limit:
+                return self._start_block(client, now)
+            client.hits.append(now)
+            return True, 0, client.strikes
+
+    def clear(self) -> None:
+        with self._lock:
+            self._clients.clear()
+

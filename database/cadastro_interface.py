@@ -1,4 +1,5 @@
 import html
+import ipaddress
 import logging
 import os
 import re
@@ -18,9 +19,9 @@ from flask_cors import CORS
 from supabase import Client, create_client
 from werkzeug.security import check_password_hash, generate_password_hash
 if __package__:
-    from .spa_security import RateLimiter, SecurityTools
+    from .spa_security import AdaptiveIPBlocker, RateLimiter, SecurityTools
 else:
-    from spa_security import RateLimiter, SecurityTools
+    from spa_security import AdaptiveIPBlocker, RateLimiter, SecurityTools
 
 try:
     from openai import OpenAI
@@ -49,6 +50,7 @@ LAST_APPOINTMENT_HOUR = 19
 OTP_TTL_MINUTES = 15
 OTP_LENGTH = 6
 CHAT_MAX_LENGTH = 1_000
+VERSAO_BACKEND = "spam-all-inline404-20260910"
 PASSWORD_PATTERN = re.compile(r"^(?=.*[a-z])(?=.*[A-Z])(?=.*[@$!%*?&#,.]).{8,}$")
 EMAIL_PATTERN = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
 
@@ -134,18 +136,52 @@ openai_client = OpenAI(api_key=OPENAI_API_KEY) if OPENAI_API_KEY and OpenAI else
 
 security = SecurityTools(secret_key)
 rate_limiter = RateLimiter()
+spam_blocker = AdaptiveIPBlocker(limit=30, window_seconds=1, base_block_seconds=30)
 # Recuperação de senha serializada entre threads de UM processo, sem migrações.
 mutation_lock = RLock()
 PUBLIC_AUTH_PATHS = {"/cadastrar", "/api/login", "/api/validar-codigo", "/api/esqueci-senha", "/api/redefinir-senha"}
 
 
+def obter_ip_cliente():
+    """Retorna o IP do par ou um cabeçalho de proxy confiado explicitamente."""
+    candidato = request.remote_addr or "desconhecido"
+    cabecalho_proxy = os.getenv("TRUSTED_PROXY_IP_HEADER", "").strip()
+    if cabecalho_proxy:
+        encaminhado = request.headers.get(cabecalho_proxy, "").split(",", 1)[0].strip()
+        try:
+            ipaddress.ip_address(encaminhado)
+        except ValueError:
+            pass
+        else:
+            candidato = encaminhado
+    return candidato
+
+
 @app.before_request
 def proteger_requisicao():
+    # Primeira barreira do Flask: conta toda chamada, inclusive OPTIONS,
+    # páginas, arquivos estáticos, API e endereços inexistentes.
+    ip_cliente = obter_ip_cliente()
+    allowed, retry, strike = spam_blocker.check(ip_cliente)
+    if not allowed:
+        logger.warning(
+            "IP bloqueado por rajada: ip=%s metodo=%s rota=%s reincidencia=%s espera=%ss",
+            ip_cliente,
+            request.method,
+            request.path,
+            strike,
+            retry,
+        )
+        return jsonify({
+            "error": "Muitas requisições. Aguarde antes de tentar novamente.",
+            "code": "ip_temporarily_blocked",
+            "retry_after": retry,
+        }), 429, {"Retry-After": str(retry)}
     if request.method not in {"POST", "PUT", "PATCH", "DELETE"}:
         return None
     if not origem_permitida():
         logger.warning("Origem bloqueada em %s: %r", request.path, request.headers.get("Origin", "")[:200])
-        return jsonify({"error": "Origem da requisição não permitida.", "code": "origin_blocked", "versao": "login-sem-sql-20260909"}), 403
+        return jsonify({"error": "Origem da requisição não permitida.", "code": "origin_blocked", "versao": VERSAO_BACKEND}), 403
     if request.method != "DELETE" and request.content_length and not request.is_json:
         return jsonify({"error": "Envie os dados no formato JSON."}), 415
     if session.get("usuario_email") and request.path not in PUBLIC_AUTH_PATHS:
@@ -176,7 +212,7 @@ def proteger_requisicao():
 
 @app.after_request
 def proteger_resposta(response):
-    response.headers["X-Spa-Version"] = "login-sem-sql-20260909"
+    response.headers["X-Spa-Version"] = VERSAO_BACKEND
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
     response.headers["X-Frame-Options"] = "SAMEORIGIN"
@@ -415,6 +451,16 @@ def pagina_principal():
 @app.route("/cadastro")
 def pagina_cadastro():
     return pagina_principal()
+
+
+@app.errorhandler(404)
+def pagina_nao_encontrada(_error):
+    if request.path.startswith("/api/"):
+        return jsonify({
+            "error": "Rota não encontrada.",
+            "code": "route_not_found",
+        }), 404
+    return pagina_principal(), 404
 
 
 @app.route("/cadastrar", methods=["POST"])
