@@ -43,12 +43,22 @@ logging.getLogger("httpcore").setLevel(logging.WARNING)
 
 IS_PRODUCTION = os.getenv("APP_ENV", os.getenv("FLASK_ENV", "development")).strip().lower() == "production"
 
+
+def valor_env(*nomes):
+    """Retorna a primeira variável preenchida, ignorando placeholders não expandidos."""
+    for nome in nomes:
+        valor = str(os.getenv(nome) or "").strip()
+        if valor and not re.fullmatch(r"\$\{[A-Za-z_][A-Za-z0-9_]*\}", valor):
+            return valor
+    return None
+
+
 SUPABASE_URL = os.getenv("SUPABASE_URL")
-SUPABASE_SERVICE_KEY = (
-    os.getenv("SUPABASE_SERVICE_ROLE_KEY")
-    or os.getenv("service_role")  # compatibilidade com o ambiente já usado no projeto
+SUPABASE_SERVICE_KEY = valor_env(
+    "SUPABASE_SERVICE_ROLE_KEY",
+    "service_role",  # compatibilidade com o ambiente já usado no projeto
 )
-SUPABASE_KEY = SUPABASE_SERVICE_KEY or os.getenv("SUPABASE_KEY")
+SUPABASE_KEY = SUPABASE_SERVICE_KEY or valor_env("SUPABASE_KEY")
 if not SUPABASE_URL or not SUPABASE_KEY:
     raise RuntimeError("SUPABASE_URL e SUPABASE_KEY são obrigatórias.")
 if IS_PRODUCTION and not SUPABASE_SERVICE_KEY:
@@ -60,7 +70,7 @@ LAST_APPOINTMENT_HOUR = 19
 OTP_TTL_MINUTES = 15
 OTP_LENGTH = 6
 CHAT_MAX_LENGTH = 1_000
-VERSAO_BACKEND = "production-ready-20260913"
+VERSAO_BACKEND = "supabase-env-fix-20260913"
 PASSWORD_PATTERN = re.compile(r"^(?=.*[a-z])(?=.*[A-Z])(?=.*[@$!%*?&#,.]).{8,}$")
 EMAIL_PATTERN = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
 RECOMPENSAS_FIDELIDADE = {
