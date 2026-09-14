@@ -14,7 +14,7 @@ from zoneinfo import ZoneInfo
 
 import requests
 from dotenv import load_dotenv
-from flask import Flask, g, jsonify, request, send_from_directory, session
+from flask import Flask, Response, g, jsonify, request, send_from_directory, session
 from flask_cors import CORS
 from supabase import Client, create_client
 from werkzeug.security import check_password_hash, generate_password_hash
@@ -38,11 +38,21 @@ else:
 
 logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"))
 logger = logging.getLogger(__name__)
+logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("httpcore").setLevel(logging.WARNING)
+
+IS_PRODUCTION = os.getenv("APP_ENV", os.getenv("FLASK_ENV", "development")).strip().lower() == "production"
 
 SUPABASE_URL = os.getenv("SUPABASE_URL")
-SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY") or os.getenv("SUPABASE_KEY")
+SUPABASE_SERVICE_KEY = (
+    os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    or os.getenv("service_role")  # compatibilidade com o ambiente já usado no projeto
+)
+SUPABASE_KEY = SUPABASE_SERVICE_KEY or os.getenv("SUPABASE_KEY")
 if not SUPABASE_URL or not SUPABASE_KEY:
     raise RuntimeError("SUPABASE_URL e SUPABASE_KEY são obrigatórias.")
+if IS_PRODUCTION and not SUPABASE_SERVICE_KEY:
+    raise RuntimeError("SUPABASE_SERVICE_ROLE_KEY é obrigatória em produção para as rotas protegidas.")
 
 SPA_TIMEZONE = ZoneInfo(os.getenv("SPA_TIMEZONE", "America/Sao_Paulo"))
 OPENING_HOUR = 9
@@ -50,13 +60,20 @@ LAST_APPOINTMENT_HOUR = 19
 OTP_TTL_MINUTES = 15
 OTP_LENGTH = 6
 CHAT_MAX_LENGTH = 1_000
-VERSAO_BACKEND = "spam-all-inline404-20260910"
+VERSAO_BACKEND = "production-ready-20260913"
 PASSWORD_PATTERN = re.compile(r"^(?=.*[a-z])(?=.*[A-Z])(?=.*[@$!%*?&#,.]).{8,}$")
 EMAIL_PATTERN = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
+RECOMPENSAS_FIDELIDADE = {
+    "pausa": {"codigo": "pausa", "nome": "Pausa Panaceia", "pontos": 100, "desconto": 10.00, "descricao": "R$ 10 de crédito para usar em uma experiência."},
+    "ritual": {"codigo": "ritual", "nome": "Ritual Panaceia", "pontos": 250, "desconto": 30.00, "descricao": "R$ 30 de crédito para reservar seu próximo ritual."},
+    "renovar": {"codigo": "renovar", "nome": "Renovar Panaceia", "pontos": 500, "desconto": 70.00, "descricao": "R$ 70 de crédito para uma nova pausa de cuidado."},
+}
 
 app = Flask(__name__)
 secret_key = os.getenv("FLASK_SECRET_KEY")
 if not secret_key:
+    if IS_PRODUCTION:
+        raise RuntimeError("FLASK_SECRET_KEY é obrigatória em produção.")
     secret_key = secrets.token_hex(32)
     logger.warning("FLASK_SECRET_KEY não configurada; as sessões serão encerradas ao reiniciar o servidor.")
 
@@ -65,9 +82,11 @@ app.config.update(
     SESSION_COOKIE_NAME="spa_panaceia_session",
     SESSION_COOKIE_HTTPONLY=True,
     SESSION_COOKIE_SAMESITE=os.getenv("SESSION_COOKIE_SAMESITE", "Lax"),
-    SESSION_COOKIE_SECURE=os.getenv("SESSION_COOKIE_SECURE", "false").lower() == "true",
+    SESSION_COOKIE_SECURE=os.getenv("SESSION_COOKIE_SECURE", "true" if IS_PRODUCTION else "false").lower() == "true",
+    SESSION_COOKIE_PATH="/",
     PERMANENT_SESSION_LIFETIME=timedelta(hours=int(os.getenv("SESSION_TTL_HOURS", "12"))),
     MAX_CONTENT_LENGTH=32 * 1024,
+    JSON_SORT_KEYS=False,
 )
 def normalizar_origem(valor):
     """Normaliza uma origem completa, sem aceitar caminho, credenciais ou curingas."""
@@ -94,12 +113,15 @@ def normalizar_origem(valor):
 origens_padrao = {
     "https://spapanaceia.com.br",
     "https://www.spapanaceia.com.br",
-    "http://127.0.0.1:5000",
-    "http://localhost:5000",
-    "http://127.0.0.1:5500",
-    "http://localhost:5500",
-    "http://192.168.18.220:5000",
 }
+if not IS_PRODUCTION:
+    origens_padrao.update({
+        "http://127.0.0.1:5000",
+        "http://localhost:5000",
+        "http://127.0.0.1:5500",
+        "http://localhost:5500",
+        "http://192.168.18.220:5000",
+    })
 origens_configuradas = {
     origem
     for valor in os.getenv("CORS_ORIGINS", "").split(",")
@@ -139,7 +161,7 @@ rate_limiter = RateLimiter()
 spam_blocker = AdaptiveIPBlocker(limit=30, window_seconds=1, base_block_seconds=30)
 # Recuperação de senha serializada entre threads de UM processo, sem migrações.
 mutation_lock = RLock()
-PUBLIC_AUTH_PATHS = {"/cadastrar", "/api/login", "/api/validar-codigo", "/api/esqueci-senha", "/api/redefinir-senha"}
+PUBLIC_AUTH_PATHS = {"/cadastrar", "/api/login", "/api/validar-codigo", "/api/reenviar-codigo", "/api/esqueci-senha", "/api/redefinir-senha"}
 
 
 def obter_ip_cliente():
@@ -194,13 +216,14 @@ def proteger_requisicao():
         "/api/esqueci-senha": (10, 900, 3),
         "/api/redefinir-senha": (20, 900, 5),
         "/api/validar-codigo": (20, 900, 5),
+        "/api/reenviar-codigo": (10, 900, 3),
         "/cadastrar": (10, 3600, 3),
         "/api/chat": (30, 60, None),
     }
     if request.path in limits:
         ip_limit, window, account_limit = limits[request.path]
         # Não confiar em X-Forwarded-For enviado diretamente pelo cliente.
-        keys = [(f"{request.path}:ip:{request.remote_addr}", ip_limit)]
+        keys = [(f"{request.path}:ip:{ip_cliente}", ip_limit)]
         email = normalizar_email(json_body().get("email"))
         if account_limit and email:
             keys.append((f"{request.path}:account:{security.fingerprint(email)}", account_limit))
@@ -216,8 +239,20 @@ def proteger_resposta(response):
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
     response.headers["X-Frame-Options"] = "SAMEORIGIN"
+    response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=(), payment=()"
+    response.headers["Content-Security-Policy"] = (
+        "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self'; "
+        "form-action 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; "
+        "font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; "
+        "connect-src 'self'"
+    )
+    if IS_PRODUCTION:
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
     if request.path.startswith("/api/"):
         response.headers["Cache-Control"] = "no-store"
+    elif request.path in {"/", "/cadastro"}:
+        response.headers["Cache-Control"] = "no-cache, must-revalidate"
     return response
 
 
@@ -453,6 +488,58 @@ def pagina_cadastro():
     return pagina_principal()
 
 
+@app.route("/api/health", methods=["GET"])
+def verificar_saude():
+    """Endpoint leve para o monitor de disponibilidade da hospedagem."""
+    return jsonify({"status": "ok", "versao": VERSAO_BACKEND}), 200
+
+
+@app.route("/manifest.webmanifest")
+def manifest_aplicativo():
+    response = jsonify({
+        "name": "Spa Panaceia",
+        "short_name": "Panaceia",
+        "start_url": "/",
+        "scope": "/",
+        "display": "standalone",
+        "background_color": "#100818",
+        "theme_color": "#6a11cb",
+        "description": "Agendamentos e experiências do Spa Panaceia.",
+        "icons": [{
+            "src": "/app-icon.svg",
+            "sizes": "any",
+            "type": "image/svg+xml",
+            "purpose": "any maskable",
+        }],
+    })
+    response.mimetype = "application/manifest+json"
+    return response
+
+
+@app.route("/spa-sw.js")
+def service_worker_aplicativo():
+    response = Response("""const CACHE_NAME = 'spa-panaceia-shell-v2';
+const APP_SHELL = ['/'];
+self.addEventListener('install', event => event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(APP_SHELL)).then(() => self.skipWaiting())));
+self.addEventListener('activate', event => event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(key => key !== CACHE_NAME).map(key => caches.delete(key)))).then(() => self.clients.claim())));
+self.addEventListener('fetch', event => {
+  const url = new URL(event.request.url);
+  if (event.request.method !== 'GET' || url.origin !== self.location.origin || url.pathname.startsWith('/api/')) return;
+  event.respondWith(fetch(event.request).then(response => {
+    if (response.ok) caches.open(CACHE_NAME).then(cache => cache.put(event.request, response.clone()));
+    return response;
+  }).catch(() => caches.match(event.request).then(cached => cached || caches.match('/'))));
+});""", mimetype="application/javascript")
+    response.headers["Service-Worker-Allowed"] = "/"
+    response.headers["Cache-Control"] = "no-cache"
+    return response
+
+
+@app.route("/app-icon.svg")
+def icone_aplicativo():
+    return Response("""<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 512 512\"><defs><linearGradient id=\"g\" x1=\"0\" y1=\"0\" x2=\"1\" y2=\"1\"><stop stop-color=\"#8b35e8\"/><stop offset=\"1\" stop-color=\"#3d087d\"/></linearGradient></defs><rect width=\"512\" height=\"512\" rx=\"116\" fill=\"url(#g)\"/><path d=\"M256 112c27 73 71 117 144 144-73 27-117 71-144 144-27-73-71-117-144-144 73-27 117-71 144-144Z\" fill=\"#fff3d8\"/><circle cx=\"256\" cy=\"256\" r=\"38\" fill=\"#6a11cb\"/></svg>""", mimetype="image/svg+xml")
+
+
 @app.errorhandler(404)
 def pagina_nao_encontrada(_error):
     if request.path.startswith("/api/"):
@@ -461,6 +548,13 @@ def pagina_nao_encontrada(_error):
             "code": "route_not_found",
         }), 404
     return pagina_principal(), 404
+
+
+@app.errorhandler(413)
+def requisicao_grande_demais(_error):
+    if request.path.startswith("/api/") or request.path == "/cadastrar":
+        return jsonify({"error": "A requisição enviada é maior que o limite permitido."}), 413
+    return pagina_principal(), 413
 
 
 @app.route("/cadastrar", methods=["POST"])
@@ -535,6 +629,31 @@ def validar_codigo():
     except Exception:
         logger.exception("Erro ao validar OTP")
         return jsonify({"error": "Erro interno ao validar o código."}), 500
+
+
+@app.route("/api/reenviar-codigo", methods=["POST"])
+@serializar_mutacao
+def reenviar_codigo():
+    """Gera um novo código para contas ainda não ativadas, sem revelar cadastros."""
+    email = normalizar_email(json_body().get("email"))
+    if not email:
+        return jsonify({"error": "Informe um e-mail válido."}), 400
+
+    resposta_padrao = {"message": "Se a conta estiver aguardando ativação, um novo código será enviado."}
+    try:
+        usuario = buscar_usuario(email, "id, nome, email_verificado")
+        if not usuario or usuario.get("email_verificado"):
+            return jsonify(resposta_padrao), 200
+
+        codigo = gerar_otp()
+        expiracao = (datetime.now(timezone.utc) + timedelta(minutes=OTP_TTL_MINUTES)).isoformat()
+        supabase.table("usuarios").update({"codigo_otp": codigo, "codigo_expira_em": expiracao}).eq("id", usuario["id"]).execute()
+        if not enviar_email_transacional(email, "Novo código de ativação — Spa Panaceia", email_de_ativacao(usuario.get("nome") or "Cliente", codigo)):
+            return jsonify({"error": "Não foi possível enviar o código agora. Tente novamente em alguns minutos."}), 503
+        return jsonify(resposta_padrao), 200
+    except Exception:
+        logger.exception("Erro ao reenviar código de ativação")
+        return jsonify({"error": "Não foi possível reenviar o código agora."}), 500
 
 
 @app.route("/api/login", methods=["POST"])
@@ -652,6 +771,7 @@ def relogio_spa():
 
 @app.route("/api/agendar", methods=["POST"])
 @login_obrigatorio
+@serializar_mutacao
 def criar_agendamento():
     dados = json_body()
     email = g.usuario["email"]
@@ -718,6 +838,7 @@ def horarios_ocupados():
 
 @app.route("/api/agendamentos/<int:agendamento_id>", methods=["PUT"])
 @login_obrigatorio
+@serializar_mutacao
 def alterar_horario(agendamento_id):
     try:
         agendamento = buscar_agendamento(agendamento_id)
@@ -740,6 +861,7 @@ def alterar_horario(agendamento_id):
 
 @app.route("/api/agendamentos/<int:agendamento_id>", methods=["DELETE"])
 @login_obrigatorio
+@serializar_mutacao
 def cancelar_agendamento(agendamento_id):
     try:
         agendamento = buscar_agendamento(agendamento_id)
@@ -794,6 +916,7 @@ def admin_agendamentos():
 
 @app.route("/api/admin/agendamentos/<int:agendamento_id>/concluir", methods=["POST"])
 @admin_obrigatorio
+@serializar_mutacao
 def concluir_agendamento(agendamento_id):
     try:
         resposta = supabase.table("agendamentos").select("email_cliente, status, servico_id").eq("id", agendamento_id).limit(1).execute()
@@ -813,7 +936,9 @@ def concluir_agendamento(agendamento_id):
             if servico:
                 pontos = int(float(servico[0].get("valor") or 0) * 0.10)
 
-        supabase.table("agendamentos").update({"status": "Concluido"}).eq("id", agendamento_id).execute()
+        conclusao = supabase.table("agendamentos").update({"status": "Concluido"}).eq("id", agendamento_id).eq("status", "Pendente").execute().data or []
+        if not conclusao:
+            return jsonify({"message": "Este agendamento já foi atualizado por outro atendimento.", "pontos": 0}), 200
         cliente = buscar_usuario(agendamento.get("email_cliente"), "pontos")
         if cliente and pontos:
             supabase.table("usuarios").update({"pontos": int(cliente.get("pontos") or 0) + pontos}).eq("email", agendamento["email_cliente"]).execute()
@@ -821,6 +946,62 @@ def concluir_agendamento(agendamento_id):
     except Exception:
         logger.exception("Erro ao concluir agendamento")
         return jsonify({"error": "Erro ao concluir o serviço."}), 500
+
+
+@app.route("/api/admin/vouchers/utilizar", methods=["POST"])
+@admin_obrigatorio
+@serializar_mutacao
+def utilizar_voucher_admin():
+    """Valida e consome um voucher no atendimento selecionado pelo administrador."""
+    dados = json_body()
+    codigo = str(dados.get("codigo_voucher") or "").strip().upper()
+    try:
+        agendamento_id = int(dados.get("agendamento_id"))
+    except (TypeError, ValueError):
+        agendamento_id = 0
+    if not re.fullmatch(r"PAN-[A-F0-9]{10}", codigo) or agendamento_id <= 0:
+        return jsonify({"error": "Informe um voucher e um atendimento válidos."}), 400
+
+    try:
+        agendamento = buscar_agendamento(agendamento_id, "id, email_cliente, status")
+        if not agendamento:
+            return jsonify({"error": "Agendamento não encontrado."}), 404
+        if agendamento.get("status") == "Cancelado":
+            return jsonify({"error": "Não é possível aplicar voucher em um atendimento cancelado."}), 409
+
+        voucher = (
+            supabase.table("resgates_pontos")
+            .select("id, email_cliente, recompensa_nome, desconto, status, expira_em")
+            .eq("codigo_voucher", codigo)
+            .limit(1)
+            .execute()
+            .data or []
+        )
+        if not voucher:
+            return jsonify({"error": "Voucher não encontrado."}), 404
+        voucher = voucher[0]
+        if normalizar_email(voucher.get("email_cliente")) != normalizar_email(agendamento.get("email_cliente")):
+            return jsonify({"error": "Este voucher pertence a outro cliente."}), 409
+        if voucher.get("status") != "ativo":
+            return jsonify({"error": "Este voucher já foi utilizado ou não está mais ativo."}), 409
+
+        expiracao = voucher.get("expira_em")
+        if expiracao and datetime.now(timezone.utc) >= datetime.fromisoformat(str(expiracao).replace("Z", "+00:00")):
+            return jsonify({"error": "Este voucher expirou."}), 409
+
+        resposta = supabase.rpc("utilizar_voucher", {"p_codigo_voucher": codigo, "p_agendamento_id": agendamento_id}).execute()
+        utilizado = resposta.data[0] if isinstance(resposta.data, list) and resposta.data else resposta.data
+        if not utilizado:
+            return jsonify({"error": "O voucher não pôde ser utilizado. Atualize a agenda e tente novamente."}), 409
+        return jsonify({
+            "message": f"Voucher aplicado: {voucher.get('recompensa_nome') or 'benefício de fidelidade'}.",
+            "voucher": {"codigo_voucher": codigo, "desconto": voucher.get("desconto") or 0, "status": "utilizado"},
+        }), 200
+    except (TypeError, ValueError):
+        return jsonify({"error": "A validade deste voucher está inconsistente."}), 409
+    except Exception:
+        logger.exception("Erro ao utilizar voucher no agendamento %s", agendamento_id)
+        return jsonify({"error": "Não foi possível aplicar o voucher agora."}), 500
 
 
 @app.route("/api/usuario/pontos", methods=["GET"])
@@ -834,6 +1015,83 @@ def obter_pontos():
     except Exception:
         logger.exception("Erro ao buscar pontos")
         return jsonify({"error": "Erro ao buscar os pontos do usuário."}), 500
+
+
+
+@app.route("/api/fidelidade", methods=["GET"])
+@login_obrigatorio
+def consultar_fidelidade():
+    """Saldo, recompensas e vouchers ativos sempre vêm do Supabase."""
+    try:
+        email_cliente = str(g.usuario["email"] or "").strip().lower()
+        cliente = buscar_usuario(email_cliente, "pontos")
+        if not cliente:
+            return jsonify({"error": "Usuário não encontrado."}), 404
+
+        # Esta tela é somente de leitura. A expiração é validada no resgate/uso
+        # do voucher; assim, abrir a página nunca altera dados por engano.
+        vouchers = (
+            supabase.table("resgates_pontos")
+            .select("id, recompensa_nome, pontos_usados, desconto, codigo_voucher, status, criado_em, expira_em")
+            .eq("email_cliente", email_cliente)
+            .eq("status", "ativo")
+            .gt("expira_em", datetime.now(timezone.utc).isoformat())
+            .order("criado_em", desc=True)
+            .execute()
+            .data or []
+        )
+        logger.info("Consulta de fidelidade concluída: %d voucher(s) ativo(s)", len(vouchers))
+        return jsonify({"pontos": int(cliente.get("pontos") or 0), "recompensas": list(RECOMPENSAS_FIDELIDADE.values()), "vouchers": vouchers, "total_vouchers": len(vouchers)}), 200
+    except Exception:
+        logger.exception("Erro ao consultar fidelidade")
+        return jsonify({"error": "Não foi possível consultar sua fidelidade agora."}), 500
+
+
+@app.route("/api/fidelidade/resgatar", methods=["POST"])
+@login_obrigatorio
+@serializar_mutacao
+def resgatar_pontos():
+    dados = json_body()
+    recompensa = str(dados.get("recompensa") or "").strip().lower()
+    if recompensa not in RECOMPENSAS_FIDELIDADE:
+        return jsonify({"error": "Recompensa inválida."}), 400
+    try:
+        resposta = supabase.rpc("resgatar_pontos", {"p_email": g.usuario["email"], "p_recompensa_codigo": recompensa}).execute()
+        resgate = resposta.data[0] if resposta.data else None
+        if not resgate:
+            raise RuntimeError("O resgate não retornou um voucher.")
+        return jsonify({"message": "Pontos trocados com sucesso. Apresente o código no Spa.", "resgate": resgate}), 201
+    except Exception as erro:
+        logger.warning("Resgate de pontos recusado para %s: %s", g.usuario["email"], type(erro).__name__)
+        mensagem = str(erro).lower()
+        if "insuficiente" in mensagem:
+            return jsonify({"error": "Você não tem pontos suficientes para essa recompensa."}), 409
+        return jsonify({"error": "Não foi possível concluir o resgate agora. Tente novamente."}), 500
+
+
+@app.route("/api/privacidade/exportar", methods=["GET"])
+@login_obrigatorio
+def exportar_dados_pessoais():
+    """Entrega ao titular uma cópia somente dos dados ligados à própria conta."""
+    try:
+        usuario = usuario_publico(g.usuario)
+        agendamentos = (
+            supabase.table("agendamentos")
+            .select("id, data_atendimento, status, avaliacao, servico(tipo, valor)")
+            .eq("email_cliente", g.usuario["email"])
+            .order("data_atendimento", desc=True)
+            .execute()
+            .data or []
+        )
+        return jsonify({
+            "gerado_em": datetime.now(SPA_TIMEZONE).isoformat(),
+            "finalidade": "Cópia dos dados pessoais e do histórico de reservas do Spa Panaceia.",
+            "conta": usuario,
+            "agendamentos": agendamentos,
+        }), 200
+    except Exception:
+        logger.exception("Erro ao exportar dados pessoais")
+        return jsonify({"error": "Não foi possível preparar sua cópia de dados agora."}), 500
 
 
 @app.route("/api/admin/usuarios", methods=["GET"])
