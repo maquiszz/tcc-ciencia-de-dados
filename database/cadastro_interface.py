@@ -828,7 +828,15 @@ def horarios_ocupados():
                 consulta = consulta.neq("id", ignorar_id)
 
         resposta = consulta.order("data_atendimento").execute()
-        return jsonify([agendamento["data_atendimento"] for agendamento in resposta.data or []]), 200
+        horarios = []
+        for agendamento in resposta.data or []:
+            data_atendimento = agendamento["data_atendimento"]
+            horarios.append(
+                data_atendimento.isoformat()
+                if isinstance(data_atendimento, datetime)
+                else str(data_atendimento)
+            )
+        return jsonify(horarios), 200
     except Exception:
         logger.exception("Erro ao listar horários ocupados")
         return jsonify({"error": "Não foi possível carregar os horários ocupados."}), 500
