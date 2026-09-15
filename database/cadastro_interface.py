@@ -16,11 +16,12 @@ import requests
 from dotenv import load_dotenv
 from flask import Flask, Response, g, jsonify, request, send_from_directory, session
 from flask_cors import CORS
-from supabase import Client, create_client
 from werkzeug.security import check_password_hash, generate_password_hash
 if __package__:
+    from .postgres_store import LocalPostgresClient
     from .spa_security import AdaptiveIPBlocker, RateLimiter, SecurityTools
 else:
+    from postgres_store import LocalPostgresClient
     from spa_security import AdaptiveIPBlocker, RateLimiter, SecurityTools
 
 try:
@@ -44,25 +45,12 @@ logging.getLogger("httpcore").setLevel(logging.WARNING)
 IS_PRODUCTION = os.getenv("APP_ENV", os.getenv("FLASK_ENV", "development")).strip().lower() == "production"
 
 
-def valor_env(*nomes):
-    """Retorna a primeira variável preenchida, ignorando placeholders não expandidos."""
-    for nome in nomes:
-        valor = str(os.getenv(nome) or "").strip()
-        if valor and not re.fullmatch(r"\$\{[A-Za-z_][A-Za-z0-9_]*\}", valor):
-            return valor
-    return None
-
-
-SUPABASE_URL = os.getenv("SUPABASE_URL")
-SUPABASE_SERVICE_KEY = valor_env(
-    "SUPABASE_SERVICE_ROLE_KEY",
-    "service_role",  # compatibilidade com o ambiente já usado no projeto
-)
-SUPABASE_KEY = SUPABASE_SERVICE_KEY or valor_env("SUPABASE_KEY")
-if not SUPABASE_URL or not SUPABASE_KEY:
-    raise RuntimeError("SUPABASE_URL e SUPABASE_KEY são obrigatórias.")
-if IS_PRODUCTION and not SUPABASE_SERVICE_KEY:
-    raise RuntimeError("SUPABASE_SERVICE_ROLE_KEY é obrigatória em produção para as rotas protegidas.")
+DB_HOST = os.getenv("DB_HOST", "postgres")
+DB_PORT = os.getenv("DB_PORT", "5432")
+DB_NAME = os.getenv("DB_NAME", "site_db")
+DB_USER = os.getenv("DB_USER", "site_user")
+if not os.getenv("DB_PASSWORD"):
+    raise RuntimeError("DB_PASSWORD é obrigatória para conectar ao PostgreSQL local.")
 
 SPA_TIMEZONE = ZoneInfo(os.getenv("SPA_TIMEZONE", "America/Sao_Paulo"))
 OPENING_HOUR = 9
@@ -70,7 +58,7 @@ LAST_APPOINTMENT_HOUR = 19
 OTP_TTL_MINUTES = 15
 OTP_LENGTH = 6
 CHAT_MAX_LENGTH = 1_000
-VERSAO_BACKEND = "supabase-env-fix-20260913"
+VERSAO_BACKEND = "postgres-local-20260915"
 PASSWORD_PATTERN = re.compile(r"^(?=.*[a-z])(?=.*[A-Z])(?=.*[@$!%*?&#,.]).{8,}$")
 EMAIL_PATTERN = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
 RECOMPENSAS_FIDELIDADE = {
@@ -160,7 +148,7 @@ CORS(
     supports_credentials=True,
 )
 
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+db = LocalPostgresClient()
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-3.5-turbo")
@@ -300,7 +288,7 @@ def gerar_otp():
 
 
 def buscar_usuario(email, campos="*"):
-    resposta = supabase.table("usuarios").select(campos).eq("email", email).limit(1).execute()
+    resposta = db.table("usuarios").select(campos).eq("email", email).limit(1).execute()
     return resposta.data[0] if resposta.data else None
 
 
@@ -364,7 +352,7 @@ def admin_obrigatorio(funcao):
 
 def buscar_agendamento(agendamento_id, campos="id, email_cliente, status"):
     resposta = (
-        supabase.table("agendamentos")
+        db.table("agendamentos")
         .select(campos)
         .eq("id", agendamento_id)
         .limit(1)
@@ -411,7 +399,7 @@ def validar_data_agendamento(value):
 
 def horario_esta_ocupado(data_atendimento, agendamento_id=None):
     consulta = (
-        supabase.table("agendamentos")
+        db.table("agendamentos")
         .select("id")
         .eq("data_atendimento", data_atendimento)
         .neq("status", "Cancelado")
@@ -587,7 +575,7 @@ def cadastrar():
 
         codigo = gerar_otp()
         expiracao = (datetime.now(timezone.utc) + timedelta(minutes=OTP_TTL_MINUTES)).isoformat()
-        supabase.table("usuarios").insert(
+        db.table("usuarios").insert(
             {
                 "nome": nome,
                 "email": email,
@@ -631,7 +619,7 @@ def validar_codigo():
         if not expiracao or datetime.now(timezone.utc) > datetime.fromisoformat(expiracao.replace("Z", "+00:00")):
             return jsonify({"error": "Código expirado. Solicite um novo código."}), 400
 
-        supabase.table("usuarios").update({"email_verificado": True, "codigo_otp": None, "codigo_expira_em": None}).eq("email", email).execute()
+        db.table("usuarios").update({"email_verificado": True, "codigo_otp": None, "codigo_expira_em": None}).eq("email", email).execute()
         return jsonify({"message": "E-mail verificado com sucesso!"}), 200
     except (TypeError, ValueError):
         logger.exception("Data de expiração de OTP inválida")
@@ -657,7 +645,7 @@ def reenviar_codigo():
 
         codigo = gerar_otp()
         expiracao = (datetime.now(timezone.utc) + timedelta(minutes=OTP_TTL_MINUTES)).isoformat()
-        supabase.table("usuarios").update({"codigo_otp": codigo, "codigo_expira_em": expiracao}).eq("id", usuario["id"]).execute()
+        db.table("usuarios").update({"codigo_otp": codigo, "codigo_expira_em": expiracao}).eq("id", usuario["id"]).execute()
         if not enviar_email_transacional(email, "Novo código de ativação — Spa Panaceia", email_de_ativacao(usuario.get("nome") or "Cliente", codigo)):
             return jsonify({"error": "Não foi possível enviar o código agora. Tente novamente em alguns minutos."}), 503
         return jsonify(resposta_padrao), 200
@@ -722,7 +710,7 @@ def esqueci_senha():
         if not buscar_usuario(email, "id"):
             return jsonify(resposta_padrao), 200
 
-        supabase.table("usuarios").update({"token_recuperacao": codigo}).eq("email", email).execute()
+        db.table("usuarios").update({"token_recuperacao": codigo}).eq("email", email).execute()
         enviar_email_transacional(email, "Código de Recuperação de Senha", email_de_recuperacao(codigo))
         return jsonify(resposta_padrao), 200
     except Exception:
@@ -752,7 +740,7 @@ def redefinir_senha():
         if not token_salvo or not secrets.compare_digest(token_salvo, codigo):
             return jsonify({"error": "Código de verificação incorreto."}), 400
 
-        resultado = supabase.table("usuarios").update({"senha": generate_password_hash(nova_senha, method="pbkdf2:sha256"), "token_recuperacao": None}).eq("email", email).eq("token_recuperacao", codigo).execute()
+        resultado = db.table("usuarios").update({"senha": generate_password_hash(nova_senha, method="pbkdf2:sha256"), "token_recuperacao": None}).eq("email", email).eq("token_recuperacao", codigo).execute()
         if not resultado.data:
             return jsonify({"error": "Código já utilizado. Solicite uma nova recuperação."}), 409
         if normalizar_email(session.get("usuario_email")) == email:
@@ -766,7 +754,7 @@ def redefinir_senha():
 @app.route("/api/servicos", methods=["GET"])
 def listar_servicos():
     try:
-        resposta = supabase.table("servico").select("id, tipo, descricao, valor, imagem_url, contratos").order("tipo").execute()
+        resposta = db.table("servico").select("id, tipo, descricao, valor, imagem_url, contratos").order("tipo").execute()
         return jsonify(resposta.data or []), 200
     except Exception:
         logger.exception("Erro ao listar serviços")
@@ -794,17 +782,17 @@ def criar_agendamento():
 
     try:
         data_atendimento = validar_data_agendamento(dados.get("data"))
-        if not supabase.table("servico").select("id").eq("id", servico_id).limit(1).execute().data:
+        if not db.table("servico").select("id").eq("id", servico_id).limit(1).execute().data:
             return jsonify({"error": "Serviço não encontrado."}), 404
         if horario_esta_ocupado(data_atendimento):
             return jsonify({"error": "Este horário já está reservado por outro cliente."}), 409
 
-        supabase.table("agendamentos").insert({"email_cliente": email, "servico_id": servico_id, "data_atendimento": data_atendimento, "status": "Pendente"}).execute()
+        db.table("agendamentos").insert({"email_cliente": email, "servico_id": servico_id, "data_atendimento": data_atendimento, "status": "Pendente"}).execute()
 
-        servico = supabase.table("servico").select("contratos").eq("id", servico_id).limit(1).execute().data
+        servico = db.table("servico").select("contratos").eq("id", servico_id).limit(1).execute().data
         if servico:
             contratos = int(servico[0].get("contratos") or 0)
-            supabase.table("servico").update({"contratos": contratos + 1}).eq("id", servico_id).execute()
+            db.table("servico").update({"contratos": contratos + 1}).eq("id", servico_id).execute()
         return jsonify({"message": "Agendamento realizado com sucesso!"}), 201
     except ValueError as error:
         return jsonify({"error": str(error)}), 400
@@ -817,7 +805,7 @@ def criar_agendamento():
 @login_obrigatorio
 def meus_agendamentos():
     try:
-        resposta = supabase.table("agendamentos").select("id, data_atendimento, status, avaliacao, servico_id, servico(tipo, valor)").eq("email_cliente", g.usuario["email"]).order("data_atendimento").execute()
+        resposta = db.table("agendamentos").select("id, data_atendimento, status, avaliacao, servico_id, servico(tipo, valor)").eq("email_cliente", g.usuario["email"]).order("data_atendimento").execute()
         return jsonify(resposta.data or []), 200
     except Exception:
         logger.exception("Erro ao buscar agendamentos do usuário")
@@ -829,7 +817,7 @@ def horarios_ocupados():
     try:
         ignorar_id = request.args.get("ignorar_id", type=int)
         consulta = (
-            supabase.table("agendamentos")
+            db.table("agendamentos")
             .select("data_atendimento")
             .neq("status", "Cancelado")
         )
@@ -860,7 +848,7 @@ def alterar_horario(agendamento_id):
         nova_data = validar_data_agendamento(json_body().get("data"))
         if horario_esta_ocupado(nova_data, agendamento_id):
             return jsonify({"error": "Este horário já está reservado por outro cliente."}), 409
-        supabase.table("agendamentos").update({"data_atendimento": nova_data}).eq("id", agendamento_id).execute()
+        db.table("agendamentos").update({"data_atendimento": nova_data}).eq("id", agendamento_id).execute()
         return jsonify({"message": "Horário atualizado com sucesso!"}), 200
     except ValueError as error:
         return jsonify({"error": str(error)}), 400
@@ -882,7 +870,7 @@ def cancelar_agendamento(agendamento_id):
 
         # A condição também é verificada no UPDATE: não pode desfazer uma
         # conclusão concorrente e permitir crédito de pontos pela segunda vez.
-        alterados = supabase.table("agendamentos").update({"status": "Cancelado"}).eq("id", agendamento_id).eq("status", "Pendente").execute().data
+        alterados = db.table("agendamentos").update({"status": "Cancelado"}).eq("id", agendamento_id).eq("status", "Pendente").execute().data
         if not alterados:
             return jsonify({"error": "Somente atendimentos pendentes podem ser cancelados. Atualize a lista."}), 409
         return jsonify({"message": "Agendamento cancelado com sucesso."}), 200
@@ -906,7 +894,7 @@ def avaliar_agendamento(agendamento_id):
         if agendamento.get("status") != "Concluido":
             return jsonify({"error": "A avaliação é liberada após a conclusão do atendimento."}), 409
 
-        supabase.table("agendamentos").update({"avaliacao": avaliacao}).eq("id", agendamento_id).execute()
+        db.table("agendamentos").update({"avaliacao": avaliacao}).eq("id", agendamento_id).execute()
         return jsonify({"message": "Avaliação registrada!"}), 200
     except Exception:
         logger.exception("Erro ao avaliar agendamento")
@@ -917,7 +905,7 @@ def avaliar_agendamento(agendamento_id):
 @admin_obrigatorio
 def admin_agendamentos():
     try:
-        resposta = supabase.table("agendamentos").select("id, email_cliente, data_atendimento, status, avaliacao, servico(tipo, valor)").order("data_atendimento", desc=True).execute()
+        resposta = db.table("agendamentos").select("id, email_cliente, data_atendimento, status, avaliacao, servico(tipo, valor)").order("data_atendimento", desc=True).execute()
         return jsonify(resposta.data or []), 200
     except Exception:
         logger.exception("Erro ao listar agendamentos administrativos")
@@ -929,7 +917,7 @@ def admin_agendamentos():
 @serializar_mutacao
 def concluir_agendamento(agendamento_id):
     try:
-        resposta = supabase.table("agendamentos").select("email_cliente, status, servico_id").eq("id", agendamento_id).limit(1).execute()
+        resposta = db.table("agendamentos").select("email_cliente, status, servico_id").eq("id", agendamento_id).limit(1).execute()
         if not resposta.data:
             return jsonify({"error": "Agendamento não encontrado."}), 404
 
@@ -942,16 +930,16 @@ def concluir_agendamento(agendamento_id):
         pontos = 0
         servico_id = agendamento.get("servico_id")
         if servico_id:
-            servico = supabase.table("servico").select("valor").eq("id", servico_id).limit(1).execute().data
+            servico = db.table("servico").select("valor").eq("id", servico_id).limit(1).execute().data
             if servico:
                 pontos = int(float(servico[0].get("valor") or 0) * 0.10)
 
-        conclusao = supabase.table("agendamentos").update({"status": "Concluido"}).eq("id", agendamento_id).eq("status", "Pendente").execute().data or []
+        conclusao = db.table("agendamentos").update({"status": "Concluido"}).eq("id", agendamento_id).eq("status", "Pendente").execute().data or []
         if not conclusao:
             return jsonify({"message": "Este agendamento já foi atualizado por outro atendimento.", "pontos": 0}), 200
         cliente = buscar_usuario(agendamento.get("email_cliente"), "pontos")
         if cliente and pontos:
-            supabase.table("usuarios").update({"pontos": int(cliente.get("pontos") or 0) + pontos}).eq("email", agendamento["email_cliente"]).execute()
+            db.table("usuarios").update({"pontos": int(cliente.get("pontos") or 0) + pontos}).eq("email", agendamento["email_cliente"]).execute()
         return jsonify({"message": f"Agendamento concluído e {pontos} pontos creditados ao cliente!", "pontos": pontos}), 200
     except Exception:
         logger.exception("Erro ao concluir agendamento")
@@ -980,7 +968,7 @@ def utilizar_voucher_admin():
             return jsonify({"error": "Não é possível aplicar voucher em um atendimento cancelado."}), 409
 
         voucher = (
-            supabase.table("resgates_pontos")
+            db.table("resgates_pontos")
             .select("id, email_cliente, recompensa_nome, desconto, status, expira_em")
             .eq("codigo_voucher", codigo)
             .limit(1)
@@ -999,7 +987,7 @@ def utilizar_voucher_admin():
         if expiracao and datetime.now(timezone.utc) >= datetime.fromisoformat(str(expiracao).replace("Z", "+00:00")):
             return jsonify({"error": "Este voucher expirou."}), 409
 
-        resposta = supabase.rpc("utilizar_voucher", {"p_codigo_voucher": codigo, "p_agendamento_id": agendamento_id}).execute()
+        resposta = db.rpc("utilizar_voucher", {"p_codigo_voucher": codigo, "p_agendamento_id": agendamento_id}).execute()
         utilizado = resposta.data[0] if isinstance(resposta.data, list) and resposta.data else resposta.data
         if not utilizado:
             return jsonify({"error": "O voucher não pôde ser utilizado. Atualize a agenda e tente novamente."}), 409
@@ -1041,7 +1029,7 @@ def consultar_fidelidade():
         # Esta tela é somente de leitura. A expiração é validada no resgate/uso
         # do voucher; assim, abrir a página nunca altera dados por engano.
         vouchers = (
-            supabase.table("resgates_pontos")
+            db.table("resgates_pontos")
             .select("id, recompensa_nome, pontos_usados, desconto, codigo_voucher, status, criado_em, expira_em")
             .eq("email_cliente", email_cliente)
             .eq("status", "ativo")
@@ -1066,7 +1054,7 @@ def resgatar_pontos():
     if recompensa not in RECOMPENSAS_FIDELIDADE:
         return jsonify({"error": "Recompensa inválida."}), 400
     try:
-        resposta = supabase.rpc("resgatar_pontos", {"p_email": g.usuario["email"], "p_recompensa_codigo": recompensa}).execute()
+        resposta = db.rpc("resgatar_pontos", {"p_email": g.usuario["email"], "p_recompensa_codigo": recompensa}).execute()
         resgate = resposta.data[0] if resposta.data else None
         if not resgate:
             raise RuntimeError("O resgate não retornou um voucher.")
@@ -1086,7 +1074,7 @@ def exportar_dados_pessoais():
     try:
         usuario = usuario_publico(g.usuario)
         agendamentos = (
-            supabase.table("agendamentos")
+            db.table("agendamentos")
             .select("id, data_atendimento, status, avaliacao, servico(tipo, valor)")
             .eq("email_cliente", g.usuario["email"])
             .order("data_atendimento", desc=True)
@@ -1108,8 +1096,8 @@ def exportar_dados_pessoais():
 @admin_obrigatorio
 def admin_usuarios():
     try:
-        usuarios = supabase.table("usuarios").select("nome, email").order("nome").execute().data or []
-        agendamentos = supabase.table("agendamentos").select("email_cliente, status, servico(valor)").execute().data or []
+        usuarios = db.table("usuarios").select("nome, email").order("nome").execute().data or []
+        agendamentos = db.table("agendamentos").select("email_cliente, status, servico(valor)").execute().data or []
         resumo_por_email = defaultdict(lambda: {"total": 0, "pendentes": 0, "concluidos": 0, "cancelados": 0, "gastos": 0.0})
 
         for agendamento in agendamentos:
@@ -1150,7 +1138,7 @@ def quantidade_inteira(value, campo):
 @admin_obrigatorio
 def listar_estoque():
     try:
-        resposta = supabase.table("estoque").select("id, nome, quantidade, quantidade_minima, unidade").order("id").execute()
+        resposta = db.table("estoque").select("id, nome, quantidade, quantidade_minima, unidade").order("id").execute()
         return jsonify(resposta.data or []), 200
     except Exception:
         logger.exception("Erro ao listar estoque")
@@ -1167,7 +1155,7 @@ def adicionar_estoque():
         return jsonify({"error": "Nome ou unidade do produto inválidos."}), 400
 
     try:
-        supabase.table("estoque").insert({"nome": nome, "quantidade": quantidade_inteira(dados.get("quantidade", 0), "Quantidade"), "quantidade_minima": quantidade_inteira(dados.get("quantidade_minima", 5), "Quantidade mínima"), "unidade": unidade}).execute()
+        db.table("estoque").insert({"nome": nome, "quantidade": quantidade_inteira(dados.get("quantidade", 0), "Quantidade"), "quantidade_minima": quantidade_inteira(dados.get("quantidade_minima", 5), "Quantidade mínima"), "unidade": unidade}).execute()
         return jsonify({"message": "Item adicionado ao estoque!"}), 201
     except ValueError as error:
         return jsonify({"error": str(error)}), 400
@@ -1182,7 +1170,7 @@ def atualizar_estoque(item_id):
     dados = json_body()
     try:
         quantidade = quantidade_inteira(dados.get("quantidade"), "Quantidade")
-        supabase.table("estoque").update({"quantidade": quantidade}).eq("id", item_id).execute()
+        db.table("estoque").update({"quantidade": quantidade}).eq("id", item_id).execute()
         return jsonify({"message": "Estoque atualizado!"}), 200
     except ValueError as error:
         return jsonify({"error": str(error)}), 400
@@ -1195,7 +1183,7 @@ def atualizar_estoque(item_id):
 @admin_obrigatorio
 def deletar_estoque(item_id):
     try:
-        supabase.table("estoque").delete().eq("id", item_id).execute()
+        db.table("estoque").delete().eq("id", item_id).execute()
         return jsonify({"message": "Item removido do estoque!"}), 200
     except Exception:
         logger.exception("Erro ao remover item do estoque")
@@ -1237,3 +1225,4 @@ def chat():
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.getenv("PORT", "5000")))
+
