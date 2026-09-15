@@ -18,10 +18,10 @@ from flask import Flask, Response, g, jsonify, request, send_from_directory, ses
 from flask_cors import CORS
 from werkzeug.security import check_password_hash, generate_password_hash
 if __package__:
-    from .postgres_store import LocalPostgresClient
+    from .postgres_store import LocalPostgresClient, ScheduleConflictError, ServiceNotFoundError
     from .spa_security import AdaptiveIPBlocker, RateLimiter, SecurityTools
 else:
-    from postgres_store import LocalPostgresClient
+    from postgres_store import LocalPostgresClient, ScheduleConflictError, ServiceNotFoundError
     from spa_security import AdaptiveIPBlocker, RateLimiter, SecurityTools
 
 try:
@@ -58,7 +58,7 @@ LAST_APPOINTMENT_HOUR = 19
 OTP_TTL_MINUTES = 15
 OTP_LENGTH = 6
 CHAT_MAX_LENGTH = 1_000
-VERSAO_BACKEND = "postgres-local-20260915"
+VERSAO_BACKEND = "postgres-hardened-20260915"
 PASSWORD_PATTERN = re.compile(r"^(?=.*[a-z])(?=.*[A-Z])(?=.*[@$!%*?&#,.]).{8,}$")
 EMAIL_PATTERN = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
 RECOMPENSAS_FIDELIDADE = {
@@ -67,7 +67,11 @@ RECOMPENSAS_FIDELIDADE = {
     "renovar": {"codigo": "renovar", "nome": "Renovar Panaceia", "pontos": 500, "desconto": 70.00, "descricao": "R$ 70 de crédito para uma nova pausa de cuidado."},
 }
 
-app = Flask(__name__)
+app = Flask(
+    __name__,
+    static_folder=str(BASE_DIR.parent / "static"),
+    static_url_path="/static",
+)
 secret_key = os.getenv("FLASK_SECRET_KEY")
 if not secret_key:
     if IS_PRODUCTION:
@@ -149,6 +153,14 @@ CORS(
 )
 
 db = LocalPostgresClient()
+try:
+    db.ensure_schema()
+except Exception:
+    logger.warning(
+        "Não foi possível criar o índice único da agenda automaticamente; "
+        "os locks transacionais continuam ativos.",
+        exc_info=True,
+    )
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-3.5-turbo")
@@ -397,18 +409,6 @@ def validar_data_agendamento(value):
     return data.strftime("%Y-%m-%dT%H:%M")
 
 
-def horario_esta_ocupado(data_atendimento, agendamento_id=None):
-    consulta = (
-        db.table("agendamentos")
-        .select("id")
-        .eq("data_atendimento", data_atendimento)
-        .neq("status", "Cancelado")
-    )
-    if agendamento_id is not None:
-        consulta = consulta.neq("id", agendamento_id)
-    return bool(consulta.limit(1).execute().data)
-
-
 def resposta_concierge_local(mensagem):
     texto = mensagem.lower()
     if any(termo in texto for termo in ("dor", "costas", "tenso", "tensão", "muscular")):
@@ -488,8 +488,22 @@ def pagina_cadastro():
 
 @app.route("/api/health", methods=["GET"])
 def verificar_saude():
-    """Endpoint leve para o monitor de disponibilidade da hospedagem."""
-    return jsonify({"status": "ok", "versao": VERSAO_BACKEND}), 200
+    """Confirma aplicação, banco e proteção estrutural da agenda."""
+    try:
+        database = db.healthcheck()
+        return jsonify({
+            "status": "ok",
+            "versao": VERSAO_BACKEND,
+            "database": "ok",
+            "restricao_agenda": bool(database.get("booking_constraint")),
+        }), 200
+    except Exception:
+        logger.exception("Falha no healthcheck do PostgreSQL")
+        return jsonify({
+            "status": "degraded",
+            "versao": VERSAO_BACKEND,
+            "database": "indisponivel",
+        }), 503
 
 
 @app.route("/manifest.webmanifest")
@@ -782,18 +796,12 @@ def criar_agendamento():
 
     try:
         data_atendimento = validar_data_agendamento(dados.get("data"))
-        if not db.table("servico").select("id").eq("id", servico_id).limit(1).execute().data:
-            return jsonify({"error": "Serviço não encontrado."}), 404
-        if horario_esta_ocupado(data_atendimento):
-            return jsonify({"error": "Este horário já está reservado por outro cliente."}), 409
-
-        db.table("agendamentos").insert({"email_cliente": email, "servico_id": servico_id, "data_atendimento": data_atendimento, "status": "Pendente"}).execute()
-
-        servico = db.table("servico").select("contratos").eq("id", servico_id).limit(1).execute().data
-        if servico:
-            contratos = int(servico[0].get("contratos") or 0)
-            db.table("servico").update({"contratos": contratos + 1}).eq("id", servico_id).execute()
+        db.create_appointment(email, servico_id, data_atendimento)
         return jsonify({"message": "Agendamento realizado com sucesso!"}), 201
+    except ServiceNotFoundError as error:
+        return jsonify({"error": str(error)}), 404
+    except ScheduleConflictError as error:
+        return jsonify({"error": str(error)}), 409
     except ValueError as error:
         return jsonify({"error": str(error)}), 400
     except Exception:
@@ -854,10 +862,10 @@ def alterar_horario(agendamento_id):
             return jsonify({"error": "Você não pode alterar este agendamento."}), 403
 
         nova_data = validar_data_agendamento(json_body().get("data"))
-        if horario_esta_ocupado(nova_data, agendamento_id):
-            return jsonify({"error": "Este horário já está reservado por outro cliente."}), 409
-        db.table("agendamentos").update({"data_atendimento": nova_data}).eq("id", agendamento_id).execute()
+        db.reschedule_appointment(agendamento_id, nova_data)
         return jsonify({"message": "Horário atualizado com sucesso!"}), 200
+    except ScheduleConflictError as error:
+        return jsonify({"error": str(error)}), 409
     except ValueError as error:
         return jsonify({"error": str(error)}), 400
     except Exception:
@@ -1027,7 +1035,7 @@ def obter_pontos():
 @app.route("/api/fidelidade", methods=["GET"])
 @login_obrigatorio
 def consultar_fidelidade():
-    """Saldo, recompensas e vouchers ativos sempre vêm do Supabase."""
+    """Consulta saldo, recompensas e vouchers ativos no PostgreSQL local."""
     try:
         email_cliente = str(g.usuario["email"] or "").strip().lower()
         cliente = buscar_usuario(email_cliente, "pontos")
