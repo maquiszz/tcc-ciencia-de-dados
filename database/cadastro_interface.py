@@ -55,7 +55,11 @@ logger = logging.getLogger(__name__)
 logging.getLogger("httpx").setLevel(logging.WARNING)
 logging.getLogger("httpcore").setLevel(logging.WARNING)
 
-IS_PRODUCTION = os.getenv("APP_ENV", os.getenv("FLASK_ENV", "development")).strip().lower() == "production"
+APP_ENVIRONMENT = os.getenv("APP_ENV", os.getenv("FLASK_ENV", "")).strip().lower()
+IS_RENDER = os.getenv("RENDER", "").strip().lower() == "true"
+# Render always supplies RENDER=true. Treat it as production even if a custom
+# start command bypasses the Procfile's APP_ENV=production prefix.
+IS_PRODUCTION = APP_ENVIRONMENT == "production" or IS_RENDER
 
 trusted_hosts_padrao = {
     "spapanaceia.com.br",
@@ -70,6 +74,10 @@ trusted_hosts = {
     for host in os.getenv("TRUSTED_HOSTS", "").split(",")
     if host.strip()
 }
+render_hostname = (os.getenv("RENDER_EXTERNAL_HOSTNAME") or "").strip().lower()
+if render_hostname:
+    # Render owns this exact service hostname; do not trust all *.onrender.com.
+    trusted_hosts_padrao.add(render_hostname)
 
 
 DB_HOST = os.getenv("DB_HOST", "postgres")
