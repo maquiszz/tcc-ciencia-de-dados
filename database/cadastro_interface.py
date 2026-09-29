@@ -8,20 +8,33 @@ from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 from functools import wraps
 from pathlib import Path
-from threading import RLock
+from threading import RLock, Thread
 from urllib.parse import urlsplit
 from zoneinfo import ZoneInfo
 
 import requests
 from dotenv import load_dotenv
 from flask import Flask, Response, g, jsonify, request, send_from_directory, session
+from flask.sessions import SecureCookieSessionInterface
 from flask_cors import CORS
 from werkzeug.security import check_password_hash, generate_password_hash
 if __package__:
-    from .postgres_store import LocalPostgresClient, ScheduleConflictError, ServiceNotFoundError
+    from .postgres_store import (
+        InsufficientStockError,
+        ScheduleConflictError,
+        ServiceNotFoundError,
+        StockItemNotFoundError,
+        create_database_client,
+    )
     from .spa_security import AdaptiveIPBlocker, RateLimiter, SecurityTools
 else:
-    from postgres_store import LocalPostgresClient, ScheduleConflictError, ServiceNotFoundError
+    from postgres_store import (
+        InsufficientStockError,
+        ScheduleConflictError,
+        ServiceNotFoundError,
+        StockItemNotFoundError,
+        create_database_client,
+    )
     from spa_security import AdaptiveIPBlocker, RateLimiter, SecurityTools
 
 try:
@@ -44,13 +57,33 @@ logging.getLogger("httpcore").setLevel(logging.WARNING)
 
 IS_PRODUCTION = os.getenv("APP_ENV", os.getenv("FLASK_ENV", "development")).strip().lower() == "production"
 
+trusted_hosts_padrao = {
+    "spapanaceia.com.br",
+    "www.spapanaceia.com.br",
+    "localhost",
+    "127.0.0.1",
+}
+if not IS_PRODUCTION:
+    trusted_hosts_padrao.add("192.168.18.220")
+trusted_hosts = {
+    host.strip().lower()
+    for host in os.getenv("TRUSTED_HOSTS", "").split(",")
+    if host.strip()
+}
+
 
 DB_HOST = os.getenv("DB_HOST", "postgres")
 DB_PORT = os.getenv("DB_PORT", "5432")
 DB_NAME = os.getenv("DB_NAME", "site_db")
 DB_USER = os.getenv("DB_USER", "site_user")
-if not os.getenv("DB_PASSWORD"):
-    raise RuntimeError("DB_PASSWORD é obrigatória para conectar ao PostgreSQL local.")
+SUPABASE_URL = (os.getenv("SUPABASE_URL") or "").strip()
+SUPABASE_SERVER_KEY = (
+    os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    or os.getenv("service_role")
+    or ""
+).strip()
+if not os.getenv("DB_PASSWORD") and not (SUPABASE_URL and SUPABASE_SERVER_KEY):
+    raise RuntimeError("Configure o PostgreSQL local ou as credenciais do Supabase.")
 
 SPA_TIMEZONE = ZoneInfo(os.getenv("SPA_TIMEZONE", "America/Sao_Paulo"))
 OPENING_HOUR = 9
@@ -58,7 +91,7 @@ LAST_APPOINTMENT_HOUR = 19
 OTP_TTL_MINUTES = 15
 OTP_LENGTH = 6
 CHAT_MAX_LENGTH = 1_000
-VERSAO_BACKEND = "postgres-hardened-20260915"
+VERSAO_BACKEND = "agenda-operations-20260929"
 PASSWORD_PATTERN = re.compile(r"^(?=.*[a-z])(?=.*[A-Z])(?=.*[@$!%*?&#,.]).{8,}$")
 EMAIL_PATTERN = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
 RECOMPENSAS_FIDELIDADE = {
@@ -81,15 +114,64 @@ if not secret_key:
 
 app.config.update(
     SECRET_KEY=secret_key,
+    TRUSTED_HOSTS=sorted(trusted_hosts_padrao | trusted_hosts),
     SESSION_COOKIE_NAME="spa_panaceia_session",
     SESSION_COOKIE_HTTPONLY=True,
     SESSION_COOKIE_SAMESITE=os.getenv("SESSION_COOKIE_SAMESITE", "Lax"),
-    SESSION_COOKIE_SECURE=os.getenv("SESSION_COOKIE_SECURE", "true" if IS_PRODUCTION else "false").lower() == "true",
+    SESSION_COOKIE_SECURE=(
+        True if IS_PRODUCTION
+        else os.getenv("SESSION_COOKIE_SECURE", "false").strip().lower() == "true"
+    ),
     SESSION_COOKIE_PATH="/",
     PERMANENT_SESSION_LIFETIME=timedelta(hours=int(os.getenv("SESSION_TTL_HOURS", "12"))),
     MAX_CONTENT_LENGTH=32 * 1024,
     JSON_SORT_KEYS=False,
 )
+
+
+class SessaoHttpPrivadaAware(SecureCookieSessionInterface):
+    """Mantém Secure em produção, mas permite cookies em HTTP na rede local.
+
+    Navegadores não enviam cookies ``Secure`` em ``http://192.168.x.x``.
+    Isso fazia o login parecer concluído no cliente, enquanto as rotas do
+    perfil recebiam uma sessão vazia quando o site era aberto pelo IP local.
+    Domínios públicos continuam protegidos pelo padrão de produção.
+    """
+
+    def get_cookie_secure(self, app):
+        # Em produção, nunca reduza Secure por causa do Host usado na conexão.
+        # A exceção para IP privado existe apenas no ambiente local de desenvolvimento.
+        if IS_PRODUCTION:
+            return True
+        if request.is_secure:
+            return True
+
+        # Não usar request.host_url: com TRUSTED_HOSTS, ler request.host para
+        # finalizar a sessão de uma requisição rejeitada pode lançar SecurityError.
+        try:
+            hostname = (urlsplit("//" + request.headers.get("Host", "")).hostname or "").strip("[]").lower()
+        except ValueError:
+            hostname = ""
+        if hostname == "localhost" or hostname.endswith(".localhost"):
+            return False
+
+        try:
+            endereco = ipaddress.ip_address(hostname)
+        except ValueError:
+            return bool(app.config.get("SESSION_COOKIE_SECURE", False))
+
+        if endereco.is_private or endereco.is_loopback or endereco.is_link_local:
+            return False
+
+        configuracao_explicita = os.getenv("SESSION_COOKIE_SECURE")
+        if configuracao_explicita is not None:
+            return configuracao_explicita.strip().lower() in {"1", "true", "yes", "on"}
+        return bool(app.config.get("SESSION_COOKIE_SECURE", False))
+
+
+app.session_interface = SessaoHttpPrivadaAware()
+
+
 def normalizar_origem(valor):
     """Normaliza uma origem completa, sem aceitar caminho, credenciais ou curingas."""
     try:
@@ -135,6 +217,11 @@ cors_origins = sorted(origens_padrao | origens_configuradas)
 def origem_permitida():
     recebida = request.headers.get("Origin")
     if not recebida:
+        # Em produção, requisições de navegador que alteram estado precisam
+        # identificar a origem. Isso também mitiga login CSRF quando ainda não
+        # existe uma sessão autenticada para exigir o token CSRF.
+        if IS_PRODUCTION:
+            return request.headers.get("Sec-Fetch-Site") == "same-origin"
         return True
     origem = normalizar_origem(recebida)
     if not origem:
@@ -152,13 +239,13 @@ CORS(
     supports_credentials=True,
 )
 
-db = LocalPostgresClient()
+db = create_database_client()
 try:
     db.ensure_schema()
 except Exception:
     logger.warning(
-        "Não foi possível criar o índice único da agenda automaticamente; "
-        "os locks transacionais continuam ativos.",
+        "Nenhum banco respondeu durante a inicialização; "
+        "a aplicação continuará ativa e tentará novamente nas próximas requisições.",
         exc_info=True,
     )
 
@@ -167,26 +254,84 @@ OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-3.5-turbo")
 openai_client = OpenAI(api_key=OPENAI_API_KEY) if OPENAI_API_KEY and OpenAI else None
 
 security = SecurityTools(secret_key)
+DUMMY_PASSWORD_HASH = generate_password_hash(secrets.token_urlsafe(32), method="pbkdf2:sha256")
 rate_limiter = RateLimiter()
 spam_blocker = AdaptiveIPBlocker(limit=30, window_seconds=1, base_block_seconds=30)
+vpn_spam_blocker = AdaptiveIPBlocker(limit=15, window_seconds=1, base_block_seconds=60)
 # Recuperação de senha serializada entre threads de UM processo, sem migrações.
 mutation_lock = RLock()
 PUBLIC_AUTH_PATHS = {"/cadastrar", "/api/login", "/api/validar-codigo", "/api/reenviar-codigo", "/api/esqueci-senha", "/api/redefinir-senha"}
 
 
-def obter_ip_cliente():
-    """Retorna o IP do par ou um cabeçalho de proxy confiado explicitamente."""
-    candidato = request.remote_addr or "desconhecido"
-    cabecalho_proxy = os.getenv("TRUSTED_PROXY_IP_HEADER", "").strip()
-    if cabecalho_proxy:
-        encaminhado = request.headers.get(cabecalho_proxy, "").split(",", 1)[0].strip()
+def carregar_redes_ip(nome_variavel):
+    redes = []
+    for entrada in os.getenv(nome_variavel, "").split(","):
+        entrada = entrada.strip()
+        if not entrada:
+            continue
         try:
-            ipaddress.ip_address(encaminhado)
+            redes.append(ipaddress.ip_network(entrada, strict=False))
         except ValueError:
-            pass
-        else:
-            candidato = encaminhado
-    return candidato
+            logger.warning("Entrada inválida ignorada em %s", nome_variavel)
+    return tuple(redes)
+
+
+def ip_pertence_as_redes(ip, redes):
+    try:
+        endereco = ipaddress.ip_address(ip)
+    except ValueError:
+        return False
+    return any(endereco.version == rede.version and endereco in rede for rede in redes)
+
+
+BLOCKED_IP_NETWORKS = carregar_redes_ip("BLOCKED_IP_CIDRS")
+ALLOWED_COUNTRIES = {
+    codigo.strip().upper()
+    for codigo in os.getenv("ALLOWED_COUNTRIES", "").split(",")
+    if codigo.strip()
+}
+if any(not re.fullmatch(r"[A-Z]{2}", codigo) for codigo in ALLOWED_COUNTRIES):
+    raise RuntimeError("ALLOWED_COUNTRIES deve conter códigos ISO de dois caracteres, separados por vírgulas.")
+
+COUNTRY_HEADER = os.getenv("TRUSTED_COUNTRY_HEADER", "CF-IPCountry").strip()
+VPN_SIGNAL_HEADER = os.getenv("TRUSTED_VPN_HEADER", "X-Spa-VPN").strip()
+
+
+def carregar_proxies_confiaveis():
+    return carregar_redes_ip("TRUSTED_PROXY_IPS")
+
+
+TRUSTED_PROXY_NETWORKS = carregar_proxies_confiaveis()
+if IS_PRODUCTION and os.getenv("TRUSTED_PROXY_IP_HEADER") and not TRUSTED_PROXY_NETWORKS:
+    logger.warning(
+        "TRUSTED_PROXY_IP_HEADER está configurado sem TRUSTED_PROXY_IPS; "
+        "o cabeçalho será ignorado e os limites usarão o IP do proxy."
+    )
+if IS_PRODUCTION and ALLOWED_COUNTRIES and not TRUSTED_PROXY_NETWORKS:
+    logger.error(
+        "ALLOWED_COUNTRIES está ativo sem TRUSTED_PROXY_IPS; "
+        "as requisições serão recusadas até o proxy confiável ser configurado."
+    )
+
+
+def requisicao_veio_de_proxy_confiavel():
+    return ip_pertence_as_redes(request.remote_addr or "", TRUSTED_PROXY_NETWORKS)
+
+
+def obter_ip_cliente():
+    """Só confia no IP encaminhado quando a conexão veio de um proxy permitido."""
+    ip_par = request.remote_addr or "desconhecido"
+    cabecalho_proxy = os.getenv("TRUSTED_PROXY_IP_HEADER", "").strip()
+    if not cabecalho_proxy or not TRUSTED_PROXY_NETWORKS:
+        return ip_par
+    if not ip_pertence_as_redes(ip_par, TRUSTED_PROXY_NETWORKS):
+        return ip_par
+
+    encaminhado = request.headers.get(cabecalho_proxy, "").strip()
+    try:
+        return str(ipaddress.ip_address(encaminhado))
+    except ValueError:
+        return ip_par
 
 
 @app.before_request
@@ -194,6 +339,42 @@ def proteger_requisicao():
     # Primeira barreira do Flask: conta toda chamada, inclusive OPTIONS,
     # páginas, arquivos estáticos, API e endereços inexistentes.
     ip_cliente = obter_ip_cliente()
+    if ip_pertence_as_redes(ip_cliente, BLOCKED_IP_NETWORKS):
+        return jsonify({
+            "error": "Acesso temporariamente indisponível para este endereço.",
+            "code": "ip_blocked",
+        }), 403
+
+    veio_de_proxy = requisicao_veio_de_proxy_confiavel()
+    if ALLOWED_COUNTRIES:
+        if not veio_de_proxy or not COUNTRY_HEADER:
+            logger.error("Filtro geográfico ativo, mas não foi possível validar a origem do proxy.")
+            return jsonify({"error": "Filtro geográfico indisponível; tente mais tarde.", "code": "geo_unavailable"}), 503
+        pais = request.headers.get(COUNTRY_HEADER, "").strip().upper()
+        if not re.fullmatch(r"[A-Z]{2}", pais) or pais not in ALLOWED_COUNTRIES:
+            return jsonify({"error": "Acesso disponível somente nos países atendidos.", "code": "country_blocked"}), 403
+
+    sinal_vpn = (
+        veio_de_proxy
+        and bool(VPN_SIGNAL_HEADER)
+        and request.headers.get(VPN_SIGNAL_HEADER, "").strip().lower() in {"1", "true", "yes", "vpn", "anonymizer"}
+    )
+    if sinal_vpn:
+        vpn_allowed, vpn_retry, vpn_strike = vpn_spam_blocker.check(ip_cliente)
+        if not vpn_allowed:
+            logger.warning(
+                "Limite de requisições para VPN excedido: metodo=%s rota=%s reincidencia=%s espera=%ss",
+                request.method,
+                request.path,
+                vpn_strike,
+                vpn_retry,
+            )
+            return jsonify({
+                "error": "Muitas requisições deste endereço. Aguarde antes de tentar novamente.",
+                "code": "vpn_rate_limited",
+                "retry_after": vpn_retry,
+            }), 429, {"Retry-After": str(vpn_retry)}
+
     allowed, retry, strike = spam_blocker.check(ip_cliente)
     if not allowed:
         logger.warning(
@@ -245,13 +426,17 @@ def proteger_requisicao():
 
 @app.after_request
 def proteger_resposta(response):
-    response.headers["X-Spa-Version"] = VERSAO_BACKEND
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
-    response.headers["X-Frame-Options"] = "SAMEORIGIN"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-Permitted-Cross-Domain-Policies"] = "none"
+    response.headers["X-DNS-Prefetch-Control"] = "off"
+    response.headers["Cross-Origin-Opener-Policy"] = "same-origin"
+    response.headers["Cross-Origin-Resource-Policy"] = "same-origin"
+    response.headers["Origin-Agent-Cluster"] = "?1"
     response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=(), payment=()"
     response.headers["Content-Security-Policy"] = (
-        "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self'; "
+        "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; "
         "form-action 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; "
         "font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; "
@@ -297,6 +482,18 @@ def senha_valida(senha):
 
 def gerar_otp():
     return f"{secrets.randbelow(10 ** OTP_LENGTH):0{OTP_LENGTH}d}"
+
+
+def comparar_senha(usuario, senha):
+    """Faz o mesmo trabalho de hash quando a conta não existe, reduzindo enumeração por tempo."""
+    senha_salva = (usuario or {}).get("senha") or DUMMY_PASSWORD_HASH
+    try:
+        senha_correta = check_password_hash(senha_salva, senha)
+    except (TypeError, ValueError):
+        # Hash legado/corrompido não deve transformar uma falha de login em 500.
+        check_password_hash(DUMMY_PASSWORD_HASH, senha)
+        return False
+    return bool(usuario) and senha_correta
 
 
 def buscar_usuario(email, campos="*"):
@@ -409,8 +606,58 @@ def validar_data_agendamento(value):
     return data.strftime("%Y-%m-%dT%H:%M")
 
 
+def normalizar_data_hora(value):
+    """Converte datetime vindo do Postgres ou da Data API para a hora local do Spa."""
+    if isinstance(value, datetime):
+        data = value.astimezone(SPA_TIMEZONE) if value.tzinfo else value
+    else:
+        texto = str(value or "").strip().replace("Z", "+00:00")
+        try:
+            data = datetime.fromisoformat(texto)
+        except ValueError:
+            return texto[:16]
+        if data.tzinfo:
+            data = data.astimezone(SPA_TIMEZONE)
+    return data.strftime("%Y-%m-%dT%H:%M")
+
+
+def horarios_bloqueio_intervalo(inicio, fim):
+    """Expande um bloqueio de uma única data em horas de atendimento."""
+    def analisar(valor):
+        if not isinstance(valor, str) or not valor.strip():
+            raise ValueError("Informe o início e o fim do bloqueio.")
+        try:
+            data = datetime.fromisoformat(valor.strip().replace("Z", "+00:00"))
+        except ValueError as error:
+            raise ValueError("Data ou horário do bloqueio inválido.") from error
+        if data.tzinfo:
+            data = data.astimezone(SPA_TIMEZONE).replace(tzinfo=None)
+        if data.minute or data.second or data.microsecond:
+            raise ValueError("O bloqueio deve começar e terminar em horas cheias.")
+        return data
+
+    primeiro, ultimo = analisar(inicio), analisar(fim)
+    if primeiro.date() != ultimo.date():
+        raise ValueError("Cada bloqueio deve corresponder a uma única data. Crie outro bloqueio para outro dia.")
+    if primeiro <= datetime.now(SPA_TIMEZONE).replace(tzinfo=None):
+        raise ValueError("O bloqueio deve começar em um horário futuro.")
+    if ultimo <= primeiro:
+        raise ValueError("Escolha um horário final posterior ao horário inicial.")
+    slots = []
+    horario = primeiro
+    while horario < ultimo:
+        if horario.weekday() != 0 and OPENING_HOUR <= horario.hour <= LAST_APPOINTMENT_HOUR:
+            slots.append(horario.strftime("%Y-%m-%dT%H:%M"))
+        horario += timedelta(hours=1)
+    if not slots:
+        raise ValueError("O período não contém horários de atendimento.")
+    return slots
+
+
 def resposta_concierge_local(mensagem):
     texto = mensagem.lower()
+    if re.search(r"\b(agend|reserv|marc)\w*\b", texto):
+        return "Claro. Vou ajudar você a escolher uma data e um horário para esse tratamento."
     if any(termo in texto for termo in ("dor", "costas", "tenso", "tensão", "muscular")):
         return "Para aliviar tensões, recomendo a Massagem Terapêutica ou a Massagem com Pedras Quentes. Ambas favorecem o relaxamento muscular."
     if any(termo in texto for termo in ("estresse", "cansaço", "cansado", "ansiedade", "mente")):
@@ -447,6 +694,123 @@ def enviar_email_transacional(destinatario, assunto, conteudo_html):
     except requests.RequestException:
         logger.exception("Falha ao enviar e-mail transacional para %s", destinatario)
         return False
+
+
+def iniciar_email_em_segundo_plano(destinatario, assunto, conteudo_html):
+    """Entrega alertas operacionais sem atrasar a confirmação da agenda."""
+    if not destinatario:
+        return False
+    Thread(
+        target=enviar_email_transacional,
+        args=(destinatario, assunto, conteudo_html),
+        name="spa-email-agenda",
+        daemon=True,
+    ).start()
+    return True
+
+
+def email_equipe_agenda(assunto, titulo, detalhes):
+    destinatario = normalizar_email(
+        os.getenv("SPA_ALERT_EMAIL") or os.getenv("SPA_TEAM_EMAIL") or os.getenv("BREVO_SENDER_EMAIL")
+    )
+    if not destinatario:
+        logger.info("Alerta da agenda sem envio: configure SPA_ALERT_EMAIL.")
+        return False
+    corpo = "".join(
+        f"<li style='margin:8px 0'><strong>{html.escape(str(rotulo))}:</strong> {html.escape(str(valor))}</li>"
+        for rotulo, valor in detalhes.items()
+    )
+    conteudo = (
+        "<div style='font-family:Arial,sans-serif;max-width:600px;margin:auto;padding:28px;color:#30223d'>"
+        f"<p style='color:#6b21a8;font-weight:700;letter-spacing:.08em'>SPA PANACEIA · AGENDA</p>"
+        f"<h2>{html.escape(titulo)}</h2><ul style='padding-left:20px;line-height:1.6'>{corpo}</ul>"
+        "<p style='color:#756a7d;font-size:13px'>Acesse o painel gerencial para consultar ou atualizar a reserva.</p></div>"
+    )
+    return iniciar_email_em_segundo_plano(destinatario, assunto, conteudo)
+
+
+def registrar_auditoria_agenda(
+    agendamento_id, acao, ator, data_anterior=None, data_nova=None,
+    status_anterior=None, status_novo=None,
+):
+    """Registra alterações de agenda sem permitir que falha de auditoria reverta a reserva."""
+    try:
+        db.table("agenda_auditoria").insert({
+            "agendamento_id": int(agendamento_id),
+            "ator_email": normalizar_email((ator or {}).get("email")) or "desconhecido",
+            "ator_tipo": "admin" if (ator or {}).get("is_admin") else "cliente",
+            "acao": str(acao)[:40],
+            "data_anterior": str(data_anterior)[:40] if data_anterior else None,
+            "data_nova": str(data_nova)[:40] if data_nova else None,
+            "status_anterior": str(status_anterior)[:40] if status_anterior else None,
+            "status_novo": str(status_novo)[:40] if status_novo else None,
+        }).execute()
+    except Exception:
+        logger.exception("Não foi possível gravar o evento de auditoria da agenda")
+
+
+def notificar_lista_espera_horario(data_atendimento):
+    """Reivindica cada aviso com compare-and-set e notifica quem pediu o horário."""
+    try:
+        chave_data = str(data_atendimento).replace(" ", "T")[:16]
+        bloqueios = (
+            db.table("agenda_bloqueios").select("id")
+            .eq("data_atendimento", chave_data).limit(1).execute().data or []
+        )
+        if bloqueios:
+            return 0
+        entradas = (
+            db.table("agenda_lista_espera")
+            .select("id, email_cliente, servico_id")
+            .eq("data_atendimento", chave_data)
+            .eq("status", "Aguardando")
+            .limit(100)
+            .execute().data or []
+        )
+        for entrada in entradas:
+            reivindicada = (
+                db.table("agenda_lista_espera")
+                .update({"status": "Notificando"})
+                .eq("id", entrada["id"])
+                .eq("status", "Aguardando")
+                .execute().data or []
+            )
+            if not reivindicada:
+                continue
+
+            def entregar_aviso(item=entrada, data=chave_data):
+                nome_servico = "um tratamento"
+                try:
+                    servicos = db.table("servico").select("tipo").eq("id", item["servico_id"]).limit(1).execute().data or []
+                    if servicos:
+                        nome_servico = servicos[0].get("tipo") or nome_servico
+                    data_legivel = datetime.fromisoformat(data).strftime("%d/%m/%Y às %H:%M")
+                    sucesso = enviar_email_transacional(
+                        item["email_cliente"],
+                        "Um horário da sua lista de espera ficou livre — Spa Panaceia",
+                        "<div style='font-family:Arial,sans-serif;max-width:600px;margin:auto;padding:28px;color:#30223d'>"
+                        "<p style='color:#6b21a8;font-weight:700;letter-spacing:.08em'>SPA PANACEIA</p>"
+                        "<h2>O horário que você queria ficou livre</h2>"
+                        f"<p>{html.escape(str(nome_servico))} · {html.escape(data_legivel)}</p>"
+                        "<p>Entre no site para conferir a disponibilidade e reservar. O horário é confirmado por ordem de agendamento.</p></div>",
+                    )
+                    estado_final = "Notificado" if sucesso else "Aguardando"
+                    atualizacao = {"status": estado_final}
+                    if sucesso:
+                        atualizacao["notificado_em"] = datetime.now(timezone.utc).isoformat()
+                    db.table("agenda_lista_espera").update(atualizacao).eq("id", item["id"]).eq("status", "Notificando").execute()
+                except Exception:
+                    logger.exception("Falha ao entregar aviso de lista de espera")
+                    try:
+                        db.table("agenda_lista_espera").update({"status": "Aguardando"}).eq("id", item["id"]).eq("status", "Notificando").execute()
+                    except Exception:
+                        logger.exception("Não foi possível liberar novamente o aviso de lista de espera")
+
+            Thread(target=entregar_aviso, name="spa-lista-espera", daemon=True).start()
+        return len(entradas)
+    except Exception:
+        logger.exception("Não foi possível processar a lista de espera do horário liberado")
+        return 0
 
 
 def email_de_ativacao(nome, codigo):
@@ -488,17 +852,23 @@ def pagina_cadastro():
 
 @app.route("/api/health", methods=["GET"])
 def verificar_saude():
-    """Confirma aplicação, banco e proteção estrutural da agenda."""
+    """Confirma aplicação e informa qual banco está atendendo as requisições."""
     try:
         database = db.healthcheck()
+        restricao_agenda = database.get("booking_constraint")
         return jsonify({
             "status": "ok",
             "versao": VERSAO_BACKEND,
             "database": "ok",
-            "restricao_agenda": bool(database.get("booking_constraint")),
+            "database_backend": database.get("backend"),
+            "databases": database.get("backends", {}),
+            # A Data API do Supabase não expõe catálogo de triggers/índices.
+            # null significa "não verificável por este endpoint", não "ausente".
+            "restricao_agenda": restricao_agenda,
+            "restricao_agenda_verificavel": restricao_agenda is not None,
         }), 200
     except Exception:
-        logger.exception("Falha no healthcheck do PostgreSQL")
+        logger.exception("Falha no healthcheck dos bancos configurados")
         return jsonify({
             "status": "degraded",
             "versao": VERSAO_BACKEND,
@@ -678,7 +1048,7 @@ def login():
 
     try:
         usuario = buscar_usuario(email)
-        if not usuario or not check_password_hash(usuario.get("senha") or "", senha):
+        if not comparar_senha(usuario, senha):
             return jsonify({"error": "E-mail ou senha incorretos."}), 401
         if not usuario.get("email_verificado"):
             return jsonify({"error": "Conta não verificada. Verifique seu e-mail antes de entrar."}), 403
@@ -796,7 +1166,27 @@ def criar_agendamento():
 
     try:
         data_atendimento = validar_data_agendamento(dados.get("data"))
-        db.create_appointment(email, servico_id, data_atendimento)
+        criado = db.create_appointment(email, servico_id, data_atendimento)
+        linhas = getattr(criado, "data", None) or []
+        agendamento = linhas[0] if linhas else {}
+        if agendamento.get("id"):
+            registrar_auditoria_agenda(
+                agendamento["id"], "criado", g.usuario,
+                status_novo="Pendente",
+            )
+        try:
+            nome_servico = "Tratamento"
+            servicos = db.table("servico").select("tipo").eq("id", servico_id).limit(1).execute().data or []
+            if servicos:
+                nome_servico = servicos[0].get("tipo") or nome_servico
+            email_equipe_agenda("Nova reserva", "Nova reserva recebida", {
+                "Tratamento": nome_servico,
+                "Data e hora": datetime.fromisoformat(data_atendimento).strftime("%d/%m/%Y às %H:%M"),
+                "Cliente": email,
+                "Reserva": agendamento.get("id", "consulte o painel"),
+            })
+        except Exception:
+            logger.exception("Reserva confirmada, mas não foi possível preparar o alerta da equipe")
         return jsonify({"message": "Agendamento realizado com sucesso!"}), 201
     except ServiceNotFoundError as error:
         return jsonify({"error": str(error)}), 404
@@ -820,31 +1210,155 @@ def meus_agendamentos():
         return jsonify({"error": "Erro ao carregar a lista de agendamentos."}), 500
 
 
+@app.route("/api/lista-espera", methods=["GET"])
+@login_obrigatorio
+def minha_lista_espera():
+    try:
+        resposta = (
+            db.table("agenda_lista_espera")
+            .select("id, servico_id, data_atendimento, status, criado_em, notificado_em")
+            .eq("email_cliente", g.usuario["email"])
+            .order("criado_em", desc=True)
+            .limit(30)
+            .execute()
+        )
+        return jsonify(resposta.data or []), 200
+    except Exception:
+        logger.exception("Erro ao consultar a lista de espera do usuário")
+        return jsonify({"error": "Não foi possível consultar seus avisos de horário."}), 500
+
+
+@app.route("/api/lista-espera/<int:entrada_id>", methods=["DELETE"])
+@login_obrigatorio
+@serializar_mutacao
+def sair_lista_espera(entrada_id):
+    try:
+        resposta = (
+            db.table("agenda_lista_espera")
+            .update({"status": "Cancelado"})
+            .eq("id", entrada_id)
+            .eq("email_cliente", g.usuario["email"])
+            .eq("status", "Aguardando")
+            .execute()
+        )
+        if not resposta.data:
+            return jsonify({"error": "Esse aviso não está mais aguardando ou não pertence à sua conta."}), 404
+        return jsonify({"message": "Aviso removido da lista de espera."}), 200
+    except Exception:
+        logger.exception("Erro ao remover usuário da lista de espera")
+        return jsonify({"error": "Não foi possível remover esse aviso agora."}), 500
+
+
+@app.route("/api/lista-espera", methods=["POST"])
+@login_obrigatorio
+@serializar_mutacao
+def entrar_lista_espera():
+    dados = json_body()
+    try:
+        servico_id = int(dados.get("servico_id"))
+    except (TypeError, ValueError):
+        servico_id = 0
+    if servico_id <= 0:
+        return jsonify({"error": "Tratamento inválido."}), 400
+
+    try:
+        data_atendimento = validar_data_agendamento(dados.get("data"))
+        servico = db.table("servico").select("id").eq("id", servico_id).limit(1).execute().data or []
+        if not servico:
+            return jsonify({"error": "Tratamento não encontrado."}), 404
+        ocupado = (
+            db.table("agendamentos").select("id")
+            .eq("data_atendimento", data_atendimento)
+            .neq("status", "Cancelado").limit(1).execute().data or []
+        )
+        if not ocupado:
+            return jsonify({"error": "Esse horário acabou de ficar livre. Atualize a agenda para reservá-lo."}), 409
+        existente = (
+            db.table("agenda_lista_espera").select("id, status")
+            .eq("email_cliente", g.usuario["email"])
+            .eq("data_atendimento", data_atendimento)
+            .eq("status", "Aguardando")
+            .limit(1).execute().data or []
+        )
+        if existente:
+            return jsonify({"message": "Você já está na lista de espera para esse horário."}), 200
+        try:
+            db.table("agenda_lista_espera").insert({
+                "email_cliente": g.usuario["email"],
+                "servico_id": servico_id,
+                "data_atendimento": data_atendimento,
+                "status": "Aguardando",
+            }).execute()
+        except Exception as error:
+            if "23505" not in str(error) and "duplicate key" not in str(error).lower():
+                raise
+            return jsonify({"message": "Você já está na lista de espera para esse horário."}), 200
+        return jsonify({"message": "Pronto. Avisaremos por e-mail se esse horário ficar livre."}), 201
+    except ValueError as error:
+        return jsonify({"error": str(error)}), 400
+    except Exception:
+        logger.exception("Erro ao adicionar cliente à lista de espera")
+        return jsonify({"error": "Não foi possível entrar na lista de espera agora."}), 500
+
+
+def consultar_linhas_paginadas(criar_consulta, tamanho=500):
+    """Evita o limite implícito de linhas da Data API ao consultar a agenda."""
+    linhas = []
+    for inicio in range(0, 100_000, tamanho):
+        pagina = criar_consulta().range(inicio, inicio + tamanho - 1).execute().data or []
+        linhas.extend(pagina)
+        if len(pagina) < tamanho:
+            return linhas
+    raise RuntimeError("A consulta da agenda excedeu o limite seguro de paginação.")
+
+
 @app.route("/api/horarios-ocupados", methods=["GET"])
 def horarios_ocupados():
     try:
         ignorar_id = request.args.get("ignorar_id", type=int)
-        consulta = (
-            db.table("agendamentos")
-            .select("data_atendimento")
-            .neq("status", "Cancelado")
-        )
+        agora = datetime.now(SPA_TIMEZONE).replace(tzinfo=None).strftime("%Y-%m-%dT%H:%M")
+        ignorar_autorizado = False
         if ignorar_id:
             usuario = usuario_da_sessao()
             agendamento = buscar_agendamento(ignorar_id)
-            if usuario_pode_alterar_agendamento(usuario, agendamento):
-                consulta = consulta.neq("id", ignorar_id)
+            ignorar_autorizado = usuario_pode_alterar_agendamento(usuario, agendamento)
 
-        resposta = consulta.order("data_atendimento").execute()
-        horarios = []
-        for agendamento in resposta.data or []:
+        def consulta_reservas():
+            consulta = (
+                db.table("agendamentos").select("data_atendimento")
+                .neq("status", "Cancelado").gt("data_atendimento", agora)
+                .order("data_atendimento")
+            )
+            return consulta.neq("id", ignorar_id) if ignorar_autorizado else consulta
+
+        reservas = consultar_linhas_paginadas(consulta_reservas)
+        horarios = set()
+        for agendamento in reservas:
             data_atendimento = agendamento["data_atendimento"]
-            horarios.append(
+            horarios.add(
                 data_atendimento.isoformat()
                 if isinstance(data_atendimento, datetime)
                 else str(data_atendimento)
             )
-        return jsonify(horarios), 200
+        bloqueios = consultar_linhas_paginadas(lambda: (
+            db.table("agenda_bloqueios").select("data_atendimento")
+            .gt("data_atendimento", agora).order("data_atendimento")
+        ))
+        horarios_bloqueados = set()
+        for bloqueio in bloqueios:
+            data_atendimento = bloqueio["data_atendimento"]
+            horarios_bloqueados.add(
+                data_atendimento.isoformat()
+                if isinstance(data_atendimento, datetime)
+                else str(data_atendimento)
+            )
+        horarios.update(horarios_bloqueados)
+        if request.args.get("detalhes") == "1":
+            return jsonify({
+                "ocupados": sorted(horarios),
+                "bloqueados": sorted(horarios_bloqueados),
+            }), 200
+        return jsonify(sorted(horarios)), 200
     except Exception:
         logger.exception("Erro ao listar horários ocupados")
         return jsonify({"error": "Não foi possível carregar os horários ocupados."}), 500
@@ -855,14 +1369,25 @@ def horarios_ocupados():
 @serializar_mutacao
 def alterar_horario(agendamento_id):
     try:
-        agendamento = buscar_agendamento(agendamento_id)
+        agendamento = buscar_agendamento(agendamento_id, "id, email_cliente, status, data_atendimento, servico_id")
         if not agendamento:
             return jsonify({"error": "Agendamento não encontrado."}), 404
         if not usuario_pode_alterar_agendamento(g.usuario, agendamento):
             return jsonify({"error": "Você não pode alterar este agendamento."}), 403
+        if agendamento.get("status") != "Pendente":
+            return jsonify({"error": "Somente atendimentos pendentes podem ser remarcados."}), 409
 
         nova_data = validar_data_agendamento(json_body().get("data"))
+        anterior = normalizar_data_hora(agendamento.get("data_atendimento"))
         db.reschedule_appointment(agendamento_id, nova_data)
+        registrar_auditoria_agenda(agendamento_id, "reagendado", g.usuario, anterior, nova_data)
+        notificar_lista_espera_horario(anterior)
+        email_equipe_agenda("Horário liberado", "Um horário ficou disponível", {
+            "Reserva": agendamento_id,
+            "Data e hora liberada": anterior,
+            "Nova data e hora": nova_data,
+            "Alteração feita por": g.usuario["email"],
+        })
         return jsonify({"message": "Horário atualizado com sucesso!"}), 200
     except ScheduleConflictError as error:
         return jsonify({"error": str(error)}), 409
@@ -878,7 +1403,7 @@ def alterar_horario(agendamento_id):
 @serializar_mutacao
 def cancelar_agendamento(agendamento_id):
     try:
-        agendamento = buscar_agendamento(agendamento_id)
+        agendamento = buscar_agendamento(agendamento_id, "id, email_cliente, status, data_atendimento, servico_id")
         if not agendamento:
             return jsonify({"error": "Agendamento não encontrado."}), 404
         if not usuario_pode_alterar_agendamento(g.usuario, agendamento):
@@ -889,6 +1414,19 @@ def cancelar_agendamento(agendamento_id):
         alterados = db.table("agendamentos").update({"status": "Cancelado"}).eq("id", agendamento_id).eq("status", "Pendente").execute().data
         if not alterados:
             return jsonify({"error": "Somente atendimentos pendentes podem ser cancelados. Atualize a lista."}), 409
+        data_liberada = normalizar_data_hora(agendamento.get("data_atendimento"))
+        registrar_auditoria_agenda(
+            agendamento_id, "cancelado", g.usuario,
+            status_anterior="Pendente", status_novo="Cancelado",
+        )
+        avisos = notificar_lista_espera_horario(data_liberada)
+        email_equipe_agenda("Reserva cancelada", "Uma reserva foi cancelada", {
+            "Reserva": agendamento_id,
+            "Horário liberado": data_liberada,
+            "Cliente da reserva": agendamento.get("email_cliente", "não informado"),
+            "Cancelamento feito por": g.usuario["email"],
+            "Pessoas avisadas na lista de espera": avisos,
+        })
         return jsonify({"message": "Agendamento cancelado com sucesso."}), 200
     except Exception:
         logger.exception("Erro ao cancelar agendamento")
@@ -928,6 +1466,85 @@ def admin_agendamentos():
         return jsonify({"error": "Erro ao buscar dados globais."}), 500
 
 
+@app.route("/api/admin/bloqueios", methods=["GET"])
+@admin_obrigatorio
+def listar_bloqueios_agenda():
+    try:
+        agora = datetime.now(SPA_TIMEZONE).replace(tzinfo=None).strftime("%Y-%m-%dT%H:%M")
+        bloqueios = consultar_linhas_paginadas(lambda: (
+            db.table("agenda_bloqueios")
+            .select("id, data_atendimento, motivo, criado_por, criado_em")
+            .gt("data_atendimento", agora).order("data_atendimento")
+        ))
+        return jsonify(bloqueios), 200
+    except Exception:
+        logger.exception("Erro ao listar bloqueios da agenda")
+        return jsonify({"error": "Não foi possível carregar os bloqueios."}), 500
+
+
+@app.route("/api/admin/bloqueios", methods=["POST"])
+@admin_obrigatorio
+@serializar_mutacao
+def criar_bloqueio_agenda():
+    dados = json_body()
+    motivo = str(dados.get("motivo") or "").strip()
+    if not 3 <= len(motivo) <= 160:
+        return jsonify({"error": "Informe um motivo de 3 a 160 caracteres."}), 400
+    try:
+        slots = horarios_bloqueio_intervalo(dados.get("data_inicio"), dados.get("data_fim"))
+        resposta = db.create_schedule_block(slots, motivo, g.usuario["email"])
+        return jsonify({
+            "message": f"{len(slots)} horário(s) bloqueado(s) com sucesso.",
+            "bloqueios": getattr(resposta, "data", None) or [],
+        }), 201
+    except ScheduleConflictError as error:
+        return jsonify({"error": str(error)}), 409
+    except ValueError as error:
+        return jsonify({"error": str(error)}), 400
+    except Exception:
+        logger.exception("Erro ao bloquear horários da agenda")
+        return jsonify({"error": "Não foi possível bloquear os horários."}), 500
+
+
+@app.route("/api/admin/bloqueios/<int:bloqueio_id>", methods=["DELETE"])
+@admin_obrigatorio
+@serializar_mutacao
+def remover_bloqueio_agenda(bloqueio_id):
+    try:
+        removidos = db.table("agenda_bloqueios").delete().eq("id", bloqueio_id).execute().data or []
+        if not removidos:
+            return jsonify({"error": "Bloqueio não encontrado."}), 404
+        email_equipe_agenda("Horário liberado", "Um bloqueio da agenda foi removido", {
+            "Data e hora": normalizar_data_hora(removidos[0].get("data_atendimento")),
+            "Motivo anterior": removidos[0].get("motivo") or "não informado",
+            "Removido por": g.usuario["email"],
+        })
+        return jsonify({"message": "Horário liberado com sucesso."}), 200
+    except Exception:
+        logger.exception("Erro ao liberar horário bloqueado")
+        return jsonify({"error": "Não foi possível liberar esse horário."}), 500
+
+
+@app.route("/api/admin/agendamentos/<int:agendamento_id>/historico", methods=["GET"])
+@admin_obrigatorio
+def historico_agendamento_admin(agendamento_id):
+    try:
+        if not buscar_agendamento(agendamento_id, "id"):
+            return jsonify({"error": "Agendamento não encontrado."}), 404
+        resposta = (
+            db.table("agenda_auditoria")
+            .select("id, ator_email, ator_tipo, acao, data_anterior, data_nova, status_anterior, status_novo, criado_em")
+            .eq("agendamento_id", agendamento_id)
+            .order("criado_em", desc=True)
+            .limit(50)
+            .execute()
+        )
+        return jsonify(resposta.data or []), 200
+    except Exception:
+        logger.exception("Erro ao carregar o histórico de um agendamento")
+        return jsonify({"error": "Não foi possível carregar o histórico da reserva."}), 500
+
+
 @app.route("/api/admin/agendamentos/<int:agendamento_id>/concluir", methods=["POST"])
 @admin_obrigatorio
 @serializar_mutacao
@@ -953,6 +1570,10 @@ def concluir_agendamento(agendamento_id):
         conclusao = db.table("agendamentos").update({"status": "Concluido"}).eq("id", agendamento_id).eq("status", "Pendente").execute().data or []
         if not conclusao:
             return jsonify({"message": "Este agendamento já foi atualizado por outro atendimento.", "pontos": 0}), 200
+        registrar_auditoria_agenda(
+            agendamento_id, "concluido", g.usuario,
+            status_anterior="Pendente", status_novo="Concluido",
+        )
         cliente = buscar_usuario(agendamento.get("email_cliente"), "pontos")
         if cliente and pontos:
             db.table("usuarios").update({"pontos": int(cliente.get("pontos") or 0) + pontos}).eq("email", agendamento["email_cliente"]).execute()
@@ -1097,11 +1718,21 @@ def exportar_dados_pessoais():
             .execute()
             .data or []
         )
+        lista_espera = (
+            db.table("agenda_lista_espera")
+            .select("data_atendimento, status, criado_em, notificado_em")
+            .eq("email_cliente", g.usuario["email"])
+            .order("criado_em", desc=True)
+            .limit(100)
+            .execute()
+            .data or []
+        )
         return jsonify({
             "gerado_em": datetime.now(SPA_TIMEZONE).isoformat(),
             "finalidade": "Cópia dos dados pessoais e do histórico de reservas do Spa Panaceia.",
             "conta": usuario,
             "agendamentos": agendamentos,
+            "lista_espera": lista_espera,
         }), 200
     except Exception:
         logger.exception("Erro ao exportar dados pessoais")
@@ -1163,6 +1794,7 @@ def listar_estoque():
 
 @app.route("/api/estoque", methods=["POST"])
 @admin_obrigatorio
+@serializar_mutacao
 def adicionar_estoque():
     dados = json_body()
     nome = str(dados.get("nome") or "").strip()
@@ -1180,16 +1812,36 @@ def adicionar_estoque():
         return jsonify({"error": "Erro ao cadastrar o produto no estoque."}), 500
 
 
-@app.route("/api/estoque/<int:item_id>", methods=["PUT"])
+@app.route("/api/estoque/<int:item_id>/movimentar", methods=["PUT"])
 @admin_obrigatorio
+@serializar_mutacao
 def atualizar_estoque(item_id):
     dados = json_body()
     try:
         quantidade = quantidade_inteira(dados.get("quantidade"), "Quantidade")
-        db.table("estoque").update({"quantidade": quantidade}).eq("id", item_id).execute()
-        return jsonify({"message": "Estoque atualizado!"}), 200
+        acao = str(dados.get("acao") or "").strip().lower()
+        if acao:
+            if acao not in {"adicionar", "somar", "remover", "subtrair"}:
+                return jsonify({"error": "Ação de estoque inválida."}), 400
+            if quantidade == 0:
+                return jsonify({"error": "A quantidade da movimentação deve ser maior que zero."}), 400
+            delta = quantidade if acao in {"adicionar", "somar"} else -quantidade
+            resposta = db.move_stock(item_id, delta)
+        else:
+            resposta = db.set_stock_quantity(item_id, quantidade)
+
+        item = resposta.data[0]
+        return jsonify({
+            "message": "Estoque atualizado com sucesso!",
+            "nova_quantidade": item.get("quantidade"),
+            "item": item,
+        }), 200
     except ValueError as error:
         return jsonify({"error": str(error)}), 400
+    except StockItemNotFoundError as error:
+        return jsonify({"error": str(error)}), 404
+    except InsufficientStockError as error:
+        return jsonify({"error": str(error)}), 409
     except Exception:
         logger.exception("Erro ao atualizar estoque")
         return jsonify({"error": "Erro ao alterar quantidade."}), 500
@@ -1197,9 +1849,12 @@ def atualizar_estoque(item_id):
 
 @app.route("/api/estoque/<int:item_id>", methods=["DELETE"])
 @admin_obrigatorio
+@serializar_mutacao
 def deletar_estoque(item_id):
     try:
-        db.table("estoque").delete().eq("id", item_id).execute()
+        removidos = db.table("estoque").delete().eq("id", item_id).execute().data or []
+        if not removidos:
+            return jsonify({"error": "Item do estoque não encontrado."}), 404
         return jsonify({"message": "Item removido do estoque!"}), 200
     except Exception:
         logger.exception("Erro ao remover item do estoque")
@@ -1220,8 +1875,9 @@ def chat():
     contexto = (
         "Você é o Concierge Virtual do Spa Panaceia. Responda em português, com tom acolhedor, "
         "natural e conciso (no máximo três frases), sem emojis nem jargão. Apresente os cuidados "
-        "de bem-estar sem prometer benefícios médicos. Quando a pessoa quiser agendar, oriente "
-        "a escolher um tratamento no catálogo. Nunca afirme que uma reserva foi feita ou aberta."
+        "de bem-estar sem prometer benefícios médicos. Quando a pessoa quiser agendar, acolha o pedido "
+        "e diga que ela poderá escolher uma data e um horário no fluxo de reserva. Nunca afirme que uma "
+        "reserva foi feita ou aberta."
     )
     try:
         resposta = openai_client.chat.completions.create(
