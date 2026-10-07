@@ -1,9 +1,11 @@
 """Acesso resiliente ao PostgreSQL local, com Supabase como contingência."""
 
+import json
 import logging
 import os
 import re
 import time
+import uuid
 from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import date, datetime
@@ -47,6 +49,14 @@ class StockItemNotFoundError(RuntimeError):
 
 class InsufficientStockError(RuntimeError):
     """A movimentação deixaria o saldo do item negativo."""
+
+
+class StockOperationConflictError(RuntimeError):
+    """A chave de idempotência foi reutilizada com dados diferentes."""
+
+
+class StockQuantityConflictError(RuntimeError):
+    """O saldo mudou antes da substituição manual ser aplicada."""
 
 
 def _connection_kwargs():
@@ -191,6 +201,26 @@ class LocalPostgresClient:
                 "motivo TEXT NOT NULL, criado_por TEXT NOT NULL, "
                 "criado_em TIMESTAMPTZ NOT NULL DEFAULT NOW())"
             )
+            cur.execute(
+                "SELECT to_regclass('public.estoque') IS NOT NULL"
+            )
+            if cur.fetchone()[0]:
+                cur.execute(
+                    "CREATE TABLE IF NOT EXISTS public.estoque_movimentacoes ("
+                    "operacao_id UUID PRIMARY KEY, item_id BIGINT NOT NULL, "
+                    "delta INTEGER NOT NULL CHECK (delta <> 0), "
+                    "resultado JSONB NOT NULL, criado_em TIMESTAMPTZ NOT NULL DEFAULT NOW())"
+                )
+                cur.execute(
+                    "SELECT 1 FROM pg_constraint "
+                    "WHERE conrelid = 'public.estoque'::regclass "
+                    "AND conname = 'estoque_quantidade_nao_negativa'"
+                )
+                if not cur.fetchone():
+                    cur.execute(
+                        "ALTER TABLE public.estoque ADD CONSTRAINT "
+                        "estoque_quantidade_nao_negativa CHECK (quantidade >= 0) NOT VALID"
+                    )
         return True
 
     @staticmethod
@@ -304,41 +334,114 @@ class LocalPostgresClient:
         except errors.UniqueViolation as error:
             raise ScheduleConflictError("O período inclui um horário já bloqueado.") from error
 
-    def move_stock(self, item_id, delta):
-        """Movimenta um item com bloqueio de linha para evitar saldos perdidos."""
+    def move_stock(self, item_id, delta, operation_id):
+        """Movimenta o saldo uma vez por operação, dentro da transação local."""
+        operation_id = str(uuid.UUID(str(operation_id)))
+        delta = int(delta)
+        if delta == 0:
+            raise ValueError("A quantidade da movimentação deve ser maior que zero.")
         with session_connection() as conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
             cur.execute(
-                "SELECT id, nome, quantidade, quantidade_minima, unidade "
-                "FROM public.estoque WHERE id = %s FOR UPDATE",
-                (item_id,),
+                "INSERT INTO public.estoque_movimentacoes "
+                "(operacao_id, item_id, delta, resultado) "
+                "VALUES (%s, %s, %s, '{}'::jsonb) "
+                "ON CONFLICT (operacao_id) DO NOTHING RETURNING operacao_id",
+                (operation_id, item_id, delta),
+            )
+            if not cur.fetchone():
+                cur.execute(
+                    "SELECT item_id, delta, resultado FROM public.estoque_movimentacoes "
+                    "WHERE operacao_id = %s FOR UPDATE",
+                    (operation_id,),
+                )
+                previous = cur.fetchone()
+                if not previous or previous["item_id"] != item_id or previous["delta"] != delta:
+                    raise StockOperationConflictError(
+                        "A chave da movimentação já foi usada com outros dados."
+                    )
+                result = previous["resultado"]
+                if isinstance(result, str):
+                    result = json.loads(result)
+                return Result([{**result, "repetida": True}])
+
+            cur.execute(
+                "UPDATE public.estoque SET quantidade = quantidade + %s "
+                "WHERE id = %s AND quantidade::BIGINT + %s BETWEEN 0 AND 2147483647 "
+                "RETURNING id, nome, quantidade, quantidade_minima, unidade",
+                (delta, item_id, delta),
             )
             item = cur.fetchone()
             if not item:
+                cur.execute("SELECT 1 FROM public.estoque WHERE id = %s", (item_id,))
+                if cur.fetchone():
+                    raise InsufficientStockError("A movimentação excede o saldo permitido.")
                 raise StockItemNotFoundError("Item do estoque não encontrado.")
-
-            nova_quantidade = int(item.get("quantidade") or 0) + int(delta)
-            if nova_quantidade < 0:
-                raise InsufficientStockError("A retirada é maior que o saldo disponível.")
-
+            result = {**dict(item), "repetida": False}
             cur.execute(
-                "UPDATE public.estoque SET quantidade = %s WHERE id = %s "
-                "RETURNING id, nome, quantidade, quantidade_minima, unidade",
-                (nova_quantidade, item_id),
+                "UPDATE public.estoque_movimentacoes SET resultado = %s::jsonb "
+                "WHERE operacao_id = %s",
+                (json.dumps(result, ensure_ascii=False), operation_id),
             )
-            return Result([dict(cur.fetchone())])
+            return Result([result])
 
-    def set_stock_quantity(self, item_id, quantity):
-        """Define o saldo de um item e confirma que ele ainda existe."""
+    def set_stock_quantity(self, item_id, quantity, expected_quantity):
+        """Substitui o saldo somente se ele ainda corresponder ao valor lido."""
         with session_connection() as conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
             cur.execute(
                 "UPDATE public.estoque SET quantidade = %s WHERE id = %s "
+                "AND quantidade = %s "
                 "RETURNING id, nome, quantidade, quantidade_minima, unidade",
-                (quantity, item_id),
+                (quantity, item_id, expected_quantity),
             )
             item = cur.fetchone()
             if not item:
+                cur.execute("SELECT 1 FROM public.estoque WHERE id = %s", (item_id,))
+                if cur.fetchone():
+                    raise StockQuantityConflictError(
+                        "O saldo mudou. Atualize a lista antes de definir um novo valor."
+                    )
                 raise StockItemNotFoundError("Item do estoque não encontrado.")
             return Result([dict(item)])
+
+    def complete_appointment(self, appointment_id):
+        """Conclui e credita pontos na mesma transação, sob lock da reserva."""
+        with session_connection() as conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute(
+                "SELECT email_cliente, servico_id, status FROM public.agendamentos "
+                "WHERE id = %s FOR UPDATE",
+                (appointment_id,),
+            )
+            appointment = cur.fetchone()
+            if not appointment:
+                return Result([{"resultado": "nao_encontrado", "pontos": 0}])
+            if appointment["status"] == "Concluido":
+                return Result([{"resultado": "ja_concluido", "pontos": 0}])
+            if appointment["status"] != "Pendente":
+                return Result([{"resultado": "status_invalido", "pontos": 0}])
+
+            cur.execute(
+                "SELECT valor FROM public.servico WHERE id = %s",
+                (appointment["servico_id"],),
+            )
+            service = cur.fetchone()
+            if not service or service["valor"] is None or service["valor"] < 0:
+                raise RuntimeError("Serviço sem valor válido para crédito de pontos.")
+            points = int(service["valor"] / 10)
+            cur.execute(
+                "UPDATE public.usuarios SET pontos = COALESCE(pontos, 0) + %s "
+                "WHERE email = %s RETURNING id",
+                (points, appointment["email_cliente"]),
+            )
+            if not cur.fetchone():
+                raise RuntimeError("Cliente não encontrado para crédito de pontos.")
+            cur.execute(
+                "UPDATE public.agendamentos SET status = 'Concluido' "
+                "WHERE id = %s AND status = 'Pendente' RETURNING id",
+                (appointment_id,),
+            )
+            if not cur.fetchone():
+                raise RuntimeError("Falha ao concluir agendamento após o crédito.")
+            return Result([{"resultado": "concluido", "pontos": points}])
 
     def rpc(self, name, params):
         if name not in {"resgatar_pontos", "utilizar_voucher"}:
@@ -417,6 +520,46 @@ class Query:
         self.row_limit = end - start + 1
         return self
 
+    def _selected_columns(self):
+        """Retorna as colunas da projeção que podem ser selecionadas com segurança."""
+        projection = (self.projection or "*").strip()
+        if projection == "*":
+            return None
+
+        parts = []
+        depth = 0
+        start = 0
+        for index, character in enumerate(projection):
+            if character in {'"', "'"}:
+                # Aliases/expressões não são usados pelas rotas e ficam no caminho compatível.
+                return None
+            if character == "(":
+                depth += 1
+            elif character == ")":
+                depth -= 1
+                if depth < 0:
+                    return None
+            elif character == "," and depth == 0:
+                parts.append(projection[start:index].strip())
+                start = index + 1
+        if depth != 0:
+            return None
+        parts.append(projection[start:].strip())
+
+        columns = []
+        includes_service = False
+        for part in parts:
+            if self.table_name == "agendamentos" and re.fullmatch(r"servico\([^()]+\)", part):
+                includes_service = True
+                continue
+            if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", part):
+                return None
+            columns.append(part)
+
+        if includes_service and "servico_id" not in columns:
+            columns.append("servico_id")
+        return columns or None
+
     def _where(self):
         if not self.filters:
             return sql.SQL(""), []
@@ -487,7 +630,15 @@ class Query:
                 cur.execute(statement, values)
                 return Result([dict(row) for row in cur.fetchall()])
 
-            statement = sql.SQL("SELECT * FROM public.{}{}").format(_ident(self.table_name), where)
+            selected_columns = self._selected_columns()
+            projection = (
+                sql.SQL("*")
+                if selected_columns is None
+                else sql.SQL(", ").join(map(_ident, selected_columns))
+            )
+            statement = sql.SQL("SELECT {} FROM public.{}{}").format(
+                projection, _ident(self.table_name), where
+            )
             parameters = list(values)
             if self.orders:
                 statement += sql.SQL(" ORDER BY ") + sql.SQL(", ").join(
@@ -554,6 +705,12 @@ class SupabaseDatabaseClient:
         if name not in {"resgatar_pontos", "utilizar_voucher"}:
             raise ValueError("Função Supabase não permitida.")
         return self._client.rpc(name, _json_value(params))
+
+    def complete_appointment(self, appointment_id):
+        return self._client.rpc(
+            "concluir_agendamento_creditar_pontos",
+            {"p_agendamento_id": int(appointment_id)},
+        ).execute()
 
     def healthcheck(self):
         self.table("servico").select("id").limit(1).execute()
@@ -676,30 +833,55 @@ class SupabaseDatabaseClient:
                 raise ScheduleConflictError("O período inclui um horário reservado ou já bloqueado.") from error
             raise
 
-    def move_stock(self, item_id, delta):
-        rows = (
-            self.table("estoque")
-            .select("id, nome, quantidade, quantidade_minima, unidade")
-            .eq("id", item_id)
-            .limit(1)
-            .execute()
-            .data or []
-        )
-        if not rows:
-            raise StockItemNotFoundError("Item do estoque não encontrado.")
-        quantity = int(rows[0].get("quantidade") or 0) + int(delta)
-        if quantity < 0:
-            raise InsufficientStockError("A retirada é maior que o saldo disponível.")
-        return self.set_stock_quantity(item_id, quantity)
+    def move_stock(self, item_id, delta, operation_id):
+        try:
+            operation_id = str(uuid.UUID(str(operation_id)))
+        except (ValueError, TypeError, AttributeError) as error:
+            raise ValueError("Identificador da movimentação inválido.") from error
+        try:
+            response = self._client.rpc(
+                "movimentar_estoque",
+                {
+                    "p_item_id": int(item_id),
+                    "p_delta": int(delta),
+                    "p_operacao_id": operation_id,
+                },
+            ).execute()
+        except Exception as error:
+            message = str(error)
+            if "ESTOQUE_INSUFICIENTE" in message:
+                raise InsufficientStockError(
+                    "A movimentação excede o saldo permitido."
+                ) from error
+            if "ESTOQUE_NAO_ENCONTRADO" in message:
+                raise StockItemNotFoundError("Item do estoque não encontrado.") from error
+            if "ESTOQUE_OPERACAO_DIVERGENTE" in message:
+                raise StockOperationConflictError(
+                    "A chave da movimentação já foi usada com outros dados."
+                ) from error
+            raise
+        data = response.data
+        if isinstance(data, list):
+            data = data[0] if data else None
+        if not isinstance(data, dict):
+            raise RuntimeError("Resposta inválida da movimentação de estoque.")
+        return Result([data])
 
-    def set_stock_quantity(self, item_id, quantity):
+    def set_stock_quantity(self, item_id, quantity, expected_quantity):
         response = (
             self.table("estoque")
             .update({"quantidade": int(quantity)})
             .eq("id", item_id)
+            .eq("quantidade", int(expected_quantity))
+            .select("id, nome, quantidade, quantidade_minima, unidade")
             .execute()
         )
         if not (response.data or []):
+            rows = self.table("estoque").select("id").eq("id", item_id).limit(1).execute().data or []
+            if rows:
+                raise StockQuantityConflictError(
+                    "O saldo mudou. Atualize a lista antes de definir um novo valor."
+                )
             raise StockItemNotFoundError("Item do estoque não encontrado.")
         return response
 
@@ -916,11 +1098,17 @@ class ResilientDatabaseClient:
             mutating=True,
         )
 
-    def move_stock(self, item_id, delta):
-        return self._run(lambda backend: backend.move_stock(item_id, delta), mutating=True)
+    def move_stock(self, item_id, delta, operation_id):
+        return self._run(lambda backend: backend.move_stock(item_id, delta, operation_id), mutating=True)
 
-    def set_stock_quantity(self, item_id, quantity):
-        return self._run(lambda backend: backend.set_stock_quantity(item_id, quantity), mutating=True)
+    def set_stock_quantity(self, item_id, quantity, expected_quantity):
+        return self._run(
+            lambda backend: backend.set_stock_quantity(item_id, quantity, expected_quantity),
+            mutating=True,
+        )
+
+    def complete_appointment(self, appointment_id):
+        return self._run(lambda backend: backend.complete_appointment(appointment_id), mutating=True)
 
 
 def create_database_client():

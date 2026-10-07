@@ -7,19 +7,44 @@ que duas bases independentes recebam gravações divergentes.
 
 ## Arquitetura de produção
 
-- Aplicação Flask servida pelo Gunicorn.
-- PostgreSQL no container `postgres`.
-- Aplicação e banco na rede Docker `postgres1_database`.
-- Supabase configurável como banco principal ou contingência pela Data API.
-- Cloudflare/HTTPS na entrada pública.
-- Um worker Gunicorn com oito threads, pool PostgreSQL e bloqueio adaptativo de
-  requisições.
-- Credenciais fornecidas em tempo de execução; nenhuma chave é copiada para a
-  imagem Docker.
+- O deploy ativo verificado está no Render, com a aplicação Flask servida pelo
+  Gunicorn. O `Procfile` define um worker e oito threads.
+- O Supabase é o banco ativo confirmado pela resposta mais recente do healthcheck.
+- O PostgreSQL local em Docker/ZimaOS é uma alternativa operacional; não é a
+  configuração ativa confirmada. O `Dockerfile` e as instruções de ZimaOS abaixo
+  documentam essa alternativa.
+- PostgreSQL e Supabase são bancos independentes: não são réplicas nem recebem
+  sincronização automática. Mantenha o failover desativado e não o habilite sem
+  um plano testado de reconciliação dos dados.
+- O backend lê credenciais do ambiente de execução. Segredos nunca devem ser
+  incluídos neste README, em outros arquivos versionados ou no Git.
+
+## Estado do deploy verificado
+
+Na última verificação pública registrada, em 29/09/2026:
+
+- `https://panaceia.onrender.com/api/health` respondeu HTTP 200 e informou
+  Supabase como backend ativo.
+- `https://spapanaceia.com.br/api/health` respondeu HTTP 530, Cloudflare 1033.
+  O domínio oficial não estava funcionando nessa verificação.
+- `https://www.spapanaceia.com.br/api/health` respondeu HTTP 530, Cloudflare
+  1016.
+
+Esses resultados são um retrato daquela verificação; confira novamente os
+endpoints depois de qualquer ajuste no Render ou no DNS/Cloudflare.
 
 ## Variáveis obrigatórias
 
-Mantenha `database.env` somente no servidor e fora do Git:
+No Render, configure as variáveis de execução no serviço. Para manter o backend
+apontando explicitamente para o banco ativo, use `DATABASE_PRIMARY=supabase` e
+`DATABASE_FAILOVER_ENABLED=false`; configure `SUPABASE_URL`,
+`SUPABASE_SERVICE_ROLE_KEY` e `FLASK_SECRET_KEY` no ambiente do Render, sem
+copiar seus valores para documentação ou Git.
+
+O bloco abaixo é um exemplo com PostgreSQL local para a alternativa Docker/ZimaOS,
+não a configuração ativa confirmada do Render. Mantenha `database.env` somente
+no servidor local, fora do Git e fora da imagem Docker. Os valores entre sinais
+de menor/maior são placeholders; nunca os substitua por segredos neste README.
 
 ```env
 APP_ENV=production
@@ -71,10 +96,13 @@ OPENAI_MODEL=gpt-4.1-mini
 LOG_LEVEL=INFO
 ```
 
-Nunca coloque `SUPABASE_SERVICE_ROLE_KEY` no HTML, JavaScript ou Git. O backend
-aceita temporariamente o nome legado `service_role`, mas o nome recomendado é
-`SUPABASE_SERVICE_ROLE_KEY`. Chaves que tenham sido expostas devem ser revogadas
-e substituídas no servidor.
+Nunca coloque valores de `SUPABASE_SERVICE_ROLE_KEY`, `FLASK_SECRET_KEY`,
+`DB_PASSWORD`, `BREVO_API_KEY`, `OPENAI_API_KEY` ou qualquer outro segredo no
+README, em arquivos versionados, no HTML/JavaScript ou no Git. Configure-os
+somente no ambiente do provedor ou no arquivo local ignorado pelo Git. O backend
+aceita temporariamente o nome legado `service_role`; o nome recomendado é
+`SUPABASE_SERVICE_ROLE_KEY`. Segredos expostos devem ser revogados e substituídos
+no ambiente de execução.
 
 O backend não usa uma chave publicável/anon como credencial do servidor. O IP de
 cliente vindo de `TRUSTED_PROXY_IP_HEADER` só é aceito quando `REMOTE_ADDR` do
@@ -281,9 +309,9 @@ bloqueadas, para não oferecer lista de espera nelas.
   leituras e gravações. Use este modo quando as bases não forem réplicas
   sincronizadas; se ele cair, o site sinaliza indisponibilidade em vez de gravar
   silenciosamente na outra base.
-- `DATABASE_FAILOVER_ENABLED=true`: permite contingência entre bancos. Só ative
-  se houver procedimento para manter/reconciliar os dados; o failover não replica
-  nem sincroniza as bases.
+- `DATABASE_FAILOVER_ENABLED=true`: permite contingência entre bancos. Não
+  habilite sem um plano testado para manter e reconciliar os dados; o failover
+  não replica nem sincroniza as bases.
 - `DATABASE_PRIMARY=postgres`: tenta o PostgreSQL primeiro e usa o Supabase se
   `DATABASE_FAILOVER_ENABLED=true` e o banco local estiver offline.
 - `DATABASE_PRIMARY=supabase`: seleciona o Supabase como origem primária.
@@ -299,7 +327,7 @@ Mesmo com failover habilitado, as duas bases precisam ter o mesmo esquema,
 funções RPC e dados coerentes. Faça backup e reconciliação antes de mudar o banco
 primário ou reativar uma base que ficou offline.
 
-## Atualização no ZimaOS
+## Alternativa: PostgreSQL local no ZimaOS
 
 Execute na pasta do repositório. Ajuste o nome do container e a porta externa
 caso a instalação use valores diferentes:
@@ -328,29 +356,42 @@ docker run -d \
 O build copia apenas o runtime. O `database.env`, backups, datasets e arquivos
 de desenvolvimento não entram na imagem.
 
-## Validação após o deploy
+## Validação do deploy ativo e da alternativa local
 
 ```bash
-curl -fsS https://spapanaceia.com.br/api/health
+curl -fsS https://panaceia.onrender.com/api/health
+curl -i https://spapanaceia.com.br/api/health
 docker ps --filter name=spa-panaceia
 docker inspect --format '{{json .State.Health}}' spa-panaceia
 docker logs --tail 100 spa-panaceia
 ```
 
-Uma resposta saudável contém:
+O primeiro comando verifica o endpoint Render ativo. Na última verificação, ele
+respondeu HTTP 200 com Supabase ativo. O segundo consulta o domínio oficial; na
+última verificação, retornou HTTP 530/Cloudflare 1033. Não considere o domínio
+oficial funcional até que uma nova verificação confirme isso. Os comandos Docker
+abaixo são aplicáveis somente à alternativa local/ZimaOS.
+
+A resposta observada no Render indicou:
 
 ```json
 {
   "status": "ok",
   "database": "ok",
-  "database_backend": "postgres",
+  "database_backend": "supabase",
   "databases": {
-    "postgres": {"status": "ok"},
+    "postgres": {"status": "nao_testado"},
     "supabase": {"status": "ok"}
   },
-  "restricao_agenda": true
+  "restricao_agenda": null,
+  "restricao_agenda_verificavel": false
 }
 ```
+
+No Supabase, `restricao_agenda: null` significa que essa rota não consegue
+verificar o catálogo de índices e gatilhos. Não confirma presença nem ausência
+deles; confira os índices e os dois triggers no próprio Supabase antes de
+depender dessa proteção.
 
 Teste também:
 
@@ -399,7 +440,257 @@ HAVING COUNT(*) > 1;
 
 O resultado precisa estar vazio.
 
-## Backup diário do PostgreSQL
+## Crédito transacional ao concluir atendimentos
+
+O administrador conclui uma reserva por `POST /api/admin/agendamentos/<id>/concluir`.
+O backend valida sessão, papel administrativo, origem e CSRF; o navegador não
+informa saldo nem quantidade de pontos. No Supabase, a função abaixo bloqueia a
+linha do agendamento, calcula `trunc(valor / 10)` a partir de `servico.valor`,
+soma os pontos em `usuarios` e altera o status na mesma transação. No PostgreSQL
+local, o adaptador executa essas mesmas etapas em uma transação com `FOR UPDATE`.
+Uma reserva já `Concluido` retorna zero pontos, inclusive se sua conclusão for
+anterior a esta mudança: não há crédito retroativo automático.
+
+Após exportar as definições das tabelas, índices, gatilhos, funções e permissões
+envolvidos, este é o SQL de instalação da função no Supabase. Não altera registros
+existentes nem muda tabelas ou políticas RLS. Execute-o como uma única transação;
+publique o backend atualizado somente depois de confirmar que a função existe e
+que apenas `service_role` (além do proprietário) pode executá-la.
+
+```sql
+BEGIN;
+
+CREATE OR REPLACE FUNCTION public.concluir_agendamento_creditar_pontos(p_agendamento_id integer)
+RETURNS TABLE(resultado text, pontos integer)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path TO pg_catalog, public
+AS $function$
+DECLARE
+    v_email text;
+    v_servico_id integer;
+    v_status text;
+    v_valor numeric;
+    v_pontos integer;
+BEGIN
+    SELECT a.email_cliente, a.servico_id, a.status
+      INTO v_email, v_servico_id, v_status
+      FROM public.agendamentos AS a
+     WHERE a.id = p_agendamento_id
+     FOR UPDATE;
+
+    IF NOT FOUND THEN
+        RETURN QUERY SELECT 'nao_encontrado'::text, 0;
+        RETURN;
+    END IF;
+    IF v_status = 'Concluido' THEN
+        RETURN QUERY SELECT 'ja_concluido'::text, 0;
+        RETURN;
+    END IF;
+    IF v_status IS DISTINCT FROM 'Pendente' THEN
+        RETURN QUERY SELECT 'status_invalido'::text, 0;
+        RETURN;
+    END IF;
+
+    SELECT s.valor INTO v_valor
+      FROM public.servico AS s
+     WHERE s.id = v_servico_id;
+    IF NOT FOUND OR v_valor IS NULL OR v_valor < 0 THEN
+        RAISE EXCEPTION 'Servico sem valor valido para credito de pontos';
+    END IF;
+    v_pontos := trunc(v_valor / 10)::integer;
+
+    UPDATE public.usuarios AS u
+       SET pontos = coalesce(u.pontos, 0) + v_pontos
+     WHERE u.email = v_email;
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'Cliente nao encontrado para credito de pontos';
+    END IF;
+
+    UPDATE public.agendamentos
+       SET status = 'Concluido'
+     WHERE id = p_agendamento_id AND status = 'Pendente';
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'Falha ao concluir agendamento apos credito';
+    END IF;
+
+    RETURN QUERY SELECT 'concluido'::text, v_pontos;
+END;
+$function$;
+
+REVOKE ALL ON FUNCTION public.concluir_agendamento_creditar_pontos(integer)
+    FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.concluir_agendamento_creditar_pontos(integer)
+    TO service_role;
+NOTIFY pgrst, 'reload schema';
+
+COMMIT;
+```
+
+Instalação conferida em 01/10/2026 no Supabase ativo: a primeira definição foi
+criada, mas o teste sintético detectou que `coalesce(pontos, 0)` era ambíguo com
+a coluna de retorno `pontos` (erro PostgreSQL 42702). A transação de teste foi
+revertida. A função foi substituída pelo SQL corrigido acima, qualificando
+`u.pontos`; a execução retornou sucesso. A inspeção de privilégios confirmou
+`EXECUTE` para `service_role` e negou `anon` e `authenticated`. Um teste com
+usuário, serviço e agendamento sintéticos, encerrado com `ROLLBACK`, confirmou
+19 pontos na primeira conclusão, zero na repetição e saldo/status coerentes.
+Após o rollback, nenhum registro sintético permaneceu e as contagens de
+agendamentos e usuários continuaram iguais. O backup estrutural pré-mudança foi
+exportado em CSV fora do repositório, sem dados de clientes nem credenciais.
+
+O SQL acima cria apenas uma função e sua permissão de execução. Uma falha em
+qualquer gravação aborta toda a chamada. Duas conclusões simultâneas da mesma
+reserva são serializadas pelo bloqueio de linha; atualizações de saldo são somas
+atômicas, inclusive quando há resgate de voucher simultâneo. Se for necessário
+reverter a instalação antes de usar a nova versão do backend, remova apenas essa
+função; depois de publicar o backend, planeje a reversão junto com o código para
+não reintroduzir a atualização separada de status e saldo.
+
+## Movimentação atômica de estoque
+
+O endpoint administrativo `PUT /api/estoque/<id>/movimentar` envia quantidade,
+ação e um `operacao_id` UUID. A interface mantém essa chave no armazenamento
+local do navegador até receber sucesso ou um erro definitivo do cliente; depois
+de timeout ou erro de servidor, a equipe pode repetir a mesma ação e o backend
+reenvia a mesma chave. O banco guarda o resultado da operação na mesma transação
+do saldo. Reutilizar a chave com outro item ou delta é rejeitado.
+
+No Supabase, uma única função executa o incremento/decremento aritmético e só
+atualiza o saldo se o resultado ficar entre zero e o limite de `integer`. O
+bloqueio de linha do `UPDATE` serializa movimentações diferentes do mesmo item;
+a chave única serializa repetições. A constraint também impede saldo negativo
+por outras gravações diretas. A tabela de idempotência tem RLS habilitado, sem
+políticas e sem privilégios diretos; somente `service_role` pode executar a
+RPC. No PostgreSQL local, o adaptador usa uma tabela equivalente, deduplicação
+transacional e atualização SQL sob o lock da linha. A substituição manual de
+saldo exige a quantidade anteriormente observada para recusar gravações com
+valor desatualizado. A chave vale dentro de cada banco; como os bancos não são
+sincronizados, mantenha o failover entre eles desligado até existir um plano de
+reconciliação. Não apague automaticamente registros de
+`estoque_movimentacoes`: sem uma janela máxima para novas tentativas, remover a
+chave pode permitir que uma repetição antiga movimente o saldo outra vez.
+
+Antes da mudança, foram exportadas 41 definições estruturais das tabelas,
+índices, gatilhos, funções e permissões relevantes para um CSV fora do
+repositório, sem dados de clientes ou credenciais. Em 02/10/2026, após confirmar
+que não havia saldo negativo e que os objetos ainda não existiam, foi aplicada
+a transação abaixo no projeto Supabase ativo:
+
+```sql
+BEGIN;
+
+ALTER TABLE public.estoque
+    ADD CONSTRAINT estoque_quantidade_nao_negativa CHECK (quantidade >= 0);
+
+CREATE TABLE public.estoque_movimentacoes (
+    operacao_id uuid PRIMARY KEY,
+    item_id bigint NOT NULL,
+    delta integer NOT NULL CHECK (delta <> 0),
+    resultado jsonb NOT NULL,
+    criado_em timestamptz NOT NULL DEFAULT now()
+);
+ALTER TABLE public.estoque_movimentacoes ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON TABLE public.estoque_movimentacoes
+    FROM PUBLIC, anon, authenticated, service_role;
+
+CREATE OR REPLACE FUNCTION public.movimentar_estoque(
+    p_item_id bigint,
+    p_delta integer,
+    p_operacao_id uuid
+)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path TO pg_catalog, public
+AS $function$
+DECLARE
+    v_inserted integer;
+    v_previous_item_id bigint;
+    v_previous_delta integer;
+    v_result jsonb;
+BEGIN
+    IF p_operacao_id IS NULL OR p_item_id IS NULL OR p_delta IS NULL OR p_delta = 0 THEN
+        RAISE EXCEPTION 'ESTOQUE_ARGUMENTO_INVALIDO' USING ERRCODE = '22023';
+    END IF;
+
+    INSERT INTO public.estoque_movimentacoes (operacao_id, item_id, delta, resultado)
+    VALUES (p_operacao_id, p_item_id, p_delta, '{}'::jsonb)
+    ON CONFLICT (operacao_id) DO NOTHING;
+    GET DIAGNOSTICS v_inserted = ROW_COUNT;
+
+    IF v_inserted = 0 THEN
+        SELECT m.item_id, m.delta, m.resultado
+          INTO v_previous_item_id, v_previous_delta, v_result
+          FROM public.estoque_movimentacoes AS m
+         WHERE m.operacao_id = p_operacao_id
+         FOR UPDATE;
+
+        IF v_previous_item_id IS DISTINCT FROM p_item_id
+           OR v_previous_delta IS DISTINCT FROM p_delta THEN
+            RAISE EXCEPTION 'ESTOQUE_OPERACAO_DIVERGENTE' USING ERRCODE = 'P0001';
+        END IF;
+        IF v_result IS NULL OR v_result = '{}'::jsonb THEN
+            RAISE EXCEPTION 'ESTOQUE_OPERACAO_INCOMPLETA' USING ERRCODE = 'P0001';
+        END IF;
+        RETURN v_result || jsonb_build_object('repetida', true);
+    END IF;
+
+    UPDATE public.estoque AS e
+       SET quantidade = (e.quantidade::bigint + p_delta)::integer
+     WHERE e.id = p_item_id
+       AND e.quantidade::bigint + p_delta BETWEEN 0 AND 2147483647
+    RETURNING jsonb_build_object(
+        'id', e.id,
+        'nome', e.nome,
+        'quantidade', e.quantidade,
+        'quantidade_minima', e.quantidade_minima,
+        'unidade', e.unidade
+    ) INTO v_result;
+
+    IF v_result IS NULL THEN
+        IF EXISTS (SELECT 1 FROM public.estoque AS e WHERE e.id = p_item_id) THEN
+            RAISE EXCEPTION 'ESTOQUE_INSUFICIENTE' USING ERRCODE = 'P0001';
+        ELSE
+            RAISE EXCEPTION 'ESTOQUE_NAO_ENCONTRADO' USING ERRCODE = 'P0001';
+        END IF;
+    END IF;
+
+    v_result := v_result || jsonb_build_object('repetida', false);
+    UPDATE public.estoque_movimentacoes AS m
+       SET resultado = v_result
+     WHERE m.operacao_id = p_operacao_id;
+
+    RETURN v_result;
+END;
+$function$;
+
+REVOKE ALL ON FUNCTION public.movimentar_estoque(bigint, integer, uuid)
+    FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.movimentar_estoque(bigint, integer, uuid)
+    TO service_role;
+NOTIFY pgrst, 'reload schema';
+
+COMMIT;
+```
+
+A instalação retornou sucesso. A verificação confirmou a constraint validada,
+RLS habilitado sem políticas, ausência de leitura direta da tabela de operações
+e execução da função apenas por `service_role` (negada a `anon` e
+`authenticated`). Um teste no Supabase usou um item e duas chaves UUID
+sintéticas dentro de um bloco com rollback: a primeira chamada elevou 5 para 8,
+a repetição não alterou o saldo, e a retirada insuficiente foi rejeitada sem
+gravar a chave. O teste foi revertido; uma consulta posterior confirmou zero
+linhas sintéticas e zero saldos negativos. O SQL de teste não alterou dados
+reais. Mocks isolados cobriram conclusão de pontos normal/repetida, duas
+conclusões concorrentes e falha no crédito; para estoque, cobriram deltas
+simultâneos, duas chamadas com a mesma chave, repetição após timeout simulado e
+saldo insuficiente. Esses mocks validam a integração do adaptador, não substituem
+um teste de concorrência contra duas sessões reais do Supabase. Esse teste não
+foi executado porque a interface SQL disponível não permite coordenar duas
+sessões mantendo os dados sintéticos reversíveis.
+
+## Backup diário do PostgreSQL (alternativa local/ZimaOS)
 
 Crie no ZimaOS uma tarefa diária, por exemplo às 03:00, com o bloco abaixo. O
 backup fica fora do container e os arquivos com mais de 14 dias são removidos:
@@ -421,7 +712,7 @@ find "$BACKUP_DIR" -type f -name 'spa-*.dump' -mtime +14 -delete
 Guarde também uma cópia periódica em outro disco ou equipamento. Um backup no
 mesmo disco não protege contra falha física.
 
-## Teste de restauração
+## Teste de restauração (alternativa local/ZimaOS)
 
 Teste periodicamente em um banco separado; nunca restaure sobre produção para
 fazer uma verificação:
@@ -453,11 +744,13 @@ defina `SESSION_COOKIE_SECURE=false`; em produção ela deve permanecer `true`.
 
 ## Checklist de segurança
 
-- `database.env` não versionado e fora da imagem.
-- Chaves OpenAI e Brevo diferentes das que já foram expostas.
+- Nenhum segredo incluído no README ou no Git; `database.env` local não
+  versionado e fora da imagem.
+- Segredos de produção configurados no ambiente do Render; segredos expostos
+  revogados e substituídos.
 - Senha exclusiva para o usuário `site_user`.
-- Porta 5432 acessível somente pela rede Docker.
+- Na alternativa PostgreSQL/ZimaOS, porta 5432 acessível somente pela rede Docker.
 - HTTPS, HSTS, CSP e cookies seguros ativos.
-- Backup diário e restauração testada.
+- Na alternativa PostgreSQL/ZimaOS, backup diário e restauração testada.
 - `/api/health` monitorado.
 - Imagens antigas mantidas por alguns dias para rollback.

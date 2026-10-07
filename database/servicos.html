@@ -12,7 +12,6 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css" integrity="sha384-RkASv+6KfBMW9eknReJIJ6b3UnjKOKC5bOUaNgIY778NFbQ8MtWq9Lr/khUgqtTt" crossorigin="anonymous">
-    <script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js" integrity="sha384-vsrfeLOOY6KuIYKDlmVH5UiBmgIdB1oEf7p01YgWHuqmOHfZr374+odEv96n9tNC" crossorigin="anonymous"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js" integrity="sha384-5JqMv4L/Xa0hfvtF06qboNdhvuYXUku9ZrhZh3bSk8VXF0A/RuSLHpLsSV9Zqhl6" crossorigin="anonymous"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/l10n/pt.js" integrity="sha384-agbVpcY312cNMSL1b3CUo060bj9FmbwUX8HUCNSE17+jOU/en4yz3w9ro9IWVusF" crossorigin="anonymous"></script>
     <link rel="manifest" href="/manifest.webmanifest">
@@ -3313,6 +3312,541 @@ body.dark-mode .spa-toast {
             .detalhes-servico-grade section { min-height: 0; padding: 18px; }
         }
 
+        /* QA responsivo: alvos de toque maiores e painel livre de sobreposições. */
+        .dropdown-item { min-height: 44px; }
+        @media (max-width: 950px) {
+            #secao-admin.ativa ~ .chatbot-btn { display: none; }
+            .clientes-botao { min-height: 44px; }
+            .flatpickr-calendar .flatpickr-prev-month,
+            .flatpickr-calendar .flatpickr-next-month { width: 44px !important; height: 44px !important; }
+            .flatpickr-day { min-height: 44px; height: 44px !important; line-height: 42px !important; }
+            .flatpickr-day.today:not(.selected) { line-height: 38px !important; }
+        }
+        @media (max-width: 420px) {
+            #btn-theme-toggle { width: 44px !important; height: 44px !important; flex-basis: 44px; }
+            #agendamentoModal { padding: 8px !important; }
+            #agendamentoModal .reserva-box {
+                width: calc(100vw - 16px) !important;
+                padding: 8px !important;
+            }
+        }
+
+        /* PANACEIA — direção visual refinada para a experiência completa. */
+        :root {
+            --brand: #7826d7;
+            --brand-strong: #54109f;
+            --brand-deep: #3b087d;
+            --brand-soft: #f1e8fc;
+            --brand-pale: #f1e8fc;
+            --accent-warm: #a98755;
+            --ink: #251d30;
+            --ink-soft: #6f657b;
+            --canvas: #f8f5fa;
+            --surface: rgba(255, 255, 255, .86);
+            --surface-raised: #fffefe;
+            --surface-soft: #f5f0f9;
+            --line: rgba(56, 24, 85, .105);
+            --field: #fffefe;
+            --field-border: rgba(84, 16, 159, .19);
+            --focus-ring: rgba(120, 38, 215, .24);
+            --calendar-muted: #7e718a;
+            --shadow-xs: 0 1px 2px rgba(38, 15, 58, .04), 0 4px 14px rgba(38, 15, 58, .035);
+            --shadow-sm: 0 12px 32px rgba(47, 16, 76, .075);
+            --shadow-md: 0 24px 60px rgba(47, 16, 76, .12);
+            --shadow-lg: 0 38px 90px rgba(31, 8, 53, .20);
+            --focus-visible: #8549c2;
+        }
+
+        body.dark-mode {
+            --brand: #a767ed;
+            --brand-strong: #8f4bdc;
+            --brand-deep: #e7d2ff;
+            --brand-soft: rgba(150, 82, 222, .20);
+            --brand-pale: rgba(150, 82, 222, .20);
+            --accent-warm: #d4b780;
+            --ink: #f5eefb;
+            --ink-soft: #c5b9cf;
+            --canvas: #0d0812;
+            --surface: rgba(28, 18, 39, .88);
+            --surface-raised: #1a1124;
+            --surface-soft: #24172f;
+            --line: rgba(237, 218, 255, .115);
+            --field: #1c1227;
+            --field-border: rgba(213, 173, 255, .24);
+            --focus-ring: rgba(178, 116, 244, .30);
+            --calendar-muted: #b9a8c6;
+            --shadow-xs: 0 1px 2px rgba(0, 0, 0, .18), 0 5px 15px rgba(0, 0, 0, .14);
+            --shadow-sm: 0 12px 30px rgba(0, 0, 0, .20);
+            --shadow-md: 0 22px 48px rgba(0, 0, 0, .27);
+            --shadow-lg: 0 32px 76px rgba(0, 0, 0, .40);
+            --focus-visible: #d5b3f3;
+        }
+
+        html { scroll-padding-top: 6.5rem; }
+        body {
+            padding: 18px clamp(14px, 2.2vw, 32px) 64px;
+            color: var(--ink);
+            background:
+                radial-gradient(ellipse at 8% 4%, color-mix(in srgb, var(--brand) 10%, transparent), transparent 34rem),
+                radial-gradient(ellipse at 96% 30%, color-mix(in srgb, var(--accent-warm) 9%, transparent), transparent 30rem),
+                var(--canvas);
+            line-height: 1.62;
+            text-rendering: optimizeLegibility;
+        }
+        body::before { opacity: 0; background-image: none; }
+        body.dark-mode {
+            background:
+                radial-gradient(ellipse at 6% 0%, rgba(111, 37, 178, .20), transparent 36rem),
+                radial-gradient(ellipse at 100% 28%, rgba(176, 125, 83, .075), transparent 32rem),
+                var(--canvas) !important;
+        }
+        body, button, input, select, textarea { font-family: var(--font-body) !important; }
+        :is(h1, h2, h3, h4, h5, h6, .logo-spa, .card-titulo, .card-preco, .item-agendamento-info h4) {
+            font-family: var(--font-display) !important;
+            color: var(--ink);
+            letter-spacing: -.035em !important;
+        }
+        :is(button, a, input, select, textarea, [tabindex]):focus-visible {
+            outline: 3px solid var(--focus-visible) !important;
+            outline-offset: 3px !important;
+        }
+        :is(input, select, textarea):focus-visible {
+            border-color: var(--focus-visible) !important;
+            box-shadow: 0 0 0 3px var(--focus-ring) !important;
+        }
+        ::selection { color: #fff; background: var(--brand-strong); }
+
+        .navbar-topo {
+            width: min(100%, 1240px);
+            min-height: 68px;
+            margin-bottom: clamp(24px, 4vw, 42px);
+            border: 1px solid var(--line);
+            border-radius: 16px;
+            background: var(--surface-raised);
+            box-shadow: var(--shadow-xs);
+            backdrop-filter: blur(12px);
+        }
+        body.dark-mode .navbar-topo { border-color: var(--line) !important; background: var(--surface) !important; }
+        .logo-spa { color: var(--brand-deep) !important; font-weight: 750; }
+        .logo-spa::before { border: 0; box-shadow: none; background: var(--accent-warm); }
+        #btn-theme-toggle {
+            color: var(--ink) !important;
+            border-color: var(--line) !important;
+            border-radius: 12px !important;
+            background: var(--surface-soft) !important;
+        }
+        #btn-theme-toggle:hover { color: var(--brand-deep) !important; border-color: var(--field-border) !important; background: var(--brand-soft) !important; transform: translateY(-1px); }
+        #btnDropdownGatilho {
+            color: #fff !important;
+            border: 1px solid var(--brand-strong) !important;
+            border-radius: 12px !important;
+            background: var(--brand-strong) !important;
+            box-shadow: none !important;
+        }
+        #btnDropdownGatilho:hover { background: #43108d !important; transform: translateY(-1px); }
+        .dropdown-menu-spa { border-color: var(--line); border-radius: 14px; background: var(--surface-raised); box-shadow: var(--shadow-md); }
+        .dropdown-item { min-height: 44px; color: var(--ink) !important; }
+        .dropdown-item:hover, .dropdown-item[aria-current='page'] { color: var(--brand-deep) !important; border-color: transparent; background: var(--brand-soft) !important; }
+
+        .secao-conteudo { width: min(100%, 1240px); }
+        .secao-conteudo > header:not(.cabecalho-catalogo) { margin: 18px 0 26px !important; }
+        .secao-conteudo > header:not(.cabecalho-catalogo) h1,
+        .secao-conteudo > header:not(.cabecalho-catalogo) h2 { font-size: clamp(1.8rem, 3.2vw, 2.55rem) !important; line-height: 1.16; }
+        .secao-conteudo > header:not(.cabecalho-catalogo) p { color: var(--ink-soft) !important; font-size: .98rem !important; line-height: 1.7; }
+        .secao-eyebrow, .clientes-eyebrow, .hero-eyebrow { color: var(--brand-strong) !important; letter-spacing: .13em; }
+        .hero-eyebrow { color: #fff !important; }
+
+        .hero-spa {
+            grid-template-columns: minmax(0, 1.08fr) minmax(0, .92fr);
+            gap: clamp(24px, 4vw, 54px);
+            min-height: 0;
+            margin-bottom: clamp(42px, 6vw, 68px);
+            padding: clamp(20px, 2.8vw, 34px);
+            border: 1px solid rgba(255, 255, 255, .22);
+            border-radius: 26px;
+            color: var(--ink);
+            background: linear-gradient(125deg, #270545 0%, #4b0b88 44%, #7519c5 100%);
+            box-shadow: 0 35px 90px rgba(51, 12, 86, .26), inset 0 1px 0 rgba(255, 255, 255, .18);
+        }
+        .hero-spa::before, .hero-spa::after { display: none !important; }
+        .hero-conteudo { padding: clamp(18px, 3vw, 40px) 0 clamp(18px, 3vw, 40px) clamp(4px, 1vw, 14px); }
+        .hero-eyebrow { color: #e5c9ff !important; }
+        .hero-conteudo h1 {
+            max-width: 13ch;
+            margin: 16px 0 18px;
+            color: #fff !important;
+            font-size: clamp(2.65rem, 4.5vw, 4.25rem) !important;
+            font-weight: 650;
+            line-height: 1.03;
+            letter-spacing: -.055em !important;
+        }
+        .hero-conteudo > p { max-width: 54ch; color: #eee5f7 !important; font-size: clamp(.98rem, 1.35vw, 1.08rem); line-height: 1.75; }
+        .hero-acoes { gap: 10px; margin-top: 24px; }
+        .btn-hero-primario, .btn-hero-secundario { min-height: 50px; padding: 0 18px; border-radius: 10px; font-size: .92rem; font-weight: 700; }
+        .btn-hero-primario { color: #3b087d !important; border: 1px solid #f3e3c8; background: #f3e3c8; box-shadow: none; }
+        .btn-hero-primario:hover { color: #3b087d !important; background: #fff6e8; transform: translateY(-1px); box-shadow: var(--shadow-xs); }
+        .btn-hero-secundario { color: #fff !important; border: 1px solid rgba(255, 255, 255, .38); background: rgba(40, 8, 70, .32); }
+        .btn-hero-secundario:hover { background: rgba(40, 8, 70, .52); transform: translateY(-1px); }
+        .hero-sinais { gap: 8px 16px; margin-top: 24px; color: #e9dcf4; font-size: .75rem; }
+        .hero-sinais span { padding-left: 14px; }
+        .hero-sinais span::before { background: var(--accent-warm); box-shadow: none; }
+        .hero-destaque {
+            display: flex;
+            min-height: 340px;
+            align-items: flex-end;
+            justify-content: flex-end;
+            padding: clamp(14px, 2.1vw, 28px);
+            overflow: hidden;
+            isolation: isolate;
+            border-radius: 20px;
+        }
+        .hero-destaque::before {
+            content: '';
+            position: absolute;
+            z-index: -1;
+            inset: 0;
+            border-radius: inherit;
+            background: linear-gradient(180deg, rgba(31, 8, 53, .03) 36%, rgba(31, 8, 53, .25)), url('https://images.unsplash.com/photo-1519823551278-64ac92734fb1?auto=format&fit=crop&w=1200&q=85') center 50% / cover no-repeat;
+        }
+        .hero-orbe { display: none !important; }
+        .hero-cartao-flutuante {
+            position: relative;
+            right: auto;
+            bottom: auto;
+            width: min(100%, 290px);
+            margin: 0;
+            padding: 20px;
+            border: 1px solid rgba(255, 255, 255, .28);
+            border-radius: 14px;
+            color: var(--ink);
+            background: rgba(255, 255, 255, .94);
+            box-shadow: 0 14px 36px rgba(27, 4, 48, .28);
+            backdrop-filter: blur(14px);
+        }
+        .hero-cartao-flutuante p { color: var(--ink-soft); }
+        .hero-cartao-flutuante strong { color: var(--ink); font-family: var(--font-display) !important; }
+        .hero-cartao-flutuante small { color: var(--brand-strong); }
+
+        .cabecalho-catalogo { margin: 0 0 26px; }
+        .cabecalho-catalogo h2 { color: var(--ink); font-size: clamp(2rem, 3.8vw, 3rem); line-height: 1.1; }
+        .cabecalho-catalogo p { color: var(--ink-soft); line-height: 1.7; }
+        .cabecalho-catalogo .secao-eyebrow { color: var(--brand-strong) !important; border-color: var(--line); background: var(--brand-soft); }
+        .grid-servicos { gap: clamp(14px, 2vw, 22px); }
+        .card {
+            border: 1px solid var(--line) !important;
+            border-radius: 16px !important;
+            background: var(--surface-raised) !important;
+            box-shadow: var(--shadow-xs) !important;
+            transition: transform var(--motion-base) var(--ease-out), border-color var(--motion-base), box-shadow var(--motion-base);
+        }
+        .card:hover, .card:focus-within { transform: translateY(-3px); border-color: rgba(103, 73, 128, .34) !important; box-shadow: var(--shadow-sm) !important; }
+        .card-img-wrapper { height: clamp(190px, 22vw, 245px); background: var(--surface-soft); }
+        .card-img-wrapper::after { height: 24%; background: linear-gradient(transparent, rgba(31, 8, 53, .16)); }
+        .card-conteudo { gap: 17px; padding: clamp(17px, 2vw, 22px); }
+        .card-titulo { color: var(--ink) !important; font-size: clamp(1.15rem, 1.65vw, 1.35rem); }
+        .card-preco { color: var(--brand-strong) !important; font-size: 1.35rem; }
+        .card-contratos { color: var(--brand-strong) !important; border-color: var(--line); background: var(--brand-soft) !important; }
+
+        .auth-container, .admin-container, .clientes-lista, .clientes-detalhe,
+        .gerencia-lista, .estoque-card, .privacidade-card, .recompensa-card,
+        .voucher-item, .notificacao-item, .fidelidade-como-funciona,
+        .item-agendamento, .bloqueios-painel {
+            border-color: var(--line) !important;
+            border-radius: 16px !important;
+            background: var(--surface-raised) !important;
+            box-shadow: var(--shadow-xs) !important;
+        }
+        .auth-container { width: min(100%, 440px); padding: clamp(24px, 4vw, 36px); }
+        .auth-container::before { color: var(--brand-strong); }
+        .auth-container h3 { color: var(--ink) !important; }
+        :is(.auth-container input, .modal-box input, .modal-box select, .modal-box textarea, .gerencia-filtros input, .gerencia-filtros select, .clientes-controles input, .clientes-controles select, .bloqueios-form :is(input, select, textarea)) {
+            color: var(--ink) !important;
+            border-color: var(--field-border) !important;
+            border-radius: 10px !important;
+            background: var(--field) !important;
+        }
+        :is(.auth-container input, .modal-box input, .modal-box select, .modal-box textarea, .gerencia-filtros input, .gerencia-filtros select, .clientes-controles input, .clientes-controles select, .bloqueios-form :is(input, select, textarea))::placeholder { color: var(--ink-soft); opacity: .78; }
+        .auth-container > #btnAuth, .btn-contratar, .btn-confirmar, .gerencia-primario,
+        .btn-acao--primary, .bloqueios-form button[type='submit'] {
+            color: #fff !important;
+            border-color: var(--brand-strong) !important;
+            border-radius: 10px !important;
+            background: var(--brand-strong) !important;
+            box-shadow: none !important;
+        }
+        .auth-container > #btnAuth:hover:not(:disabled), .btn-contratar:hover:not(:disabled),
+        .btn-confirmar:hover:not(:disabled), .gerencia-primario:hover:not(:disabled),
+        .btn-acao--primary:hover:not(:disabled), .bloqueios-form button[type='submit']:hover:not(:disabled) {
+            color: #fff !important;
+            border-color: #43108d !important;
+            background: #43108d !important;
+            box-shadow: var(--shadow-xs) !important;
+            transform: translateY(-1px);
+        }
+        .btn-detalhes-servico, .clientes-botao, .btn-reserva-voltar, .btn-remarcar,
+        .btn-cancelar, .btn-acao, .btn-horario, .lembrete-proximo-acao {
+            min-height: 44px;
+            border-radius: 10px !important;
+        }
+        .btn-detalhes-servico, .clientes-botao, .btn-reserva-voltar, .btn-acao--neutral {
+            color: var(--ink) !important;
+            border-color: var(--field-border) !important;
+            background: var(--surface-raised) !important;
+            box-shadow: none !important;
+        }
+        .btn-detalhes-servico:hover, .clientes-botao:hover:not(:disabled), .btn-reserva-voltar:hover, .btn-acao--neutral:hover:not(:disabled) {
+            color: var(--brand-deep) !important;
+            border-color: var(--brand) !important;
+            background: var(--brand-soft) !important;
+            transform: translateY(-1px);
+        }
+        button:disabled, [aria-disabled='true'] { cursor: not-allowed !important; opacity: .56 !important; transform: none !important; }
+        button.is-loading:disabled::after { border-color: #fff; border-right-color: transparent; color: #fff; }
+
+        .modal-overlay { background: rgba(28, 20, 34, .66); backdrop-filter: blur(7px); }
+        .modal-box { border-color: var(--line) !important; border-radius: 18px !important; background: var(--surface-raised) !important; box-shadow: var(--shadow-lg) !important; }
+        .modal-box h3 { color: var(--ink) !important; }
+        .modal-box > p { color: var(--ink-soft); }
+        .btn-fechar { color: var(--ink-soft) !important; border: 1px solid var(--line) !important; border-radius: 10px !important; background: var(--surface-soft) !important; }
+        .btn-fechar:hover { color: var(--ink) !important; border-color: var(--field-border) !important; background: var(--brand-soft) !important; transform: none; }
+        .detalhes-servico-imagem { background: var(--surface-soft); }
+        .detalhes-servico-meta { color: var(--brand-strong); border-color: var(--line); background: var(--brand-soft); }
+        .detalhes-servico-grade section { border-color: var(--line); border-radius: 12px; background: var(--surface-soft); }
+        .detalhes-servico-grade h4 { color: var(--ink) !important; }
+        .detalhes-servico-agendar { min-height: 48px; }
+        .reserva-etapas li { border-color: var(--line); color: var(--ink-soft); }
+        .reserva-etapas li[aria-current='step'] { border-color: var(--brand-strong); color: var(--brand-strong); }
+        .reserva-resumo { border-color: var(--line); background: var(--surface-soft); }
+        .reserva-rodape { background: linear-gradient(to bottom, transparent 0, var(--surface-raised) 12px); }
+        .reserva-rodape .btn-confirmar { background: var(--brand-strong) !important; }
+        .seletor-horario { border-color: var(--line); background: var(--surface-soft); }
+        .btn-horario { color: var(--ink); border-color: var(--field-border); background: var(--surface-raised); }
+        .btn-horario:hover:not(:disabled), .btn-horario.ativo { color: #fff; border-color: var(--brand-strong); background: var(--brand-strong); }
+        .flatpickr-calendar { color: var(--ink) !important; border-color: var(--line) !important; border-radius: 14px !important; background: var(--surface-raised) !important; box-shadow: var(--shadow-xs) !important; }
+        .flatpickr-month, .flatpickr-current-month, .flatpickr-current-month input.cur-year, .flatpickr-weekday { color: var(--ink) !important; }
+        .flatpickr-weekday { color: var(--ink-soft) !important; }
+        .flatpickr-day { color: var(--ink) !important; }
+        .flatpickr-day:hover, .flatpickr-day:focus { color: var(--brand-strong) !important; background: var(--brand-soft) !important; }
+        .flatpickr-day.today { border-color: var(--brand) !important; color: var(--brand-strong) !important; }
+        .flatpickr-day.selected, .flatpickr-day.selected:hover, .flatpickr-day.startRange, .flatpickr-day.endRange { color: #fff !important; background: var(--brand-strong) !important; box-shadow: none !important; }
+        .flatpickr-prev-month:hover, .flatpickr-next-month:hover { background: var(--brand-soft); }
+        .flatpickr-prev-month svg, .flatpickr-next-month svg { fill: var(--brand-strong) !important; }
+
+        #secao-agendamentos .item-agendamento { background: var(--surface-raised) !important; }
+        #secao-agendamentos .item-agendamento--concluido { background: var(--surface-raised) !important; }
+        #secao-agendamentos #cardFidelidade {
+            border-color: rgba(255, 255, 255, .12) !important;
+            background: linear-gradient(118deg, #2d0756, #6416b7) !important;
+            box-shadow: var(--shadow-sm) !important;
+        }
+        #secao-agendamentos #cardFidelidade h4 { color: #f6f3e9 !important; }
+        #secao-agendamentos #cardFidelidade #contadorPontos { color: #e5d1a8 !important; }
+        #secao-agendamentos .avaliacao-atendimento { border-color: var(--line); background: var(--surface-soft); }
+        .lembrete-proximo { border-radius: 14px; background: var(--brand-soft); box-shadow: var(--shadow-xs); }
+        .lembrete-proximo-marca { background: var(--accent-warm); box-shadow: none; }
+        .lembrete-proximo-rotulo, .detalhes-servico-selo { color: var(--brand-strong); }
+        .item-agendamento, .voucher-item, .recompensa-card, .notificacao-item, .privacidade-card { border-radius: 14px !important; }
+        .item-agendamento:hover, .voucher-item:hover, .recompensa-card:hover, .notificacao-item:hover, .privacidade-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-sm) !important; }
+
+        #cardFidelidade {
+            border-color: rgba(255, 255, 255, .12) !important;
+            background: linear-gradient(118deg, #2d0756, #6416b7) !important;
+            box-shadow: var(--shadow-sm) !important;
+        }
+        #cardFidelidade h4 { color: #f6f3e9 !important; }
+        #cardFidelidade #contadorPontos { color: #e5d1a8 !important; }
+        #cardFidelidade > div:last-child { border-color: rgba(255,255,255,.20) !important; background: rgba(255,255,255,.10) !important; }
+        .fidelidade-cabecalho h1, .vouchers-area h2, .fidelidade-como-funciona h2 { color: var(--ink) !important; }
+        .fidelidade-saldo-card { border-radius: 16px; background: linear-gradient(118deg, #2d0756, #6416b7) !important; box-shadow: var(--shadow-sm) !important; }
+        .fidelidade-como-funciona, .recompensa-card, .voucher-item { border: 1px solid var(--line); }
+        .recompensa-custo { color: var(--brand-strong) !important; }
+        .privacidade-selo { color: var(--brand-strong) !important; }
+        .notificacao-item h2, .privacidade-card h2, .recompensa-card h2, .voucher-item h3 { color: var(--ink) !important; }
+
+        .clientes-painel { --cliente-acento: var(--brand-strong); --cliente-verde: #52745d; --cliente-ambar: #8c6a32; }
+        .admin-container { background: var(--surface-raised) !important; }
+        .clientes-indicadores article, .estoque-indicadores article { border-color: var(--line); border-radius: 14px; background: var(--surface); }
+        .clientes-indicadores .clientes-indicador-destaque { border-color: var(--field-border); background: var(--brand-soft); }
+        .gerencia-destaques { border-color: var(--line); background: var(--brand-soft) !important; }
+        .gerencia-lista-topo, .clientes-lista-cabecalho, .estoque-cabecalho { color: var(--ink); }
+        .gerencia-tabela th, .clientes-tabela th, .estoque-tabela th { color: var(--ink-soft) !important; background: var(--surface-soft) !important; }
+        .gerencia-tabela td, .clientes-tabela td, .estoque-tabela td { color: var(--ink) !important; }
+        :is(.gerencia-tabela, .clientes-tabela, .estoque-tabela) tbody tr:hover { background: var(--surface-soft) !important; }
+        .bloqueios-painel, .bloqueios-calendario { border-color: var(--line); }
+        .bloqueios-calendario { background: var(--surface-soft); }
+        .bloqueios-item { border-color: var(--line); background: var(--surface-soft); }
+        .badge-concluido { color: #385c43; background: #e4eee2; }
+        .badge-pendente { color: #765622; background: #f4ead3; }
+        .badge-cancelado { color: #843f3c; background: #f3e3df; }
+
+        .spa-toast { color: var(--ink); border-color: var(--line); border-left-color: var(--brand-strong); border-radius: 12px; background: var(--surface-raised); box-shadow: var(--shadow-md); }
+        .spa-toast.sucesso { border-left-color: #52745d; }
+        .spa-toast.erro { border-left-color: var(--danger); }
+        .spa-toast.aviso { border-left-color: var(--accent-warm); }
+        .chatbot-btn { border-color: rgba(255,255,255,.28); background: var(--brand-strong); box-shadow: var(--shadow-sm); }
+        .chatbot-btn:hover { background: #43108d; box-shadow: var(--shadow-md); transform: translateY(-2px); }
+        #chatbotJanela { border-color: var(--line) !important; border-radius: 16px !important; background: var(--surface-raised) !important; box-shadow: var(--shadow-lg) !important; }
+
+        body.dark-mode {
+            background:
+                radial-gradient(ellipse at 6% 0%, rgba(111, 37, 178, .20), transparent 36rem),
+                radial-gradient(ellipse at 100% 28%, rgba(176, 125, 83, .075), transparent 32rem),
+                var(--canvas) !important;
+        }
+        body.dark-mode .hero-spa { border-color: var(--line); background: linear-gradient(125deg, #251431, #3d2155 55%, #512a71); }
+        body.dark-mode .hero-conteudo h1 { color: #edf1e9 !important; }
+        body.dark-mode .hero-conteudo > p, body.dark-mode .hero-sinais { color: #d8cce2 !important; }
+        body.dark-mode .hero-eyebrow { color: #e2c5ff !important; }
+        body.dark-mode .btn-hero-primario { color: #3b087d !important; border-color: #f3e3c8; background: #f3e3c8; }
+        body.dark-mode .btn-hero-primario:hover { background: #fff6e8; }
+        body.dark-mode .btn-hero-secundario { color: #f1ecf4 !important; border-color: rgba(230,215,239,.32); background: rgba(35,27,41,.72); }
+        body.dark-mode .hero-cartao-flutuante { color: var(--ink); border-color: var(--line); background: rgba(39,32,46,.96); }
+        body.dark-mode .hero-cartao-flutuante p { color: var(--ink-soft); }
+        body.dark-mode .hero-cartao-flutuante strong { color: var(--ink); }
+        body.dark-mode .hero-cartao-flutuante small { color: #d4b780; }
+        body.dark-mode .card, body.dark-mode .auth-container, body.dark-mode .admin-container,
+        body.dark-mode .modal-box, body.dark-mode .item-agendamento, body.dark-mode .clientes-lista,
+        body.dark-mode .clientes-detalhe, body.dark-mode .gerencia-lista, body.dark-mode .estoque-card,
+        body.dark-mode .privacidade-card, body.dark-mode .recompensa-card, body.dark-mode .voucher-item,
+        body.dark-mode .notificacao-item, body.dark-mode .fidelidade-como-funciona,
+        body.dark-mode .bloqueios-painel, body.dark-mode .dropdown-menu-spa {
+            color: var(--ink) !important;
+            border-color: var(--line) !important;
+            background: var(--surface-raised) !important;
+            box-shadow: var(--shadow-xs) !important;
+        }
+        body.dark-mode .card-conteudo, body.dark-mode .card-titulo, body.dark-mode .modal-box h3,
+        body.dark-mode .privacidade-card h2, body.dark-mode .recompensa-card h2,
+        body.dark-mode .notificacao-item h2, body.dark-mode .voucher-item h3 { color: var(--ink) !important; }
+        body.dark-mode .card-preco, body.dark-mode .fidelidade-cabecalho h1,
+        body.dark-mode .vouchers-area h2, body.dark-mode .fidelidade-como-funciona h2,
+        body.dark-mode .recompensa-custo { color: var(--brand-deep) !important; }
+        body.dark-mode .card-contratos, body.dark-mode .detalhes-servico-meta,
+        body.dark-mode .reserva-resumo, body.dark-mode .seletor-horario,
+        body.dark-mode .bloqueios-calendario, body.dark-mode .bloqueios-item,
+        body.dark-mode .gerencia-destaques { color: var(--ink); border-color: var(--line); background: var(--surface-soft) !important; }
+        body.dark-mode .detalhes-servico-grade section { border-color: var(--line); background: var(--surface-soft); }
+        body.dark-mode .btn-detalhes-servico, body.dark-mode .clientes-botao,
+        body.dark-mode .btn-reserva-voltar, body.dark-mode .btn-acao--neutral,
+        body.dark-mode .btn-horario { color: var(--ink) !important; border-color: var(--field-border) !important; background: var(--surface-soft) !important; }
+        body.dark-mode .btn-detalhes-servico:hover, body.dark-mode .clientes-botao:hover:not(:disabled),
+        body.dark-mode .btn-reserva-voltar:hover, body.dark-mode .btn-horario:hover:not(:disabled),
+        body.dark-mode .btn-horario.ativo { color: #2a1739 !important; background: var(--brand) !important; }
+        body.dark-mode #btnDropdownGatilho {
+            color: #fff !important;
+            border-color: #512c6f !important;
+            background: #512c6f !important;
+            box-shadow: none !important;
+        }
+        body.dark-mode #btnDropdownGatilho:hover { color: #fff !important; border-color: #713ba2 !important; background: #713ba2 !important; }
+        body.dark-mode :is(.auth-container > #btnAuth, .btn-contratar, .btn-confirmar, .gerencia-primario, .btn-acao--primary, .bloqueios-form button[type='submit']) {
+            color: #fff !important;
+            border-color: #6f359f !important;
+            background: #6f359f !important;
+            box-shadow: none !important;
+        }
+        body.dark-mode :is(.auth-container > #btnAuth, .btn-contratar, .btn-confirmar, .gerencia-primario, .btn-acao--primary, .bloqueios-form button[type='submit']):hover:not(:disabled) {
+            color: #fff !important;
+            border-color: #8f4bdc !important;
+            background: #8f4bdc !important;
+        }
+        body.dark-mode .gerencia-tabela th, body.dark-mode .clientes-tabela th, body.dark-mode .estoque-tabela th { color: var(--ink) !important; background: var(--surface-soft) !important; }
+        body.dark-mode .gerencia-tabela td, body.dark-mode .clientes-tabela td, body.dark-mode .estoque-tabela td { color: var(--ink) !important; }
+        body.dark-mode .flatpickr-calendar { color: var(--ink) !important; border-color: var(--line) !important; background: var(--surface-raised) !important; }
+        body.dark-mode .flatpickr-month, body.dark-mode .flatpickr-current-month,
+        body.dark-mode .flatpickr-current-month input.cur-year, body.dark-mode .flatpickr-weekday,
+        body.dark-mode .flatpickr-day { color: var(--ink) !important; }
+        body.dark-mode .flatpickr-day.selected, body.dark-mode .flatpickr-day.selected:hover { color: #2a1739 !important; background: var(--brand) !important; }
+        body.dark-mode #cardFidelidade, body.dark-mode #secao-agendamentos #cardFidelidade,
+        body.dark-mode .fidelidade-saldo-card { color: #f7f1fa !important; background: linear-gradient(118deg, #32174b, #633992) !important; }
+        body.dark-mode #cardFidelidade h4, body.dark-mode #secao-agendamentos #cardFidelidade h4 { color: #f6f3e9 !important; }
+        body.dark-mode #cardFidelidade #contadorPontos, body.dark-mode #secao-agendamentos #cardFidelidade #contadorPontos { color: #e5d1a8 !important; }
+        body.dark-mode #secao-financeiro [style*='color: #1e293b'], body.dark-mode #secao-financeiro [style*='color: #334155'],
+        body.dark-mode #secao-financeiro [style*='color: #64748b'] { color: var(--ink-soft) !important; }
+        body.dark-mode #secao-financeiro [style*='background: white'], body.dark-mode #secao-financeiro [style*='background:white'] { border-color: var(--line) !important; background: var(--surface-raised) !important; }
+        body.dark-mode .spa-toast { color: var(--ink); border-color: var(--line); background: var(--surface-raised) !important; }
+
+        @media (max-width: 1024px) {
+            .hero-spa { min-height: 0; }
+            .hero-destaque { min-height: 320px; }
+            .privacidade-grid, .recompensas-grade { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        }
+        @media (max-width: 820px) {
+            .hero-spa { grid-template-columns: minmax(0, 1fr); gap: 12px; padding: clamp(18px, 4vw, 30px); }
+            .hero-conteudo { padding: 12px 4px 4px; }
+            .hero-conteudo h1 { max-width: 14ch; font-size: clamp(2.45rem, 7vw, 3.5rem) !important; }
+            .hero-destaque { min-height: clamp(210px, 38vw, 310px); }
+            .hero-cartao-flutuante { width: min(100%, 300px); padding: 17px; }
+        }
+        @media (max-width: 760px) {
+            body { padding: max(12px, env(safe-area-inset-top)) 14px calc(42px + env(safe-area-inset-bottom)); }
+            .navbar-topo { margin-bottom: 22px; }
+            .hero-spa { margin-bottom: 42px; border-radius: 20px; }
+            .hero-acoes { display: flex; }
+            .hero-sinais { display: flex; }
+            .cabecalho-catalogo { margin: 0 0 22px; }
+            #secao-catalogo > .cabecalho-catalogo { margin-top: 0; padding-bottom: 0; border: 0; }
+            #secao-catalogo > .cabecalho-catalogo h2 { max-width: 18ch; font-size: clamp(1.9rem, 6vw, 2.6rem); }
+            #secao-catalogo > .cabecalho-catalogo p { padding: 0; border: 0; font-size: .95rem; }
+            .grid-servicos { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .card-img-wrapper { height: clamp(160px, 30vw, 220px); }
+            .card-conteudo { min-height: 0; }
+            .privacidade-grid, .recompensas-grade { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .modal-overlay { padding: 12px; }
+            .modal-box { max-height: calc(100dvh - 24px); }
+        }
+        @media (max-width: 560px) {
+            body { padding-inline: 12px; }
+            .navbar-topo { min-height: 60px; padding: 8px 9px 8px 13px; }
+            .acoes-topo { gap: 7px; }
+            .logo-spa { font-size: .95rem; }
+            #btnDropdownGatilho { max-width: min(170px, calc(100vw - 95px)); }
+            .hero-spa { gap: 6px; padding: 16px; }
+            .hero-conteudo { padding: 8px 2px 3px; }
+            .hero-conteudo h1 { margin: 12px 0; font-size: clamp(2.35rem, 10.5vw, 3rem) !important; }
+            .hero-conteudo > p { font-size: .94rem; }
+            .hero-acoes { display: grid; grid-template-columns: 1fr; width: 100%; margin-top: 18px; }
+            .btn-hero-primario, .btn-hero-secundario { width: 100%; min-height: 48px; }
+            .hero-sinais { display: grid; gap: 7px; margin-top: 16px; font-size: .72rem; }
+            .hero-destaque { min-height: 210px; justify-content: flex-start; padding: 10px; border-radius: 14px; }
+            .hero-cartao-flutuante { width: min(100%, 260px); padding: 14px; }
+            .hero-cartao-flutuante strong { font-size: 1rem; }
+            #secao-catalogo > .cabecalho-catalogo h2 { font-size: clamp(1.85rem, 8vw, 2.4rem); }
+            .grid-servicos, .privacidade-grid, .recompensas-grade { grid-template-columns: minmax(0, 1fr); }
+            .card-img-wrapper { height: clamp(190px, 58vw, 250px); }
+            .card-acoes { grid-template-columns: 1fr 1.15fr; }
+            .card-acoes > button { min-height: 46px; }
+            .item-agendamento-acoes :is(button, a), .clientes-botao, .gerencia-tabela button { min-height: 44px; }
+            .modal-overlay { padding: 8px; }
+            .modal-box { width: min(100%, 460px) !important; max-height: calc(100dvh - 16px); padding: 22px 17px calc(22px + env(safe-area-inset-bottom)) !important; border-radius: 16px !important; }
+            .modal-box.detalhes-servico-box { padding: 0 !important; }
+            #agendamentoModal .reserva-box { width: min(100%, 600px) !important; padding: 12px !important; }
+            .reserva-etapas { gap: 5px; }
+            .reserva-etapas li { font-size: 10px; }
+            .flatpickr-calendar.inline { padding: 4px !important; }
+            .flatpickr-day { min-height: 44px; height: 44px !important; line-height: 42px !important; }
+            .flatpickr-day.today:not(.selected) { line-height: 38px !important; }
+            .fidelidade-saldo { grid-template-columns: minmax(0, 1fr); }
+            #cardFidelidade { gap: 14px; }
+            .gerencia-cabecalho { align-items: stretch; }
+            .gerencia-cabecalho > button { width: 100%; }
+            .clientes-area.com-detalhe { grid-template-columns: minmax(0, 1fr); }
+            .clientes-lista-cabecalho, .clientes-controles { padding-inline: 16px; }
+            .gerencia-filtros, .bloqueios-campos { grid-template-columns: minmax(0, 1fr) !important; }
+            .notificacao-item { padding: 16px; }
+        }
+        @media (max-width: 380px) {
+            .logo-spa { font-size: .88rem; }
+            #btnDropdownGatilho { max-width: 140px; gap: 4px; padding-inline: 7px; font-size: .68rem; }
+            .chatbot-btn { width: 48px; height: 48px; right: 14px; bottom: calc(14px + env(safe-area-inset-bottom)); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            html { scroll-behavior: auto !important; }
+            *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
+            .card:hover, .card:focus-within, .item-agendamento:hover, .voucher-item:hover,
+            .recompensa-card:hover, .notificacao-item:hover, .privacidade-card:hover { transform: none !important; }
+        }
+
     </style>
     <script>
         if (typeof location !== 'undefined' && /^https?:$/.test(location.protocol) && !new Set(['/', '/cadastro']).has(location.pathname)) {
@@ -3901,7 +4435,7 @@ body.dark-mode .spa-toast {
     <div class="modal-overlay" id="detalhesServicoModal">
         <div class="modal-box detalhes-servico-box" role="dialog" aria-modal="true" aria-labelledby="detalhesServicoTitulo">
             <button class="btn-fechar" type="button" aria-label="Fechar detalhes do tratamento" onclick="fecharModal('detalhesServicoModal')">&times;</button>
-            <div class="detalhes-servico-imagem"><img id="detalhesServicoImagem" src="" alt="" decoding="async"></div>
+            <div class="detalhes-servico-imagem"><img id="detalhesServicoImagem" src="" alt="" width="760" height="500" decoding="async"></div>
             <div class="detalhes-servico-corpo">
                 <span class="detalhes-servico-selo">EXPERIÊNCIA PANACEIA</span>
                 <h3 id="detalhesServicoTitulo" tabindex="-1"></h3>
@@ -3966,7 +4500,7 @@ body.dark-mode .spa-toast {
     </div>
 
     <div class="modal-overlay" id="notificacaoModal">
-        <div class="modal-box">
+        <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="notificacaoTitulo">
             <div id="notificacaoIcone" style="font-size: 55px; margin-bottom: 15px; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1));"></div>
             <h3 id="notificacaoTitulo">Mensagem</h3>
             <p id="notificacaoTexto" style="color: #4a5568; line-height: 1.6; font-size: 15px; margin-bottom: 25px;"></p>
@@ -3975,7 +4509,7 @@ body.dark-mode .spa-toast {
     </div>
 
     <div class="modal-overlay" id="confirmarCancelamentoModal">
-        <div class="modal-box">
+        <div class="modal-box" role="dialog" aria-modal="true" aria-label="Confirmar cancelamento de reserva">
             <div style="font-size: 55px; margin-bottom: 15px;"></div>
             <h3>Reavaliar Momento</h3>
             <p style="color: #4a5568; line-height: 1.6; margin-bottom: 25px;">A reserva será cancelada e o horário poderá ficar disponível para outra pessoa. Deseja continuar?</p>
@@ -3984,11 +4518,12 @@ body.dark-mode .spa-toast {
                 <button type="button" class="btn-acao btn-acao--neutral" style="flex: 1;" onclick="fecharModal('confirmarCancelamentoModal')">Manter Reserva</button>
                 <button type="button" class="btn-acao btn-acao--danger" style="flex: 1;" onclick="ejecutarCancelamentoConfirmado()">Sim, Cancelar</button>
             </div>
+            <p id="cancelamentoStatus" role="alert" aria-live="polite"></p>
         </div>
     </div>
 
     <div id="modalNotificacao" class="modal-overlay hidden">
-        <div class="modal-box">
+        <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="modalTituloNotificacao">
             <div id="modalIcone" style="font-size: 55px; margin-bottom: 15px;"></div>
             <h3 id="modalTituloNotificacao">Até logo!</h3>
             <p id="modalMensagem" style="color: #4a5568; margin-bottom: 25px; line-height: 1.6;">Sua sessão foi encerrada.</p>
@@ -4077,6 +4612,9 @@ body.dark-mode .spa-toast {
         // valor antigo ou inválido no navegador não interrompe o JavaScript.
         let usuarioLogado = null;
         let sessaoInicializada = false;
+        let sessaoEstado = 'verificando';
+        let versaoSessao = 0;
+        let ultimaVerificacaoSessao = 0;
         let carregamentoSessao = null;
         const BACKEND_URL = "";
         let acaoAoFecharModal = null;
@@ -4089,6 +4627,29 @@ body.dark-mode .spa-toast {
         let controleAcionadoNaInteracao = null;
         let instanteUltimaInteracao = 0;
         const requisicoesPorBotao = new WeakMap();
+        const escritasEmAndamentoPorBotao = new WeakSet();
+        let promessaChartJs = null;
+        let canalSessao = null;
+        let ultimoSinalSessaoRecebido = '';
+
+        function carregarChartJs() {
+            if (window.Chart) return Promise.resolve(window.Chart);
+            if (promessaChartJs) return promessaChartJs;
+            promessaChartJs = new Promise((resolver, rejeitar) => {
+                const script = document.createElement('script');
+                script.src = 'https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js';
+                script.integrity = 'sha384-vsrfeLOOY6KuIYKDlmVH5UiBmgIdB1oEf7p01YgWHuqmOHfZr374+odEv96n9tNC';
+                script.crossOrigin = 'anonymous';
+                script.onload = () => window.Chart ? resolver(window.Chart) : rejeitar(new Error('Chart.js não inicializou.'));
+                script.onerror = () => rejeitar(new Error('Não foi possível carregar os gráficos agora.'));
+                document.head.appendChild(script);
+            }).catch((erro) => {
+                promessaChartJs = null;
+                console.warn(erro.message);
+                return null;
+            });
+            return promessaChartJs;
+        }
 
         // Identifica somente o botão que iniciou a interação atual. O bloqueio
         // é aplicado quando essa ação realmente começa uma chamada à API.
@@ -4109,14 +4670,41 @@ body.dark-mode .spa-toast {
         async function apiFetch(url, opcoes = {}) {
             const headers = new Headers(opcoes.headers || {});
             const metodo = (opcoes.method || 'GET').toUpperCase();
+            const ehEscrita = !['GET', 'HEAD', 'OPTIONS'].includes(metodo);
+            const versaoDaSessao = versaoSessao;
+            const rotaDaRequisicao = String(url).replace(/^https?:\/\/[^/]+/i, '').split('?')[0];
+            const rotaSemSessao = /^\/(?:cadastrar|api\/(?:servicos|relogio|horarios-ocupados|login|me|chat|esqueci-senha|redefinir-senha|resetar-senha|reenviar-codigo|validar-codigo))(?:\/|$)/.test(rotaDaRequisicao);
             // Alguns handlers aguardam a sessão ou outra tarefa antes de chamar
             // a API. Preserve o botão por alguns segundos para não perder essa
             // associação ao atravessar awaits/microtasks.
             const interacaoRecente = performance.now() - instanteUltimaInteracao < 10000;
             const botaoAcionado = interacaoRecente ? controleAcionadoNaInteracao : null;
             const ehBotaoAcionado = botaoAcionado?.matches('button, input[type="submit"], input[type="button"]');
+            if (ehEscrita && ehBotaoAcionado && escritasEmAndamentoPorBotao.has(botaoAcionado)) {
+                const erroDuplicado = new Error('Esta ação já está em andamento. Aguarde a confirmação antes de tentar novamente.');
+                erroDuplicado.code = 'duplicate_action';
+                throw erroDuplicado;
+            }
+            const timeoutMs = Number.isFinite(Number(opcoes.timeoutMs)) ? Math.max(1000, Number(opcoes.timeoutMs)) : 20000;
+            const opcoesFetch = { ...opcoes };
+            delete opcoesFetch.timeoutMs;
+            const sinalExterno = opcoesFetch.signal;
+            const controlador = typeof AbortController === 'function' ? new AbortController() : null;
+            let expirou = false;
+            let temporizadorTimeout = null;
+            let cancelarPorSinalExterno = null;
+            if (controlador) {
+                opcoesFetch.signal = controlador.signal;
+                temporizadorTimeout = setTimeout(() => { expirou = true; controlador.abort(); }, timeoutMs);
+                if (sinalExterno) {
+                    cancelarPorSinalExterno = () => controlador.abort(sinalExterno.reason);
+                    if (sinalExterno.aborted) cancelarPorSinalExterno();
+                    else sinalExterno.addEventListener('abort', cancelarPorSinalExterno, { once: true });
+                }
+            }
+            if (ehEscrita && ehBotaoAcionado) escritasEmAndamentoPorBotao.add(botaoAcionado);
             let estadoBotao = ehBotaoAcionado ? requisicoesPorBotao.get(botaoAcionado) : null;
-            const travarBotao = ehBotaoAcionado && (!botaoAcionado.disabled || Boolean(estadoBotao));
+            const travarBotao = Boolean(ehBotaoAcionado);
 
             if (travarBotao) {
                 if (!estadoBotao) {
@@ -4136,26 +4724,47 @@ body.dark-mode .spa-toast {
                 botaoAcionado.classList.add('is-loading');
                 botaoAcionado.setAttribute('aria-busy', 'true');
             }
-            if (!['GET', 'HEAD', 'OPTIONS'].includes(metodo)) {
+            if (ehEscrita) {
                 headers.set('Content-Type', 'application/json');
                 if (tokenCsrf) headers.set('X-CSRF-Token', tokenCsrf);
             }
             try {
-                const response = await fetch(url, { ...opcoes, headers, credentials: 'include' });
+                const response = await fetch(url, { ...opcoesFetch, headers, credentials: 'include' });
                 const rota = String(url);
                 const autenticacaoEmAndamento = rota.endsWith('/api/login') || rota.endsWith('/api/me');
 
-                if (response.status === 401 && !autenticacaoEmAndamento) {
-                    usuarioLogado = null;
-                    tokenCsrf = '';
-                    limparPainelClientes();
-                    limparPainelGerencial();
-                    sessaoInicializada = true;
-                    ['agendamentoModal', 'reagendamentoModal'].forEach(fecharModal);
-                    atualizarPainelUsuario();
+                if (response.status === 401 && !rotaSemSessao && !autenticacaoEmAndamento && versaoDaSessao === versaoSessao) {
+                    marcarSessaoAnonima(true);
+                }
+                if (!rotaSemSessao && response.status !== 401 && versaoDaSessao !== versaoSessao) {
+                    const respostaDesatualizada = new Error(ehEscrita
+                        ? 'A conta mudou durante esta solicitação. Confira o estado atualizado antes de tentar novamente.'
+                        : 'A conta mudou durante a consulta; os dados antigos foram descartados.');
+                    respostaDesatualizada.code = 'stale_session_response';
+                    respostaDesatualizada.resultadoIncerto = ehEscrita;
+                    throw respostaDesatualizada;
                 }
                 return response;
+            } catch (erro) {
+                if (expirou) {
+                    const erroTimeout = new Error(ehEscrita
+                        ? 'A solicitação expirou sem confirmação. Confira o estado atualizado antes de tentar novamente.'
+                        : 'A solicitação demorou demais. Verifique sua conexão e tente novamente.');
+                    erroTimeout.code = 'api_timeout';
+                    erroTimeout.resultadoIncerto = ehEscrita;
+                    throw erroTimeout;
+                }
+                if (ehEscrita && erro?.name === 'TypeError') {
+                    const erroConexao = new Error('Não foi possível confirmar o resultado da ação. Atualize os dados antes de tentar novamente.');
+                    erroConexao.code = 'api_network_error';
+                    erroConexao.resultadoIncerto = true;
+                    throw erroConexao;
+                }
+                throw erro;
             } finally {
+                if (temporizadorTimeout) clearTimeout(temporizadorTimeout);
+                if (sinalExterno && cancelarPorSinalExterno) sinalExterno.removeEventListener('abort', cancelarPorSinalExterno);
+                if (ehEscrita && ehBotaoAcionado) escritasEmAndamentoPorBotao.delete(botaoAcionado);
                 if (travarBotao) {
                     estadoBotao.pendentes -= 1;
                     if (estadoBotao.pendentes <= 0) {
@@ -4491,34 +5100,160 @@ body.dark-mode .spa-toast {
             });
         }
 
-        async function restaurarSessaoDoServidor() {
-            try {
-                const response = await apiFetch(`${BACKEND_URL}/api/me`);
-                if (!response.ok) {
-                    usuarioLogado = null;
-                    return null;
-                }
+        function avisarOutrasAbasSobreSessao(tipo) {
+            const sinal = { tipo, nonce: Math.random().toString(36).slice(2), instante: Date.now() };
+            try { canalSessao?.postMessage(sinal); } catch (_) { /* O fallback de storage atende navegadores sem canal. */ }
+            try { localStorage.setItem('spa_session_signal', JSON.stringify(sinal)); } catch (_) { /* Storage pode estar indisponível. */ }
+        }
 
-                const data = await response.json();
-                usuarioLogado = usuarioTemSessaoAtiva(data.usuario) ? data.usuario : null;
-                tokenCsrf = data.csrf_token || '';
-                return usuarioLogado;
-            } catch (erro) {
-                console.warn('Não foi possível restaurar a sessão:', erro);
-                usuarioLogado = null;
-                return null;
-            } finally {
-                limparSessaoAntigaDoNavegador();
-                sessaoInicializada = true;
-                carregamentoSessao = null;
-                atualizarPainelUsuario();
-            }
+        function limparDadosDaSessaoAtual() {
+            const haviaSessaoAtiva = Boolean(usuarioLogado);
+            usuarioLogado = null;
+            tokenCsrf = '';
+            notificacoesAtuais = [];
+            const containerPerfil = document.getElementById('container-meus-agendamentos');
+            const listaEspera = document.getElementById('perfilListaEsperaItens');
+            const recompensas = document.getElementById('recompensas-fidelidade');
+            const vouchers = document.getElementById('vouchers-fidelidade');
+            const listaNotificacoes = document.getElementById('lista-notificacoes');
+            if (containerPerfil) containerPerfil.textContent = '';
+            if (listaEspera) listaEspera.textContent = '';
+            if (recompensas) recompensas.textContent = 'Verificando sua sessão para consultar as recompensas.';
+            if (vouchers) vouchers.textContent = 'Verificando sua sessão para consultar seus vouchers.';
+            if (listaNotificacoes) listaNotificacoes.textContent = '';
+            const resumoNotificacoes = document.getElementById('notificacoes-resumo');
+            if (resumoNotificacoes) resumoNotificacoes.textContent = 'Verificando sua sessão para carregar as atualizações.';
+            const contadorPontos = document.getElementById('contadorPontos');
+            const pontosFidelidade = document.getElementById('fidelidade-pontos');
+            if (contadorPontos) contadorPontos.textContent = '— pts';
+            if (pontosFidelidade) pontosFidelidade.textContent = '— pontos';
+            const contadorNotificacoes = document.getElementById('notificacoes-contador');
+            if (contadorNotificacoes) { contadorNotificacoes.hidden = true; contadorNotificacoes.textContent = '0'; }
+            const painelListaEspera = document.getElementById('perfilListaEspera');
+            if (painelListaEspera) painelListaEspera.hidden = true;
+            elementoComFocoAntesDoModal = null;
+            limparPainelClientes();
+            limparPainelGerencial();
+            if (haviaSessaoAtiva) fecharTodosModais();
+        }
+
+        function marcarSessaoAnonima(notificarOutrasAbas = false) {
+            const haviaSessaoAutenticada = sessaoEstado === 'autenticada' || Boolean(usuarioLogado);
+            versaoSessao += 1;
+            limparDadosDaSessaoAtual();
+            sessaoInicializada = true;
+            sessaoEstado = 'anonima';
+            ultimaVerificacaoSessao = Date.now();
+            carregamentoSessao = null;
+            limparSessaoAntigaDoNavegador();
+            atualizarPainelUsuario();
+            if (notificarOutrasAbas && haviaSessaoAutenticada) avisarOutrasAbasSobreSessao('sessao-alterada');
+        }
+
+        function marcarSessaoIndisponivel() {
+            versaoSessao += 1;
+            limparDadosDaSessaoAtual();
+            sessaoInicializada = false;
+            sessaoEstado = 'indisponivel';
+            carregamentoSessao = null;
+            atualizarPainelUsuario();
+        }
+
+        function invalidarSessaoParaRevalidar(notificarOutrasAbas = false) {
+            versaoSessao += 1;
+            limparDadosDaSessaoAtual();
+            sessaoInicializada = false;
+            sessaoEstado = 'verificando';
+            carregamentoSessao = null;
+            atualizarPainelUsuario();
+            if (notificarOutrasAbas) avisarOutrasAbasSobreSessao('sessao-alterada');
+            return garantirSessaoCarregada();
+        }
+
+        function restaurarSessaoDoServidor() {
+            if (carregamentoSessao) return carregamentoSessao;
+            const versaoDaConsulta = versaoSessao;
+            sessaoEstado = 'verificando';
+            atualizarPainelUsuario();
+            let tarefa;
+            tarefa = (async () => {
+                try {
+                    const response = await apiFetch(`${BACKEND_URL}/api/me`);
+                    if (versaoDaConsulta !== versaoSessao) return sincronizarSessaoUsuario();
+                    if (response.status === 401) {
+                        marcarSessaoAnonima(true);
+                        return null;
+                    }
+                    if (!response.ok) throw new Error('O servidor não conseguiu confirmar a sessão.');
+
+                    const data = await response.json();
+                    if (!usuarioTemSessaoAtiva(data.usuario)) throw new Error('A resposta do servidor não confirmou uma conta válida.');
+                    if (versaoDaConsulta !== versaoSessao) return sincronizarSessaoUsuario();
+                    usuarioLogado = data.usuario;
+                    tokenCsrf = data.csrf_token || '';
+                    sessaoInicializada = true;
+                    sessaoEstado = 'autenticada';
+                    ultimaVerificacaoSessao = Date.now();
+                    return usuarioLogado;
+                } catch (erro) {
+                    console.warn('Não foi possível restaurar a sessão:', erro);
+                    if (versaoDaConsulta === versaoSessao) {
+                        limparDadosDaSessaoAtual();
+                        sessaoInicializada = false;
+                        sessaoEstado = 'indisponivel';
+                    }
+                    return null;
+                } finally {
+                    if (carregamentoSessao === tarefa) carregamentoSessao = null;
+                    if (versaoDaConsulta === versaoSessao) {
+                        limparSessaoAntigaDoNavegador();
+                        atualizarPainelUsuario();
+                    }
+                }
+            })();
+            carregamentoSessao = tarefa;
+            return tarefa;
         }
 
         function garantirSessaoCarregada() {
-            if (sessaoInicializada) return Promise.resolve(sincronizarSessaoUsuario());
+            if (sessaoInicializada) return Promise.resolve(sessaoEstado === 'autenticada' ? sincronizarSessaoUsuario() : null);
             if (!carregamentoSessao) carregamentoSessao = restaurarSessaoDoServidor();
             return carregamentoSessao;
+        }
+
+        function inicializarSincronizacaoSessao() {
+            const atualizarDadosAposRevalidacao = () => {
+                const perfilAtivo = document.getElementById('secao-agendamentos')?.classList.contains('ativa');
+                if (perfilAtivo) carregarMeusAgendamentos();
+                if (usuarioLogado) carregarNotificacoes();
+            };
+            const receberSinalDeOutraAba = (sinal) => {
+                if (sinal?.nonce && sinal.nonce === ultimoSinalSessaoRecebido) return;
+                if (sinal?.nonce) ultimoSinalSessaoRecebido = sinal.nonce;
+                invalidarSessaoParaRevalidar(false).then(atualizarDadosAposRevalidacao);
+            };
+            if ('BroadcastChannel' in window) {
+                canalSessao = new BroadcastChannel('spa-panaceia-sessao');
+                canalSessao.addEventListener('message', (evento) => {
+                    if (evento.data?.tipo === 'sessao-alterada') receberSinalDeOutraAba(evento.data);
+                });
+            }
+            window.addEventListener('storage', (evento) => {
+                if (evento.key === 'spa_session_signal' && evento.newValue) {
+                    try { receberSinalDeOutraAba(JSON.parse(evento.newValue)); } catch (_) { receberSinalDeOutraAba({}); }
+                }
+            });
+            let ficouOcultaEm = 0;
+            document.addEventListener('visibilitychange', () => {
+                if (document.visibilityState === 'hidden') {
+                    ficouOcultaEm = Date.now();
+                    return;
+                }
+                if (ficouOcultaEm && Date.now() - ficouOcultaEm >= 30000 && sessaoEstado === 'autenticada') {
+                    invalidarSessaoParaRevalidar(false).then(atualizarDadosAposRevalidacao);
+                }
+                ficouOcultaEm = 0;
+            });
         }
 
         async function abrirMinhaConta(event) {
@@ -4527,10 +5262,14 @@ body.dark-mode .spa-toast {
             const dropdown = document.getElementById('menuDropdownSpa');
             const botao = document.getElementById('btnDropdownGatilho');
 
-            if (!await garantirSessaoCarregada()) {
+            const usuarioConfirmado = await (sessaoEstado === 'autenticada'
+                ? invalidarSessaoParaRevalidar(false)
+                : garantirSessaoCarregada());
+            if (!usuarioConfirmado) {
                 if (dropdown) dropdown.classList.remove('ativo');
                 if (botao) botao.setAttribute('aria-expanded', 'false');
-                alternarAbas('login_tela');
+                if (sessaoEstado === 'anonima') alternarAbas('login_tela');
+                else exibirNotificacaoSpa('Não foi possível verificar sua sessão', 'Sua conta não foi confirmada como encerrada. Confira a conexão e tente novamente.', 'aviso');
                 return;
             }
 
@@ -4551,7 +5290,8 @@ body.dark-mode .spa-toast {
             if (!await garantirSessaoCarregada()) {
                 if (dropdown) dropdown.classList.remove('ativo');
                 if (botao) botao.setAttribute('aria-expanded', 'false');
-                alternarAbas('login_tela');
+                if (sessaoEstado === 'anonima') alternarAbas('login_tela');
+                else exibirNotificacaoSpa('Não foi possível verificar sua sessão', 'Sua conta não foi confirmada como encerrada. Confira a conexão e tente novamente.', 'aviso');
                 return;
             }
 
@@ -4585,6 +5325,15 @@ body.dark-mode .spa-toast {
             document.body.classList.remove('modal-aberto');
         }
 
+        function controlesFocaveisModal(modal) {
+            const seletores = 'a[href], area[href], button:not(:disabled), input:not([type="hidden"]):not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])';
+            const areas = [modal];
+            const calendario = document.querySelector('.flatpickr-calendar.open');
+            if (calendario) areas.push(calendario);
+            return areas.flatMap((area) => Array.from(area.querySelectorAll(seletores)))
+                .filter((controle) => !controle.hidden && controle.getAttribute('aria-hidden') !== 'true' && controle.getClientRects().length > 0);
+        }
+
         function abrirModal(idModal) {
             const focoAnterior = document.activeElement;
             fecharTodosModais();
@@ -4597,8 +5346,10 @@ body.dark-mode .spa-toast {
                 document.body.classList.add('modal-aberto');
 
                 requestAnimationFrame(() => {
-                    const primeiroControle = el.querySelector('input:not([type="hidden"]):not([disabled]), button:not([disabled]), [tabindex]:not([tabindex="-1"])');
-                    primeiroControle?.focus();
+                    const primeiroControle = controlesFocaveisModal(el)[0];
+                    const dialogo = el.querySelector('[role="dialog"]') || el.querySelector('.modal-box') || el;
+                    if (!primeiroControle && !dialogo.hasAttribute('tabindex')) dialogo.setAttribute('tabindex', '-1');
+                    (primeiroControle || dialogo).focus();
                 });
             }
         }
@@ -4626,9 +5377,29 @@ body.dark-mode .spa-toast {
         }
 
         document.addEventListener('keydown', function(event) {
-            if (event.key !== 'Escape' || document.querySelector('.flatpickr-calendar.open')) return;
             const modalAberto = Array.from(document.querySelectorAll('.modal-overlay.active')).pop();
-            if (modalAberto) fecharModal(modalAberto.id);
+            if (!modalAberto) return;
+            if (event.key === 'Tab') {
+                const controles = controlesFocaveisModal(modalAberto);
+                if (!controles.length) {
+                    event.preventDefault();
+                    (modalAberto.querySelector('[role="dialog"]') || modalAberto.querySelector('.modal-box') || modalAberto).focus();
+                    return;
+                }
+                const primeiro = controles[0];
+                const ultimo = controles[controles.length - 1];
+                const calendario = document.querySelector('.flatpickr-calendar.open');
+                const focoDentroDoDialogo = modalAberto.contains(document.activeElement) || calendario?.contains(document.activeElement);
+                if (event.shiftKey && (document.activeElement === primeiro || !focoDentroDoDialogo)) {
+                    event.preventDefault();
+                    ultimo.focus();
+                } else if (!event.shiftKey && (document.activeElement === ultimo || !focoDentroDoDialogo)) {
+                    event.preventDefault();
+                    primeiro.focus();
+                }
+                return;
+            }
+            if (event.key === 'Escape' && !document.querySelector('.flatpickr-calendar.open')) fecharModal(modalAberto.id);
         });
 
         function escaparHtml(valor) {
@@ -4748,13 +5519,20 @@ body.dark-mode .spa-toast {
         }
 
         async function carregarNotificacoes() {
-            if (!await garantirSessaoCarregada() || !usuarioLogado) return;
+            if (!await garantirSessaoCarregada() || !usuarioLogado) {
+                const resumo = document.getElementById('notificacoes-resumo');
+                if (resumo) resumo.textContent = sessaoEstado === 'anonima' ? 'Entre na sua conta para acompanhar suas atualizações.' : 'Não foi possível confirmar a sessão. Tente novamente.';
+                return;
+            }
+            const usuarioDaConsulta = usuarioLogado;
+            const versaoDaConsulta = versaoSessao;
             const resumo = document.getElementById('notificacoes-resumo');
             if (resumo) resumo.textContent = 'Atualizando sua central…';
             try {
                 const [respostaAgenda, respostaPontos] = await Promise.all([apiFetch(`${BACKEND_URL}/api/meus-agendamentos`), apiFetch(`${BACKEND_URL}/api/usuario/pontos`)]);
                 const agenda = respostaAgenda.ok ? await respostaAgenda.json() : [];
                 const dadosPontos = respostaPontos.ok ? await respostaPontos.json() : {};
+                if (usuarioDaConsulta !== usuarioLogado || versaoDaConsulta !== versaoSessao) return;
                 if (Number.isFinite(Number(dadosPontos.pontos))) usuarioLogado.pontos = Number(dadosPontos.pontos);
                 notificacoesAtuais = montarNotificacoes(agenda, usuarioLogado.pontos);
                 renderizarNotificacoes();
@@ -4778,11 +5556,18 @@ body.dark-mode .spa-toast {
 
         async function baixarDadosPessoais() {
             const status = document.getElementById('privacidade-status');
-            if (!await garantirSessaoCarregada()) { alternarAbas('login_tela'); return; }
+            if (!await garantirSessaoCarregada() || !usuarioLogado) {
+                if (sessaoEstado === 'anonima') alternarAbas('login_tela');
+                else if (status) status.textContent = 'Não foi possível confirmar sua sessão. Tente novamente.';
+                return;
+            }
+            const usuarioDaConsulta = usuarioLogado;
+            const versaoDaConsulta = versaoSessao;
             if (status) status.textContent = 'Preparando sua cópia de dados…';
             try {
                 const resposta = await apiFetch(`${BACKEND_URL}/api/privacidade/exportar`);
                 const dados = await resposta.json();
+                if (usuarioDaConsulta !== usuarioLogado || versaoDaConsulta !== versaoSessao) return;
                 if (!resposta.ok) throw new Error(dados.error || 'Não foi possível exportar os dados.');
                 const arquivo = new Blob([JSON.stringify(dados, null, 2)], { type: 'application/json;charset=utf-8' });
                 const url = URL.createObjectURL(arquivo); const link = document.createElement('a'); link.href = url; link.download = `meus-dados-panaceia-${agoraSpa().slice(0, 10)}.json`; link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
@@ -4824,33 +5609,53 @@ body.dark-mode .spa-toast {
         }
 
         async function carregarFidelidade() {
-            if (!await garantirSessaoCarregada() || !usuarioLogado) { alternarAbas('login_tela'); return; }
+            if (!await garantirSessaoCarregada() || !usuarioLogado) {
+                if (sessaoEstado === 'anonima') alternarAbas('login_tela');
+                else {
+                    const mensagem = '<div class="fidelidade-vazio" role="alert">Não foi possível confirmar sua sessão. Tente novamente.</div>';
+                    document.getElementById('recompensas-fidelidade').innerHTML = mensagem;
+                    document.getElementById('vouchers-fidelidade').innerHTML = mensagem;
+                }
+                return;
+            }
+            const usuarioDaConsulta = usuarioLogado;
+            const versaoDaConsulta = versaoSessao;
             const pontos = document.getElementById('fidelidade-pontos'); const recompensas = document.getElementById('recompensas-fidelidade'); const vouchers = document.getElementById('vouchers-fidelidade');
             if (recompensas) recompensas.innerHTML = '<div class="fidelidade-vazio">Carregando recompensas…</div>';
             try {
                 const resposta = await apiFetch(`${BACKEND_URL}/api/fidelidade`); const dados = await resposta.json();
+                if (usuarioDaConsulta !== usuarioLogado || versaoDaConsulta !== versaoSessao) return;
                 if (!resposta.ok) throw new Error(dados.error || 'Não foi possível carregar a fidelidade.');
                 usuarioLogado.pontos = Number(dados.pontos || 0);
                 if (pontos) pontos.textContent = `${usuarioLogado.pontos} ${usuarioLogado.pontos === 1 ? 'ponto' : 'pontos'}`;
                 const contador = document.getElementById('contadorPontos'); if (contador) contador.textContent = `${usuarioLogado.pontos} pts`;
-                if (recompensas) recompensas.innerHTML = (dados.recompensas || []).map((item) => `<article class="recompensa-card"><small>${escaparHtml(item.codigo).toUpperCase()}</small><h2>${escaparHtml(item.nome)}</h2><p>${escaparHtml(item.descricao)}</p><div class="recompensa-custo">${Number(item.pontos)} pontos</div><button type="button" class="clientes-botao gerencia-primario" ${usuarioLogado.pontos < Number(item.pontos) ? 'disabled' : ''} onclick="resgatarPontos('${escaparHtml(item.codigo)}', ${Number(item.pontos)})">Trocar por ${formatarMoeda(item.desconto)}</button></article>`).join('') || '<div class="fidelidade-vazio">Nenhuma recompensa disponível no momento.</div>';
+                if (recompensas) recompensas.innerHTML = (dados.recompensas || []).map((item) => `<article class="recompensa-card"><small>${escaparHtml(item.codigo).toUpperCase()}</small><h2>${escaparHtml(item.nome)}</h2><p>${escaparHtml(item.descricao)}</p><div class="recompensa-custo">${Number(item.pontos)} pontos</div><button type="button" class="clientes-botao gerencia-primario" ${usuarioLogado.pontos < Number(item.pontos) ? 'disabled' : ''} onclick="resgatarPontos('${escaparHtml(item.codigo)}', ${Number(item.pontos)}, this)">Trocar por ${formatarMoeda(item.desconto)}</button></article>`).join('') || '<div class="fidelidade-vazio">Nenhuma recompensa disponível no momento.</div>';
                 const vouchersAtivos = Array.isArray(dados.vouchers) ? dados.vouchers : [];
                 usuarioLogado.vouchersAtivos = vouchersAtivos;
                 if (vouchers) vouchers.innerHTML = vouchersAtivos.map((voucher) => `<article class="voucher-item"><div><h3>${escaparHtml(voucher.recompensa_nome)}</h3><p>${formatarMoeda(voucher.desconto)} de crédito · válido até ${formatarDataVoucher(voucher.expira_em)}</p></div><code class="voucher-codigo">${escaparHtml(voucher.codigo_voucher)}</code></article>`).join('') || '<div class="fidelidade-vazio">Você ainda não tem vouchers ativos. Ao trocar pontos, seu código aparecerá aqui automaticamente.</div>';
                 notificacoesAtuais = montarNotificacoes([], usuarioLogado.pontos); atualizarContadorNotificacoes();
             } catch (erro) {
+                if (usuarioDaConsulta !== usuarioLogado || versaoDaConsulta !== versaoSessao) return;
                 const mensagem = escaparHtml(erro.message || 'Não foi possível carregar sua fidelidade.');
                 if (recompensas) recompensas.innerHTML = `<div class="fidelidade-vazio">${mensagem}</div>`;
                 if (vouchers) vouchers.innerHTML = `<div class="fidelidade-vazio">${mensagem}</div>`;
             }
         }
 
-        async function resgatarPontos(codigo, custo) {
+        async function resgatarPontos(codigo, custo, botao) {
+            if (!botao || botao.disabled) return;
             if (!usuarioLogado || !Number.isFinite(Number(custo)) || usuarioLogado.pontos < custo) { exibirNotificacaoSpa('Saldo insuficiente', 'Você ainda não tem pontos suficientes para essa recompensa.', 'aviso'); return; }
             const confirma = window.confirm(`Trocar ${custo} pontos por esta recompensa? O saldo será descontado agora e um voucher será gerado.`);
             if (!confirma) return;
+            const usuarioDaOperacao = usuarioLogado;
+            const versaoDaOperacao = versaoSessao;
+            const textoOriginal = botao.textContent;
+            botao.disabled = true;
+            botao.setAttribute('aria-busy', 'true');
+            botao.textContent = 'Resgatando…';
             try {
                 const resposta = await apiFetch(`${BACKEND_URL}/api/fidelidade/resgatar`, { method: 'POST', body: JSON.stringify({ recompensa: codigo }) }); const dados = await resposta.json();
+                if (usuarioDaOperacao !== usuarioLogado || versaoDaOperacao !== versaoSessao) return;
                 if (!resposta.ok) throw new Error(dados.error || 'Não foi possível concluir o resgate.');
                 usuarioLogado.pontos = Number(dados.resgate?.saldo_restante || 0);
                 if (dados.resgate?.codigo_voucher) {
@@ -4861,7 +5666,12 @@ body.dark-mode .spa-toast {
                 exibirNotificacaoSpa('Voucher gerado', `${dados.resgate?.codigo_voucher || 'Seu código'} está disponível em Meus vouchers.`, 'sucesso');
                 registrarNotificacaoDaConta('Pontos resgatados', `Você gerou o voucher ${dados.resgate?.codigo_voucher || ''}.`, 'pontos');
                 await carregarFidelidade();
-            } catch (erro) { exibirNotificacaoSpa('Resgate não concluído', erro.message || 'Tente novamente.', 'erro'); }
+            } catch (erro) {
+                if (usuarioDaOperacao === usuarioLogado) exibirNotificacaoSpa('Resgate não confirmado', erro.message || 'Confira seus pontos e vouchers antes de tentar novamente.', 'erro');
+            } finally {
+                botao.removeAttribute('aria-busy');
+                if (botao.isConnected) { botao.disabled = false; botao.textContent = textoOriginal; }
+            }
         }
 
         let observadorEntradaInterface = null;
@@ -4970,6 +5780,11 @@ body.dark-mode .spa-toast {
                 document.getElementById('secao-financeiro').classList.add('ativa');
                 document.title = "Spa Panaceia | Visão financeira"; //  Título Aba
                 carregarAgendamentosAdmin();
+                carregarChartJs().then((chart) => {
+                    if (!chart || !usuarioEhAdmin(usuarioLogado) || !document.getElementById('secao-financeiro').classList.contains('ativa')) return;
+                    if (mostrandoTodos) processarDadosAdminERenderizar(cacheAgendamentosAdmin);
+                    else executarFiltroDoCalendario();
+                });
             } else if(aba === 'usuarios') { 
                 document.getElementById('secao-usuarios').classList.add('ativa'); 
                 document.title = "Spa Panaceia | Base de Clientes"; //  Título Aba
@@ -5030,10 +5845,30 @@ body.dark-mode .spa-toast {
             const dropDeslogar = document.getElementById('drop-deslogar');
 
             if (!usuarioLogado) {
+                const mensagemDeAcesso = sessaoEstado === 'anonima'
+                    ? 'Entre na sua conta para consultar este conteúdo.'
+                    : sessaoEstado === 'verificando'
+                        ? 'Verificando sua sessão para carregar este conteúdo.'
+                        : 'Não foi possível confirmar sua sessão. Tente novamente.';
+                const resumoNotificacoes = document.getElementById('notificacoes-resumo');
+                const recompensas = document.getElementById('recompensas-fidelidade');
+                const vouchers = document.getElementById('vouchers-fidelidade');
+                const contadorPontos = document.getElementById('contadorPontos');
+                const pontosFidelidade = document.getElementById('fidelidade-pontos');
+                const contadorNotificacoes = document.getElementById('notificacoes-contador');
+                if (resumoNotificacoes) resumoNotificacoes.textContent = mensagemDeAcesso;
+                if (recompensas) recompensas.textContent = mensagemDeAcesso;
+                if (vouchers) vouchers.textContent = mensagemDeAcesso;
+                if (contadorPontos) contadorPontos.textContent = '— pts';
+                if (pontosFidelidade) pontosFidelidade.textContent = '— pontos';
+                if (contadorNotificacoes) { contadorNotificacoes.hidden = true; contadorNotificacoes.textContent = '0'; }
                 if(btnGatilho) {
                     btnGatilho.innerHTML = '<span class="perfil-icone" aria-hidden="true"></span><span id="nome-usuario-logado"></span>';
-                    btnGatilho.querySelector('#nome-usuario-logado').textContent = 'Acessar conta';
-                    btnGatilho.title = 'Acessar conta';
+                    const nomeGatilho = btnGatilho.querySelector('#nome-usuario-logado');
+                    const verificando = sessaoEstado === 'verificando';
+                    nomeGatilho.textContent = verificando ? 'Verificando sessão…' : sessaoEstado === 'indisponivel' ? 'Verificar sessão' : 'Acessar conta';
+                    btnGatilho.title = verificando ? 'Verificando sua sessão' : sessaoEstado === 'indisponivel' ? 'Tentar verificar sua sessão' : 'Acessar conta';
+                    btnGatilho.setAttribute('aria-busy', String(verificando));
                     btnGatilho.setAttribute('aria-expanded', 'false');
                 }
                 if(dropPerfil) dropPerfil.style.display = 'none';
@@ -5053,6 +5888,7 @@ body.dark-mode .spa-toast {
                 btnGatilho.innerHTML = '<span class="perfil-icone" aria-hidden="true"></span><span id="nome-usuario-logado"></span>';
                 btnGatilho.querySelector('#nome-usuario-logado').textContent = primeiroNome;
                 btnGatilho.title = 'Abrir menu da sua conta';
+                btnGatilho.removeAttribute('aria-busy');
             }
             if(dropDeslogar) dropDeslogar.style.display = 'block';
             if(dropFidelidade) dropFidelidade.style.display = 'block';
@@ -5247,6 +6083,20 @@ body.dark-mode .spa-toast {
             lembrete.hidden = false;
         }
 
+        async function buscarLeiturasIndependentesDoPerfil() {
+            // São consultas GET independentes. Capturar cada falha mantém a
+            // tolerância atual: saldo indisponível não oculta a agenda, e vice-versa.
+            const capturarResultado = (promessa) => promessa.then(
+                resposta => ({ resposta }),
+                erro => ({ erro })
+            );
+            const [pontos, agendamentos] = await Promise.all([
+                capturarResultado(apiFetch(`${BACKEND_URL}/api/usuario/pontos`)),
+                capturarResultado(apiFetch(`${BACKEND_URL}/api/meus-agendamentos`))
+            ]);
+            return { pontos, agendamentos };
+        }
+
         async function carregarMeusAgendamentos() {
             const container = document.getElementById('container-meus-agendamentos');
             const lembrete = document.getElementById('lembreteProximo');
@@ -5256,8 +6106,13 @@ body.dark-mode .spa-toast {
                 container.innerHTML = '<div class="perfil-estado-vazio" role="status"><span class="perfil-estado-marca" aria-hidden="true"></span><div><h2>Entre para ver seus agendamentos</h2><p>Faça login para acompanhar seus horários, pontos e próximos momentos de cuidado.</p></div><button type="button" class="btn-contratar" onclick="alternarAbas(\'login_tela\')">Entrar na minha conta</button></div>';
             };
 
+            if (!usuarioLogado && !sessaoInicializada) {
+                container.innerHTML = '<div class="perfil-estado-carregando" role="status" aria-live="polite"><span class="perfil-spinner" aria-hidden="true"></span><span>Verificando sua sessão…</span></div>';
+                await garantirSessaoCarregada();
+            }
             if (!usuarioLogado) {
-                exibirConviteLogin();
+                if (sessaoEstado === 'anonima') exibirConviteLogin();
+                else container.innerHTML = '<div class="perfil-estado-vazio" role="alert"><span class="perfil-estado-marca perfil-estado-marca--erro" aria-hidden="true"></span><div><h2>Não conseguimos confirmar sua conta</h2><p>Sua sessão não foi confirmada como encerrada. Confira sua conexão e tente novamente.</p></div><button type="button" class="btn-reserva-voltar" onclick="carregarMeusAgendamentos()">Tentar novamente</button></div>';
                 return;
             }
 
@@ -5266,13 +6121,12 @@ body.dark-mode .spa-toast {
             // A memória do navegador não é prova de autenticação. Confere a
             // sessão assinada antes de buscar pontos e reservas.
             let usuarioDaConsulta;
+            const versaoDaConsulta = versaoSessao;
             try {
                 const validacaoSessao = await apiFetch(`${BACKEND_URL}/api/me`);
+                if (versaoDaConsulta !== versaoSessao) return;
                 if (validacaoSessao.status === 401) {
-                    usuarioLogado = null;
-                    tokenCsrf = '';
-                    sessaoInicializada = true;
-                    atualizarPainelUsuario();
+                    marcarSessaoAnonima(true);
                     exibirConviteLogin();
                     return;
                 }
@@ -5280,17 +6134,26 @@ body.dark-mode .spa-toast {
 
                 const dadosSessao = await validacaoSessao.json();
                 if (!usuarioTemSessaoAtiva(dadosSessao.usuario)) throw new Error('Sua sessão não pôde ser confirmada. Entre novamente para continuar.');
+                if (versaoDaConsulta !== versaoSessao) return;
                 usuarioLogado = dadosSessao.usuario;
                 tokenCsrf = dadosSessao.csrf_token || tokenCsrf;
+                sessaoEstado = 'autenticada';
+                sessaoInicializada = true;
+                ultimaVerificacaoSessao = Date.now();
                 usuarioDaConsulta = usuarioLogado;
                 carregarListaEsperaPerfil();
             } catch (erro) {
+                if (versaoDaConsulta === versaoSessao) marcarSessaoIndisponivel();
                 container.innerHTML = `<div class="perfil-estado-vazio" role="alert"><span class="perfil-estado-marca perfil-estado-marca--erro" aria-hidden="true"></span><div><h2>Não conseguimos confirmar sua conta</h2><p>${escaparHtml(erro.message || 'Confira sua conexão e tente novamente.')}</p></div><button type="button" class="btn-reserva-voltar" onclick="carregarMeusAgendamentos()">Tentar novamente</button></div>`;
                 return;
             }
 
+            const leiturasPerfil = buscarLeiturasIndependentesDoPerfil();
+            const { pontos: resultadoPontos, agendamentos: resultadoAgendamentos } = await leiturasPerfil;
+
             try {
-                const respostaPontos = await apiFetch(BACKEND_URL + '/api/usuario/pontos');
+                if (resultadoPontos.erro) throw resultadoPontos.erro;
+                const respostaPontos = resultadoPontos.resposta;
                 if (respostaPontos.ok) {
                     const dadosPontos = await respostaPontos.json();
                     if (usuarioLogado !== usuarioDaConsulta) return;
@@ -5298,7 +6161,7 @@ body.dark-mode .spa-toast {
                 }
             } catch (_) { /* A agenda continua disponível se o saldo não carregar. */ }
             if (!usuarioLogado || usuarioLogado !== usuarioDaConsulta) {
-                exibirConviteLogin();
+                if (sessaoEstado === 'anonima') exibirConviteLogin();
                 return;
             }
             document.getElementById('contadorPontos').textContent = String(usuarioLogado.pontos || 0) + ' pts';
@@ -5306,7 +6169,8 @@ body.dark-mode .spa-toast {
             container.innerHTML = '<p style="text-align: center;"> Carregando seus agendamentos...</p>';
  
             try {
-                const response = await apiFetch(`${BACKEND_URL}/api/meus-agendamentos`);
+                if (resultadoAgendamentos.erro) throw resultadoAgendamentos.erro;
+                const response = resultadoAgendamentos.resposta;
                 const dados = await response.json();
                 if (usuarioLogado !== usuarioDaConsulta) {
                     exibirConviteLogin();
@@ -5339,13 +6203,13 @@ body.dark-mode .spa-toast {
                                 <section class="avaliacao-atendimento" aria-label="Avaliação do atendimento">
                                     <p class="avaliacao-pergunta">Como foi a sua experiência?</p>
                                     <div class="avaliacao-opcoes">
-                                        <button type="button" class="avaliacao-opcao avaliacao-opcao--boa" onclick="avaliarServico(${agend.id}, 'Bom')">
+                                        <button type="button" class="avaliacao-opcao avaliacao-opcao--boa" onclick="avaliarServico(${agend.id}, 'Bom', this)">
                                             Excelente
                                         </button>
-                                        <button type="button" class="avaliacao-opcao avaliacao-opcao--media" onclick="avaliarServico(${agend.id}, 'Médio')">
+                                        <button type="button" class="avaliacao-opcao avaliacao-opcao--media" onclick="avaliarServico(${agend.id}, 'Médio', this)">
                                              Razoável
                                         </button>
-                                        <button type="button" class="avaliacao-opcao avaliacao-opcao--ruim" onclick="avaliarServico(${agend.id}, 'Ruim')">
+                                        <button type="button" class="avaliacao-opcao avaliacao-opcao--ruim" onclick="avaliarServico(${agend.id}, 'Ruim', this)">
                                              Fraco
                                         </button>
                                     </div>
@@ -5448,7 +6312,13 @@ body.dark-mode .spa-toast {
             }
         }
 
-        async function avaliarServico(id, nota) {
+        async function avaliarServico(id, nota, botao) {
+            const grupo = botao?.closest('.avaliacao-opcoes');
+            const controles = grupo ? Array.from(grupo.querySelectorAll('button')) : [];
+            if (!botao || !controles.length || controles.some((controle) => controle.disabled)) return;
+            const usuarioDaOperacao = usuarioLogado;
+            const versaoDaOperacao = versaoSessao;
+            controles.forEach((controle) => { controle.disabled = true; controle.setAttribute('aria-busy', 'true'); });
             try {
                 // Manda a nota pro Back-end Python
                 const response = await apiFetch(`${BACKEND_URL}/api/agendamentos/${id}/avaliar`, { 
@@ -5457,17 +6327,20 @@ body.dark-mode .spa-toast {
                     body: JSON.stringify({ avaliacao: nota }) 
                 });
                 
+                if (usuarioDaOperacao !== usuarioLogado || versaoDaOperacao !== versaoSessao) return;
                 if (response.ok) {
                     // Se deu certo, avisa o cliente e atualiza a tela na hora!
                     exibirNotificacaoSpa('Obrigado pela avaliação', 'Sua avaliação foi registrada com sucesso! ', '');
-                    carregarMeusAgendamentos(); 
+                    await carregarMeusAgendamentos();
                 } else {
                     const erroDados = await response.json().catch(() => ({}));
                     exibirNotificacaoSpa('Aviso', erroDados.error || 'Não foi possível registrar a avaliação.', '');
                 }
             } catch (e) {
                 console.error("Erro ao avaliar:", e);
-                exibirNotificacaoSpa('Erro', 'Falha na conexão com o servidor.', '');
+                if (usuarioDaOperacao === usuarioLogado) exibirNotificacaoSpa('Avaliação não confirmada', e.message || 'Confira a reserva antes de tentar novamente.', 'erro');
+            } finally {
+                controles.forEach((controle) => { controle.removeAttribute('aria-busy'); if (controle.isConnected) controle.disabled = false; });
             }
         }
 
@@ -5496,14 +6369,7 @@ body.dark-mode .spa-toast {
                 const response = await apiFetch(`${BACKEND_URL}/api/logout`, { method: 'POST' });
                 if (!response.ok) throw new Error('O servidor não confirmou a saída.');
 
-                limparSessaoAntigaDoNavegador();
-                usuarioLogado = null;
-                tokenCsrf = '';
-                limparPainelClientes();
-                limparPainelGerencial();
-                sessaoInicializada = true;
-                carregamentoSessao = null;
-                atualizarPainelUsuario();
+                marcarSessaoAnonima(true);
 
                 exibirModalNotificacao(
                     'Até logo!',
@@ -5576,12 +6442,18 @@ body.dark-mode .spa-toast {
                     document.getElementById('authSenha').value = ''; 
 
                 } else {
+                    if (!usuarioTemSessaoAtiva(data.usuario)) throw new Error('O servidor não confirmou uma conta válida. Tente novamente.');
+                    versaoSessao += 1;
+                    limparDadosDaSessaoAtual();
                     usuarioLogado = data.usuario;
                     tokenCsrf = data.csrf_token || '';
                     sessaoInicializada = true;
+                    sessaoEstado = 'autenticada';
+                    ultimaVerificacaoSessao = Date.now();
                     carregamentoSessao = null;
                     limparSessaoAntigaDoNavegador();
                     atualizarPainelUsuario();
+                    avisarOutrasAbasSobreSessao('sessao-alterada');
 
                     if (usuarioEhAdmin(usuarioLogado)) {
                         alternarAbas('admin');
@@ -5589,6 +6461,7 @@ body.dark-mode .spa-toast {
                         alternarAbas('catalogo');
                     }
 
+                    document.getElementById('btnDropdownGatilho')?.focus();
                     exibirNotificacaoSpa('Bem-vindo de volta', `Seja muito bem-vindo(a), ${usuarioLogado.nome.split(' ')[0] || 'Cliente'}! Sinta-se em casa.`, '');
                 }
             } catch (err) {
@@ -5773,9 +6646,9 @@ body.dark-mode .spa-toast {
  
                 servicosDados.forEach((servico, idx) => {
                     const cardHtml = `
-                        <div class="card" style="animation-delay: ${idx * 0.15}s">
+                        <div class="card" style="animation-delay: ${Math.min(idx * 0.05, 0.3)}s">
                             <div class="card-img-wrapper">
-                                ${(() => { const imagem = imagemDoServico(servico, 760); return `<img src="${escaparHtml(imagem.src)}" style="object-position: ${escaparHtml(imagem.posicao)}" alt="${escaparHtml(servico.tipo)}" loading="lazy" decoding="async">`; })()}
+                                ${(() => { const imagem = imagemDoServico(servico, 760); return `<img src="${escaparHtml(imagem.src)}" width="760" height="500" style="object-position: ${escaparHtml(imagem.posicao)}" alt="${escaparHtml(servico.tipo)}" loading="lazy" decoding="async">`; })()}
                             </div>
                             <div class="card-conteudo">
                                 <div>
@@ -5825,8 +6698,10 @@ body.dark-mode .spa-toast {
   
         async function abrirModalAgendamento(id, tipo, descricao, etapaInicial = 1) {
             if (!await garantirSessaoCarregada()) {
-                exibirNotificacaoSpa('Entre para agendar', 'Entre na sua conta para escolher um horário e acompanhar sua reserva.', '');
-                alternarAbas('login_tela');
+                if (sessaoEstado === 'anonima') {
+                    exibirNotificacaoSpa('Entre para agendar', 'Entre na sua conta para escolher um horário e acompanhar sua reserva.', '');
+                    alternarAbas('login_tela');
+                } else exibirNotificacaoSpa('Não foi possível verificar sua sessão', 'Confira sua conexão e tente novamente antes de iniciar o agendamento.', 'aviso');
                 return;
             }
             document.getElementById('modalServicoId').value = id;
@@ -6524,7 +7399,8 @@ body.dark-mode .spa-toast {
 
         async function abrirModalRemarcar(id) {
             if (!await garantirSessaoCarregada()) {
-                alternarAbas('login_tela');
+                if (sessaoEstado === 'anonima') alternarAbas('login_tela');
+                else exibirNotificacaoSpa('Não foi possível verificar sua sessão', 'Confira sua conexão e tente novamente antes de alterar a reserva.', 'aviso');
                 return;
             }
             document.getElementById('reagendarId').value = id;
@@ -6576,7 +7452,13 @@ body.dark-mode .spa-toast {
         }
 
         async function entrarListaEspera(data, horario, servicoId, botao) {
-            if (!await garantirSessaoCarregada() || !botao || botao.disabled) return;
+            if (!botao || botao.disabled) return;
+            if (!await garantirSessaoCarregada()) {
+                if (sessaoEstado === 'anonima') alternarAbas('login_tela');
+                else exibirNotificacaoSpa('Não foi possível verificar sua sessão', 'Confira sua conexão e tente novamente para entrar na lista de espera.', 'aviso');
+                return;
+            }
+            if (botao.disabled) return;
             botao.disabled = true;
             botao.textContent = 'Enviando…';
             try {
@@ -6600,6 +7482,8 @@ body.dark-mode .spa-toast {
             const id = document.getElementById('reagendarId').value;
             const novaData = document.getElementById('novaData').value;
             const status = document.getElementById('reagendarStatus');
+            const botao = document.querySelector('#reagendamentoModal button[onclick="salvarRemarcacao()"]');
+            if (!botao || botao.disabled) return;
  
             if(!novaData) { 
                 status.style.color = "#e53e3e"; 
@@ -6613,6 +7497,11 @@ body.dark-mode .spa-toast {
                 return; 
             }
  
+            const textoOriginal = botao.textContent;
+            const usuarioDaOperacao = usuarioLogado;
+            botao.disabled = true;
+            botao.setAttribute('aria-busy', 'true');
+            botao.textContent = 'Atualizando…';
             try {
                 const response = await apiFetch(`${BACKEND_URL}/api/agendamentos/${id}`, {
                     method: 'PUT', 
@@ -6621,6 +7510,7 @@ body.dark-mode .spa-toast {
                 });
  
                 const resultado = await response.json();
+                if (usuarioDaOperacao !== usuarioLogado) return;
                 
                 if(response.ok) {
                     fecharModal('reagendamentoModal');
@@ -6634,18 +7524,30 @@ body.dark-mode .spa-toast {
                 }
             } catch(e) { 
                 status.style.color = "#e53e3e"; 
-                status.innerText = " Não conseguimos conectar. Tente novamente."; 
+                status.innerText = e.message || 'Não foi possível confirmar a alteração. Confira a agenda antes de tentar novamente.';
+            } finally {
+                botao.removeAttribute('aria-busy');
+                if (botao.isConnected) { botao.disabled = false; botao.textContent = textoOriginal; }
             }
         }
  
         function solicitarCancelamento(id) {
             document.getElementById('cancelarAgendamentoId').value = id;
+            document.getElementById('cancelamentoStatus').textContent = '';
             abrirModal('confirmarCancelamentoModal');
         }
 
         async function ejecutarCancelamentoConfirmado() {
             const id = document.getElementById('cancelarAgendamentoId').value;
- 
+            const botao = document.querySelector('#confirmarCancelamentoModal button[onclick="ejecutarCancelamentoConfirmado()"]');
+            const status = document.getElementById('cancelamentoStatus');
+            if (!id || !botao || botao.disabled) return;
+            const textoOriginal = botao.textContent;
+            const usuarioDaOperacao = usuarioLogado;
+            botao.disabled = true;
+            botao.setAttribute('aria-busy', 'true');
+            botao.textContent = 'Cancelando…';
+            if (status) status.textContent = 'Enviando a solicitação…';
             try {
                 const url = `${BACKEND_URL}/api/agendamentos/${id}`;
                 const response = await apiFetch(url, { 
@@ -6653,6 +7555,7 @@ body.dark-mode .spa-toast {
                     headers: { 'Content-Type': 'application/json' } 
                 });
                 
+                if (usuarioDaOperacao !== usuarioLogado) return;
                 if(response.ok) {
                     fecharModal('confirmarCancelamentoModal'); 
                     exibirNotificacaoSpa('Agendamento cancelado', 'Sua reserva foi cancelada. Quando quiser, você pode escolher um novo horário.', '');
@@ -6662,12 +7565,13 @@ body.dark-mode .spa-toast {
                     carregarHorariosBloqueados();
                 } else { 
                     const erroServidor = await response.json().catch(() => ({ error: 'O pulso retornou mal formatado.' }));
-                    fecharModal('confirmarCancelamentoModal');
-                    exibirNotificacaoSpa('Não foi possível cancelar', `${erroServidor.error}`, ''); 
+                    if (status) status.textContent = erroServidor.error || 'Não foi possível cancelar a reserva.';
                 }
             } catch(e) { 
-                fecharModal('confirmarCancelamentoModal');
-                exibirNotificacaoSpa('Não foi possível conectar', 'Confira sua internet e tente novamente.', ''); 
+                if (status) status.textContent = e.message || 'Não foi possível confirmar o resultado. Confira a agenda antes de tentar novamente.';
+            } finally {
+                botao.removeAttribute('aria-busy');
+                if (botao.isConnected) { botao.disabled = false; botao.textContent = textoOriginal; }
             }
         }
  
@@ -6975,13 +7879,14 @@ body.dark-mode .spa-toast {
                 return item;
             };
             adicionar(mensagem, 'chat-mensagem--usuario');
-            input.value = ''; chatEnviando = true; botao.disabled = true;
+            chatEnviando = true; botao.disabled = true; input.disabled = true;
             const aguardando = adicionar('Preparando uma resposta...');
             aguardando.setAttribute('role', 'status');
             try {
                 const response = await apiFetch(BACKEND_URL + '/api/chat', {method: 'POST', body: JSON.stringify({mensagem})});
                 const dados = await response.json();
                 if (!response.ok) throw new Error(dados.error || 'O assistente não está disponível agora.');
+                input.value = '';
                 aguardando.remove();
                 adicionar(dados.resposta || 'Você pode conhecer os tratamentos pelo catálogo.');
                 const servicoParaAgendar = adicionarAcoesAgendamentoChat(container, mensagem);
@@ -6991,11 +7896,12 @@ body.dark-mode .spa-toast {
                     await abrirModalAgendamentoPorId(servicoParaAgendar.id, true);
                 }
             } catch (erro) {
+                input.value = mensagem;
                 aguardando.remove(); adicionar(erro.message || 'Confira sua conexão e tente novamente.', 'chat-mensagem--erro');
-            } finally { chatEnviando = false; botao.disabled = false; container.scrollTop = container.scrollHeight; }
+            } finally { chatEnviando = false; botao.disabled = false; input.disabled = false; container.scrollTop = container.scrollHeight; }
         }
 
-        const estoqueEstado = { itens: [], exclusaoId: null, carregando: false };
+        const estoqueEstado = { itens: [], exclusaoId: null, carregando: false, operacoesPendentes: new Map() };
 
         function situacaoEstoque(item) {
             if (Number(item.quantidade) === 0) return 'zerado';
@@ -7126,6 +8032,86 @@ body.dark-mode .spa-toast {
             }
         }
 
+        function novoIdOperacaoEstoque() {
+            if (window.crypto?.randomUUID) return window.crypto.randomUUID();
+            const bytes = new Uint8Array(16);
+            window.crypto.getRandomValues(bytes);
+            bytes[6] = (bytes[6] & 0x0f) | 0x40;
+            bytes[8] = (bytes[8] & 0x3f) | 0x80;
+            const hex = Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('');
+            return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+        }
+
+        function obterOperacaoEstoquePendente(id, acao, quantidade) {
+            const storageKey = `spa-estoque-operacoes:${id}`;
+            const payloadKey = `${acao}:${quantidade}`;
+            const erroPersistencia = 'A movimentação não foi enviada porque não foi possível guardar uma chave segura para uma eventual repetição. Verifique o armazenamento do navegador e tente novamente.';
+            const erroLegado = 'Há uma movimentação anterior com resultado incerto neste navegador. Confira o saldo do item com a equipe antes de liberar novas movimentações; nenhuma solicitação foi enviada.';
+            const validarOperacoes = (valor) => {
+                if (!valor || typeof valor !== 'object' || Array.isArray(valor)) throw new Error(erroPersistencia);
+                if (valor.__bloqueado__) throw new Error(erroLegado);
+                for (const chave of Object.keys(valor)) {
+                    if (!/^[a-z]+:\d+$/.test(chave) || !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(valor[chave])) {
+                        throw new Error(erroPersistencia);
+                    }
+                }
+                return valor;
+            };
+
+            try {
+                // O código anterior guardava pendências em localStorage, compartilhado entre abas.
+                // Não convertemos uma pendência incerta antiga em outra chave: primeiro ela precisa ser conciliada.
+                const legado = window.localStorage.getItem(storageKey);
+                if (legado !== null) {
+                    let operacoesLegadas;
+                    try { operacoesLegadas = JSON.parse(legado); } catch (_) { throw new Error(erroLegado); }
+                    if (!operacoesLegadas || typeof operacoesLegadas !== 'object' || Array.isArray(operacoesLegadas) || Object.keys(operacoesLegadas).length) {
+                        throw new Error(erroLegado);
+                    }
+                }
+
+                const armazenadas = window.sessionStorage.getItem(storageKey);
+                let operacoes = armazenadas === null ? {} : validarOperacoes(JSON.parse(armazenadas));
+                const memoria = estoqueEstado.operacoesPendentes.get(storageKey) || {};
+                operacoes = validarOperacoes({ ...operacoes, ...memoria });
+                const operacaoId = operacoes[payloadKey] || novoIdOperacaoEstoque();
+                const atualizadas = { ...operacoes, [payloadKey]: operacaoId };
+                const serializadas = JSON.stringify(atualizadas);
+                window.sessionStorage.setItem(storageKey, serializadas);
+                if (window.sessionStorage.getItem(storageKey) !== serializadas) throw new Error(erroPersistencia);
+                estoqueEstado.operacoesPendentes.set(storageKey, atualizadas);
+                return { storageKey, payloadKey, operacaoId, operacoes: atualizadas };
+            } catch (erro) {
+                if (erro?.message === erroLegado || erro?.message === erroPersistencia) throw erro;
+                throw new Error(erroPersistencia);
+            }
+        }
+
+        function finalizarOperacaoEstoquePendente(storageKey, payloadKey, operacoes) {
+            const atualizadas = { ...operacoes };
+            delete atualizadas[payloadKey];
+            try {
+                if (Object.keys(atualizadas).length) {
+                    const serializadas = JSON.stringify(atualizadas);
+                    window.sessionStorage.setItem(storageKey, serializadas);
+                    if (window.sessionStorage.getItem(storageKey) !== serializadas) throw new Error('Falha ao salvar estado');
+                    estoqueEstado.operacoesPendentes.set(storageKey, atualizadas);
+                } else {
+                    window.sessionStorage.removeItem(storageKey);
+                    if (window.sessionStorage.getItem(storageKey) !== null) throw new Error('Falha ao remover estado');
+                    estoqueEstado.operacoesPendentes.delete(storageKey);
+                }
+                return true;
+            } catch (_) {
+                // O resultado remoto é definitivo, mas uma chave presa não pode ser reutilizada
+                // como se fosse uma nova intenção. Persistimos um bloqueio quando possível.
+                const bloqueado = { ...operacoes, __bloqueado__: true };
+                try { window.sessionStorage.setItem(storageKey, JSON.stringify(bloqueado)); } catch (_) {}
+                estoqueEstado.operacoesPendentes.set(storageKey, bloqueado);
+                return false;
+            }
+        }
+
         async function alterarEstoqueQtd(id, acao, botaoAcionado) {
             const campo = document.getElementById(`qtd-mudar-${id}`);
             const quantidade = Number(campo?.value);
@@ -7134,19 +8120,43 @@ body.dark-mode .spa-toast {
                 campo?.focus();
                 return;
             }
+            let pendente;
+            try {
+                pendente = obterOperacaoEstoquePendente(id, acao, quantidade);
+            } catch (erro) {
+                exibirNotificacaoSpa('Movimentação não enviada', erro.message || 'Não foi possível preparar uma repetição segura.', 'erro');
+                return;
+            }
             const controles = botaoAcionado?.closest('.estoque-movimento')?.querySelectorAll('button, input') || [];
             controles.forEach((controle) => { controle.disabled = true; });
             try {
-                const response = await apiFetch(`${BACKEND_URL}/api/estoque/${id}/movimentar`, { method: 'PUT', body: JSON.stringify({ quantidade, acao }) });
+                const response = await apiFetch(`${BACKEND_URL}/api/estoque/${id}/movimentar`, { method: 'PUT', body: JSON.stringify({ quantidade, acao, operacao_id: pendente.operacaoId }) });
                 const dados = await response.json().catch(() => ({}));
-                if (!response.ok) throw new Error(dados.error || 'Não foi possível atualizar o saldo.');
+                if (!response.ok) {
+                    if (response.status < 500) finalizarOperacaoEstoquePendente(pendente.storageKey, pendente.payloadKey, pendente.operacoes);
+                    throw new Error(dados.error || 'Não foi possível atualizar o saldo.');
+                }
+                if (!dados || typeof dados !== 'object' || !dados.item || typeof dados.item !== 'object') {
+                    throw new Error('A resposta do servidor ficou incompleta. O resultado pode ser incerto; repita a mesma ação e quantidade para reutilizar a chave com segurança.');
+                }
+                if (dados.item?.repetida) {
+                    await carregarEstoque();
+                    exibirNotificacaoSpa('Movimentação confirmada', 'Esta solicitação já havia sido registrada. O saldo atual foi recarregado.', 'sucesso');
+                    if (!finalizarOperacaoEstoquePendente(pendente.storageKey, pendente.payloadKey, pendente.operacoes)) {
+                        exibirNotificacaoSpa('Nova movimentação bloqueada', 'A solicitação foi confirmada, mas o navegador não conseguiu liberar a chave. Confira o saldo e tente novamente mais tarde.', 'aviso');
+                    }
+                    return;
+                }
                 const indice = estoqueEstado.itens.findIndex((item) => Number(item.id) === Number(id));
                 if (indice >= 0 && dados.item) estoqueEstado.itens[indice] = { ...estoqueEstado.itens[indice], ...dados.item, quantidade: Number(dados.item.quantidade) };
                 atualizarResumoEstoque();
                 renderizarEstoque();
                 exibirNotificacaoSpa('Saldo atualizado', `${acao === 'remover' ? 'Retirada' : 'Entrada'} registrada com sucesso.`, 'sucesso');
+                if (!finalizarOperacaoEstoquePendente(pendente.storageKey, pendente.payloadKey, pendente.operacoes)) {
+                    exibirNotificacaoSpa('Nova movimentação bloqueada', 'A movimentação foi confirmada, mas o navegador não conseguiu liberar a chave. Confira o saldo e tente novamente mais tarde.', 'aviso');
+                }
             } catch (erro) {
-                exibirNotificacaoSpa('Movimentação não concluída', erro.message || 'Tente novamente.', 'erro');
+                exibirNotificacaoSpa('Movimentação não concluída', erro.message || 'O resultado pode ser incerto. Repita a mesma ação e quantidade para reutilizar a chave com segurança.', 'erro');
                 controles.forEach((controle) => { controle.disabled = false; });
             }
         }
@@ -7195,6 +8205,7 @@ body.dark-mode .spa-toast {
             document.querySelector('#chatbotJanela button[onclick="toggleChat()"]').setAttribute('aria-label', 'Fechar assistente');
             document.querySelector('#chatbotJanela button[onclick="enviarMensagemChat()"]').setAttribute('aria-label', 'Enviar mensagem');
             atualizarPainelUsuario();
+            inicializarSincronizacaoSessao();
             const restauracaoDaSessao = garantirSessaoCarregada();
             carregarServicos();
             carregarHorariosBloqueados();

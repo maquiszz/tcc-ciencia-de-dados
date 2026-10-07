@@ -4,6 +4,7 @@ import logging
 import os
 import re
 import secrets
+import uuid
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 from functools import wraps
@@ -24,6 +25,8 @@ if __package__:
         ScheduleConflictError,
         ServiceNotFoundError,
         StockItemNotFoundError,
+        StockOperationConflictError,
+        StockQuantityConflictError,
         create_database_client,
     )
     from .spa_security import AdaptiveIPBlocker, RateLimiter, SecurityTools
@@ -33,6 +36,8 @@ else:
         ScheduleConflictError,
         ServiceNotFoundError,
         StockItemNotFoundError,
+        StockOperationConflictError,
+        StockQuantityConflictError,
         create_database_client,
     )
     from spa_security import AdaptiveIPBlocker, RateLimiter, SecurityTools
@@ -1146,7 +1151,8 @@ def redefinir_senha():
 @app.route("/api/servicos", methods=["GET"])
 def listar_servicos():
     try:
-        resposta = db.table("servico").select("id, tipo, descricao, valor, imagem_url, contratos").order("tipo").execute()
+        # ``contratos`` é um contador operacional de reservas, não parte do catálogo público.
+        resposta = db.table("servico").select("id, tipo, descricao, valor, imagem_url").order("tipo").execute()
         return jsonify(resposta.data or []), 200
     except Exception:
         logger.exception("Erro ao listar serviços")
@@ -1558,33 +1564,23 @@ def historico_agendamento_admin(agendamento_id):
 @serializar_mutacao
 def concluir_agendamento(agendamento_id):
     try:
-        resposta = db.table("agendamentos").select("email_cliente, status, servico_id").eq("id", agendamento_id).limit(1).execute()
-        if not resposta.data:
+        resposta = db.complete_appointment(agendamento_id)
+        resultado = (resposta.data or [None])[0]
+        if not resultado:
+            raise RuntimeError("A conclusão não retornou um resultado.")
+        if resultado.get("resultado") == "nao_encontrado":
             return jsonify({"error": "Agendamento não encontrado."}), 404
-
-        agendamento = resposta.data[0]
-        if agendamento.get("status") == "Concluido":
+        if resultado.get("resultado") == "ja_concluido":
             return jsonify({"message": "Este agendamento já foi concluído.", "pontos": 0}), 200
-        if agendamento.get("status") == "Cancelado":
-            return jsonify({"error": "Agendamentos cancelados não podem ser concluídos."}), 409
-
-        pontos = 0
-        servico_id = agendamento.get("servico_id")
-        if servico_id:
-            servico = db.table("servico").select("valor").eq("id", servico_id).limit(1).execute().data
-            if servico:
-                pontos = int(float(servico[0].get("valor") or 0) * 0.10)
-
-        conclusao = db.table("agendamentos").update({"status": "Concluido"}).eq("id", agendamento_id).eq("status", "Pendente").execute().data or []
-        if not conclusao:
-            return jsonify({"message": "Este agendamento já foi atualizado por outro atendimento.", "pontos": 0}), 200
+        if resultado.get("resultado") == "status_invalido":
+            return jsonify({"error": "Somente agendamentos pendentes podem ser concluídos."}), 409
+        if resultado.get("resultado") != "concluido":
+            raise RuntimeError("A conclusão retornou um estado desconhecido.")
+        pontos = int(resultado["pontos"])
         registrar_auditoria_agenda(
             agendamento_id, "concluido", g.usuario,
             status_anterior="Pendente", status_novo="Concluido",
         )
-        cliente = buscar_usuario(agendamento.get("email_cliente"), "pontos")
-        if cliente and pontos:
-            db.table("usuarios").update({"pontos": int(cliente.get("pontos") or 0) + pontos}).eq("email", agendamento["email_cliente"]).execute()
         return jsonify({"message": f"Agendamento concluído e {pontos} pontos creditados ao cliente!", "pontos": pontos}), 200
     except Exception:
         logger.exception("Erro ao concluir agendamento")
@@ -1777,15 +1773,38 @@ def admin_usuarios():
         return jsonify({"error": "Erro interno ao carregar relatório de clientes."}), 500
 
 
+ESTOQUE_QUANTIDADE_MAXIMA = 2_147_483_647
+
+
 def quantidade_inteira(value, campo):
+    mensagem_inteiro = f"{campo} deve ser um número inteiro não negativo."
     if isinstance(value, bool):
-        raise ValueError(f"{campo} deve ser um número inteiro.")
-    try:
-        quantidade = int(value)
-    except (TypeError, ValueError) as error:
-        raise ValueError(f"{campo} deve ser um número inteiro.") from error
+        raise ValueError(mensagem_inteiro)
+
+    if isinstance(value, int):
+        quantidade = value
+    elif isinstance(value, str):
+        texto = value.strip()
+        if texto.startswith("-") and texto[1:].isascii() and texto[1:].isdigit():
+            raise ValueError(f"{campo} não pode ser negativa.")
+        if not texto or not texto.isascii() or not texto.isdigit():
+            raise ValueError(mensagem_inteiro)
+        digitos_significativos = texto.lstrip("0") or "0"
+        if len(digitos_significativos) > len(str(ESTOQUE_QUANTIDADE_MAXIMA)):
+            raise ValueError(
+                f"{campo} excede o limite máximo de {ESTOQUE_QUANTIDADE_MAXIMA}."
+            )
+        quantidade = int(digitos_significativos)
+    else:
+        # Não converte float/Decimal silenciosamente; a API espera inteiros JSON.
+        raise ValueError(mensagem_inteiro)
+
     if quantidade < 0:
         raise ValueError(f"{campo} não pode ser negativa.")
+    if quantidade > ESTOQUE_QUANTIDADE_MAXIMA:
+        raise ValueError(
+            f"{campo} excede o limite máximo de {ESTOQUE_QUANTIDADE_MAXIMA}."
+        )
     return quantidade
 
 
@@ -1811,7 +1830,16 @@ def adicionar_estoque():
         return jsonify({"error": "Nome ou unidade do produto inválidos."}), 400
 
     try:
-        db.table("estoque").insert({"nome": nome, "quantidade": quantidade_inteira(dados.get("quantidade", 0), "Quantidade"), "quantidade_minima": quantidade_inteira(dados.get("quantidade_minima", 5), "Quantidade mínima"), "unidade": unidade}).execute()
+        quantidade = quantidade_inteira(dados.get("quantidade", 0), "Quantidade")
+        quantidade_minima = quantidade_inteira(
+            dados.get("quantidade_minima", 5), "Quantidade mínima"
+        )
+        db.table("estoque").insert({
+            "nome": nome,
+            "quantidade": quantidade,
+            "quantidade_minima": quantidade_minima,
+            "unidade": unidade,
+        }).execute()
         return jsonify({"message": "Item adicionado ao estoque!"}), 201
     except ValueError as error:
         return jsonify({"error": str(error)}), 400
@@ -1833,10 +1861,17 @@ def atualizar_estoque(item_id):
                 return jsonify({"error": "Ação de estoque inválida."}), 400
             if quantidade == 0:
                 return jsonify({"error": "A quantidade da movimentação deve ser maior que zero."}), 400
+            try:
+                operacao_id = str(uuid.UUID(str(dados.get("operacao_id") or "")))
+            except (ValueError, TypeError, AttributeError):
+                return jsonify({"error": "Identificador da movimentação inválido."}), 400
             delta = quantidade if acao in {"adicionar", "somar"} else -quantidade
-            resposta = db.move_stock(item_id, delta)
+            resposta = db.move_stock(item_id, delta, operacao_id)
         else:
-            resposta = db.set_stock_quantity(item_id, quantidade)
+            quantidade_atual = quantidade_inteira(
+                dados.get("quantidade_atual"), "Quantidade atual"
+            )
+            resposta = db.set_stock_quantity(item_id, quantidade, quantidade_atual)
 
         item = resposta.data[0]
         return jsonify({
@@ -1849,6 +1884,8 @@ def atualizar_estoque(item_id):
     except StockItemNotFoundError as error:
         return jsonify({"error": str(error)}), 404
     except InsufficientStockError as error:
+        return jsonify({"error": str(error)}), 409
+    except (StockOperationConflictError, StockQuantityConflictError) as error:
         return jsonify({"error": str(error)}), 409
     except Exception:
         logger.exception("Erro ao atualizar estoque")
