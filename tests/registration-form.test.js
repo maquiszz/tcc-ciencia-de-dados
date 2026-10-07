@@ -178,6 +178,42 @@ test('erro de servidor preserva campos e permite nova tentativa manual', async (
     assert.equal(elements.get('botaoCadastro').disabled, false);
 });
 
+test('resposta 2xx sem JSON não afirma sucesso e mantém os campos', async () => {
+    let calls = 0;
+    const { elements } = setup(async () => {
+        calls += 1;
+        return { ok: true, json: async () => { throw new SyntaxError('invalid JSON'); } };
+    });
+    elements.get('nome').value = 'Ana Silva';
+    elements.get('email').value = 'ana@example.test';
+    elements.get('senha').value = 'SenhaSegura!';
+
+    await submit(elements, 'cadastroForm');
+
+    assert.equal(calls, 1);
+    assert.equal(elements.get('cadastroForm').hidden, false);
+    assert.equal(elements.get('verificacaoForm').hidden, true);
+    assert.match(elements.get('status').textContent, /cadastro pode ter sido iniciado/);
+    assert.equal(elements.get('nome').value, 'Ana Silva');
+    assert.equal(elements.get('email').value, 'ana@example.test');
+    assert.equal(elements.get('senha').value, 'SenhaSegura!');
+});
+
+test('resposta 2xx sem o e-mail esperado não avança para confirmação', async () => {
+    const { elements } = setup(async () => response(201, { message: 'Cadastro iniciado' }));
+    elements.get('nome').value = 'Ana Silva';
+    elements.get('email').value = 'ana@example.test';
+    elements.get('senha').value = 'SenhaSegura!';
+
+    await submit(elements, 'cadastroForm');
+
+    assert.equal(elements.get('cadastroForm').hidden, false);
+    assert.equal(elements.get('verificacaoForm').hidden, true);
+    assert.match(elements.get('status').textContent, /não pôde ser confirmada/);
+    assert.equal(elements.get('email').value, 'ana@example.test');
+    assert.equal(elements.get('senha').value, 'SenhaSegura!');
+});
+
 test('timeout não repete o cadastro e mantém os dados preenchidos', async () => {
     let calls = 0;
     const { elements } = setup(() => {

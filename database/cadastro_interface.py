@@ -940,7 +940,7 @@ def pagina_privacidade():
 
 @app.route("/robots.txt")
 def robots_txt():
-    linhas = ["User-agent: *", "Disallow: /api/", "Disallow: /cadastro"]
+    linhas = ["User-agent: *", "Disallow: /api/", "Disallow: /cadastro", "Disallow: /cadastrar"]
     site_url = obter_url_publica_canonica()
     if site_url:
         linhas.append(f"Sitemap: {site_url}/sitemap.xml")

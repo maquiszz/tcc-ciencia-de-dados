@@ -99,6 +99,8 @@ class PublicRouteTests(unittest.TestCase):
         self.assertIn(b"Um tempo para cuidar de voc", home.data)
         self.assertIn(b"/app-icon.svg", home.data)
         self.assertNotIn(b"__SPA_CANONICAL_METADATA__", home.data)
+        self.assertIn(b"Custos e despesas", home.data)
+        self.assertIn(b"Mensagem para o assistente virtual", home.data)
         self.assertEqual(home.headers.get("Cache-Control"), "no-cache, must-revalidate")
         icon = self.client.get("/favicon.ico")
         self.assertEqual(icon.status_code, 308)
@@ -110,6 +112,29 @@ class PublicRouteTests(unittest.TestCase):
         self.assertEqual(script.status_code, 200)
         stylesheet.close()
         script.close()
+
+        for path in (
+            "/manifest.webmanifest",
+            "/spa-sw.js",
+            "/static/js/registration.min.js",
+            "/static/img/logo_panaceia.png",
+        ):
+            with self.subTest(path=path):
+                asset = self.client.get(path)
+                self.assertEqual(asset.status_code, 200)
+                asset.close()
+
+    def test_public_privacy_copy_matches_confirmed_account_behavior(self):
+        registration = self.client.get("/cadastro")
+        self.assertIn(b"confirmar seu e-mail", registration.data)
+        self.assertIn(b"recursos da conta", registration.data)
+        self.assertNotIn(b"somente para atendimento e gest\xc3\xa3o das reservas", registration.data)
+        self.assertIn(b"--danger:#ff8b83", registration.data)
+        self.assertIn(b"--success:#62ddb0", registration.data)
+
+        privacy = self.client.get("/privacidade")
+        self.assertIn(b"o Spa precisa indicar um canal oficial", privacy.data)
+        self.assertIn(b"n\xc3\xa3o declara conformidade", privacy.data)
 
     def test_canonical_metadata_is_emitted_only_for_an_exact_trusted_https_host(self):
         os.environ["PUBLIC_SITE_URL"] = "https://localhost"
@@ -149,6 +174,7 @@ class PublicRouteTests(unittest.TestCase):
         robots = self.client.get("/robots.txt")
         self.assertEqual(robots.status_code, 200)
         self.assertIn(b"Disallow: /api/", robots.data)
+        self.assertIn(b"Disallow: /cadastrar", robots.data)
         self.assertNotIn(b"Sitemap:", robots.data)
         self.assertEqual(self.client.get("/sitemap.xml").status_code, 503)
 
@@ -159,6 +185,9 @@ class PublicRouteTests(unittest.TestCase):
         self.assertEqual(sitemap.status_code, 200)
         self.assertIn(b"https://localhost/privacidade", sitemap.data)
         self.assertNotIn(b"/api/", sitemap.data)
+        self.assertNotIn(b"/cadastro", sitemap.data)
+        self.assertNotIn(b"/perfil", sitemap.data)
+        self.assertNotIn(b"/admin", sitemap.data)
 
         os.environ["PUBLIC_SITE_URL"] = "https://example.invalid"
         self.assertEqual(self.client.get("/sitemap.xml").status_code, 503)

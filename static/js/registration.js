@@ -33,7 +33,19 @@
     }
 
     async function readResponse(response) {
-        const payload = await response.json().catch(() => ({}));
+        let payload;
+        try {
+            payload = await response.json();
+        } catch (_) {
+            const error = new Error('O servidor retornou uma resposta inválida.');
+            error.name = 'InvalidResponseError';
+            throw error;
+        }
+        if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+            const error = new Error('O servidor retornou uma resposta inválida.');
+            error.name = 'InvalidResponseError';
+            throw error;
+        }
         if (!response.ok) throw new Error(payload.error || 'Não foi possível concluir. Tente novamente.');
         return payload;
     }
@@ -65,7 +77,12 @@
                 body: JSON.stringify({ nome, email, senha })
             });
             const result = await readResponse(response);
-            emailToVerify = typeof result.email === 'string' ? result.email : email;
+            if (typeof result.email !== 'string' || result.email.trim().toLowerCase() !== email) {
+                const error = new Error('O servidor não confirmou o e-mail do cadastro.');
+                error.name = 'InvalidResponseError';
+                throw error;
+            }
+            emailToVerify = result.email;
             try { window.localStorage.setItem(emailStorageKey, emailToVerify); } catch (_) { /* O fluxo segue na página atual se o armazenamento estiver bloqueado. */ }
             element('emailVerificacao').textContent = emailToVerify;
             element('senha').value = '';
@@ -76,6 +93,8 @@
         } catch (error) {
             const message = error.name === 'TimeoutError'
                 ? 'Não recebemos a confirmação. O cadastro pode ter sido iniciado; confira seu e-mail antes de tentar novamente. Seus dados foram mantidos.'
+                : error.name === 'InvalidResponseError'
+                    ? 'A resposta do servidor não pôde ser confirmada. O cadastro pode ter sido iniciado; confira seu e-mail antes de tentar novamente. Seus dados foram mantidos.'
                 : error.name === 'AbortError'
                     ? 'A conexão foi interrompida. Seus dados foram mantidos; confira seu e-mail antes de tentar novamente.'
                     : error.message || 'Não foi possível conectar. Seus dados foram mantidos; tente novamente.';
@@ -121,6 +140,8 @@
         } catch (error) {
             const message = error.name === 'TimeoutError'
                 ? 'A confirmação demorou e o resultado é incerto. Seus dados foram mantidos; confira a mensagem antes de reenviar o código.'
+                : error.name === 'InvalidResponseError'
+                    ? 'A resposta do servidor não pôde ser confirmada. A ativação pode ter sido concluída; confira se já consegue entrar antes de reenviar o código.'
                 : error.name === 'AbortError'
                     ? 'A conexão foi interrompida. O código continua preenchido; confira sua conexão e tente novamente.'
                     : error.message || 'Não foi possível validar o código. Seus dados foram mantidos.';
@@ -149,6 +170,8 @@
         } catch (error) {
             const message = error.name === 'TimeoutError'
                 ? 'Não recebemos a confirmação do reenvio. Confira seu e-mail antes de solicitar outro código.'
+                : error.name === 'InvalidResponseError'
+                    ? 'A resposta do servidor não pôde ser confirmada. Confira seu e-mail antes de solicitar outro código.'
                 : error.message || 'Não foi possível solicitar outro código. Tente novamente mais tarde.';
             setStatus(message, 'erro');
         } finally {
