@@ -4,6 +4,9 @@ import os
 import sys
 import types
 import unittest
+from datetime import date, datetime
+from pathlib import Path
+from zoneinfo import ZoneInfo
 
 
 class _FakeQuery:
@@ -196,6 +199,159 @@ class PublicRouteTests(unittest.TestCase):
         response = self.client.post("/cadastrar", json={"nome": "Cliente", "email": "cliente@example.test"})
         self.assertEqual(response.status_code, 400)
         self.assertIn("senha", response.get_json()["error"].lower())
+
+
+def _simulate_expiry(records, local_now, activation_date, locked_ids=(), fail_audit=False):
+    """In-memory transaction model for the SQL job; it is not a PostgreSQL test."""
+    local_today = local_now.astimezone(ZoneInfo("America/Sao_Paulo")).date()
+    staged = [dict(record) for record in records]
+    audit = []
+
+    for record in sorted(staged, key=lambda item: (item["data_atendimento"], item["id"])):
+        if (
+            record["status"] != "Pendente"
+            or record["data_atendimento"].date() >= local_today
+            or record["data_atendimento"].date() < activation_date
+            or record["id"] in locked_ids
+        ):
+            continue
+
+        record["status"] = "Cancelado"
+        if fail_audit:
+            raise RuntimeError("falha simulada na auditoria")
+        audit.append({
+            "agendamento_id": record["id"],
+            "ator_tipo": "sistema",
+            "acao": "cancelamento_automatico",
+            "status_anterior": "Pendente",
+            "status_novo": "Cancelado",
+        })
+
+    records[:] = staged
+    return len(audit), audit
+
+
+class AppointmentExpiryModelTests(unittest.TestCase):
+    def setUp(self):
+        self.sao_paulo = ZoneInfo("America/Sao_Paulo")
+        self.activation = date(2026, 10, 6)
+
+    def test_booking_remains_valid_until_the_local_day_ends(self):
+        rows = [{
+            "id": 1,
+            "data_atendimento": datetime(2026, 10, 7, 20, 0),
+            "status": "Pendente",
+        }]
+
+        count, _ = _simulate_expiry(
+            rows, datetime(2026, 10, 7, 23, 59, tzinfo=self.sao_paulo), self.activation
+        )
+        self.assertEqual(count, 0)
+        self.assertEqual(rows[0]["status"], "Pendente")
+
+        count, audit = _simulate_expiry(
+            rows, datetime(2026, 10, 8, 0, 0, tzinfo=self.sao_paulo), self.activation
+        )
+        self.assertEqual(count, 1)
+        self.assertEqual(rows[0]["status"], "Cancelado")
+        self.assertEqual(audit[0]["ator_tipo"], "sistema")
+
+    def test_repeat_and_non_pending_statuses_do_not_change_or_duplicate_audit(self):
+        rows = [
+            {"id": 1, "data_atendimento": datetime(2026, 10, 6, 10), "status": "Pendente"},
+            {"id": 2, "data_atendimento": datetime(2026, 10, 6, 11), "status": "Concluido"},
+            {"id": 3, "data_atendimento": datetime(2026, 10, 6, 12), "status": "Cancelado"},
+        ]
+        now = datetime(2026, 10, 8, 12, tzinfo=self.sao_paulo)
+
+        first_count, first_audit = _simulate_expiry(rows, now, self.activation)
+        second_count, second_audit = _simulate_expiry(rows, now, self.activation)
+
+        self.assertEqual(first_count, 1)
+        self.assertEqual(second_count, 0)
+        self.assertEqual(len(first_audit) + len(second_audit), 1)
+        self.assertEqual([row["status"] for row in rows], ["Cancelado", "Concluido", "Cancelado"])
+
+    def test_a_completion_holding_the_row_lock_wins_without_cancellation(self):
+        rows = [{
+            "id": 1,
+            "data_atendimento": datetime(2026, 10, 6, 10),
+            "status": "Pendente",
+            "points": 0,
+        }]
+        now = datetime(2026, 10, 8, 12, tzinfo=self.sao_paulo)
+
+        count, audit = _simulate_expiry(rows, now, self.activation, locked_ids={1})
+        self.assertEqual((count, audit), (0, []))
+        rows[0]["status"] = "Concluido"  # simulated completion commits first
+        rows[0]["points"] += 18
+        count, audit = _simulate_expiry(rows, now, self.activation)
+
+        self.assertEqual((count, audit), (0, []))
+        self.assertEqual(rows[0]["status"], "Concluido")
+        self.assertEqual(rows[0]["points"], 18)
+
+    def test_cancellation_winning_the_lock_prevents_a_later_points_credit(self):
+        rows = [{
+            "id": 1,
+            "data_atendimento": datetime(2026, 10, 6, 10),
+            "status": "Pendente",
+            "points": 0,
+        }]
+
+        count, audit = _simulate_expiry(
+            rows, datetime(2026, 10, 8, 12, tzinfo=self.sao_paulo), self.activation
+        )
+
+        self.assertEqual(count, 1)
+        self.assertEqual(len(audit), 1)
+        self.assertEqual(rows[0]["status"], "Cancelado")
+        if rows[0]["status"] == "Pendente":
+            rows[0]["status"] = "Concluido"
+            rows[0]["points"] += 18
+        self.assertEqual(rows[0]["status"], "Cancelado")
+        self.assertEqual(rows[0]["points"], 0)
+
+    def test_audit_failure_rolls_back_the_mocked_status_change(self):
+        rows = [{
+            "id": 1,
+            "data_atendimento": datetime(2026, 10, 6, 10),
+            "status": "Pendente",
+        }]
+        before = [dict(row) for row in rows]
+
+        with self.assertRaisesRegex(RuntimeError, "auditoria"):
+            _simulate_expiry(
+                rows,
+                datetime(2026, 10, 8, 12, tzinfo=self.sao_paulo),
+                self.activation,
+                fail_audit=True,
+            )
+
+        self.assertEqual(rows, before)
+
+    def test_documented_sql_keeps_timezone_lock_audit_and_safe_activation_contract(self):
+        readme = Path(__file__).resolve().parents[1] / "README.md"
+        text = readme.read_text(encoding="utf-8")
+        section = text.split("## Cancelamento automático de agendamentos vencidos", 1)[1]
+        migration = section.split("```sql", 1)[1].split("```", 1)[0].lower()
+
+        for fragment in (
+            "create extension if not exists pg_cron",
+            "at time zone 'america/sao_paulo'",
+            "a.status = 'pendente'",
+            "a.data_atendimento < v_hoje::timestamp",
+            "a.data_atendimento >= p_desde::timestamp",
+            "for update of a skip locked",
+            "and a.status = 'pendente'",
+            "insert into public.agenda_auditoria",
+            "'sistema', 'sistema',",
+            "'cancelamento_automatico'",
+            "'*/15 * * * *'",
+            "from public, anon, authenticated, service_role",
+        ):
+            with self.subTest(fragment=fragment):
+                self.assertIn(fragment, migration)
 
 
 if __name__ == "__main__":

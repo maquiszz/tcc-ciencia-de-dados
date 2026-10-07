@@ -577,6 +577,243 @@ reverter a instalação antes de usar a nova versão do backend, remova apenas e
 função; depois de publicar o backend, planeje a reversão junto com o código para
 não reintroduzir a atualização separada de status e saldo.
 
+## Cancelamento automático de agendamentos vencidos
+
+### Estado estrutural verificado antes da instalação
+
+Inspeção somente de leitura no Supabase em 07/10/2026, 11:30 (horário de São
+Paulo): `agendamentos.data_atendimento` é `timestamp without time zone` com a
+hora local do Spa, e `status` é `character varying`, padrão `Pendente`. O banco
+usa UTC e a configuração de `cron.timezone` é `GMT`; o corte do dia é calculado
+explicitamente em `America/Sao_Paulo`, e a periodicidade de 15 minutos não
+depende do fuso do cron.
+
+Antes da instalação, `pg_cron` não estava instalado, não havia schema/tabela
+`cron.job`, mas a extensão versão 1.6.4 estava disponível. `pg_net` também não
+estava instalado e não é necessário. `agenda_auditoria` tem RLS habilitado, sem
+políticas públicas, e a restrição existente era
+`CHECK (ator_tipo IN ('admin', 'cliente'))`; não havia gatilho de auditoria.
+As tabelas da agenda pertencem a `postgres`, e o acesso de aplicação é feito
+por `service_role`. O gatilho `trg_agendamentos_respeitar_bloqueio` não impede
+cancelamentos: sua função pula as verificações de horário quando o novo status
+é `Cancelado`.
+
+O índice parcial `uq_agendamentos_horario_ativo` cobre horários cujo status não
+é `Cancelado`; o índice será liberado naturalmente pela atualização do status.
+O crédito de pontos está em outra função transacional e só aceita uma reserva
+`Pendente`, de modo que o cancelamento concorrente não pode creditar pontos.
+
+### Pendências anteriores à ativação
+
+Na mesma leitura, em 07/10/2026, havia 16 agendamentos `Pendente` com data
+anterior ao dia local atual. Quantidades por dia: 16/09 (2), 17/09 (1), 22/09
+(1), 25/09 (2), 26/09 (1), 30/09 (7) e 01/10 (2). Havia também uma entrada de
+lista de espera `Aguardando` com data passada. Nenhum desses registros foi
+alterado nesta inspeção.
+
+O job guarda a data local de ativação no comando agendado e processa somente
+datas a partir desse dia. Assim, sua primeira execução não faz cancelamento em
+lote do histórico anterior; a equipe deve revisar essas 16 reservas antes de
+qualquer decisão de acerto retroativo. Uma reserva ainda `Pendente` na data da
+ativação continua válida até o fim desse dia e passa a ser elegível depois da
+meia-noite local.
+
+### Instalação no Supabase
+
+O bloco abaixo instala `pg_cron`, amplia somente a restrição de tipo de ator da
+auditoria, cria uma função transacional idempotente e agenda uma execução a cada
+15 minutos. Não altera permissões de tabela, RLS, pontos, clientes ou reservas
+existentes. Execute tudo como uma transação no SQL Editor do Supabase.
+
+```sql
+BEGIN;
+
+CREATE EXTENSION IF NOT EXISTS pg_cron;
+
+ALTER TABLE public.agenda_auditoria
+    DROP CONSTRAINT agenda_auditoria_ator_tipo_check;
+ALTER TABLE public.agenda_auditoria
+    ADD CONSTRAINT agenda_auditoria_ator_tipo_check
+    CHECK (ator_tipo IN ('admin', 'cliente', 'sistema'));
+
+CREATE OR REPLACE FUNCTION public.cancelar_agendamentos_vencidos(p_desde date)
+RETURNS integer
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path TO pg_catalog, public
+AS $function$
+DECLARE
+    v_hoje date := (statement_timestamp() AT TIME ZONE 'America/Sao_Paulo')::date;
+    v_agendamento record;
+    v_data_anterior text;
+    v_cancelados integer := 0;
+BEGIN
+    IF p_desde IS NULL THEN
+        RAISE EXCEPTION 'Data de ativação obrigatória';
+    END IF;
+
+    FOR v_agendamento IN
+        SELECT a.id
+          FROM public.agendamentos AS a
+         WHERE a.status = 'Pendente'
+           AND a.data_atendimento < v_hoje::timestamp
+           AND a.data_atendimento >= p_desde::timestamp
+         ORDER BY a.data_atendimento, a.id
+         FOR UPDATE OF a SKIP LOCKED
+    LOOP
+        UPDATE public.agendamentos AS a
+           SET status = 'Cancelado'
+         WHERE a.id = v_agendamento.id
+           AND a.status = 'Pendente'
+        RETURNING a.data_atendimento::text INTO v_data_anterior;
+
+        IF FOUND THEN
+            INSERT INTO public.agenda_auditoria (
+                agendamento_id, ator_email, ator_tipo, acao,
+                data_anterior, status_anterior, status_novo
+            ) VALUES (
+                v_agendamento.id, 'sistema', 'sistema',
+                'cancelamento_automatico', v_data_anterior,
+                'Pendente', 'Cancelado'
+            );
+            v_cancelados := v_cancelados + 1;
+        END IF;
+    END LOOP;
+
+    RETURN v_cancelados;
+END;
+$function$;
+
+REVOKE ALL ON FUNCTION public.cancelar_agendamentos_vencidos(date)
+    FROM PUBLIC, anon, authenticated, service_role;
+
+DO $schedule$
+DECLARE
+    v_ativacao date := (statement_timestamp() AT TIME ZONE 'America/Sao_Paulo')::date;
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM cron.job
+         WHERE jobname = 'spa-cancelar-agendamentos-vencidos'
+    ) THEN
+        PERFORM cron.schedule(
+            'spa-cancelar-agendamentos-vencidos',
+            '*/15 * * * *',
+            format(
+                'SELECT public.cancelar_agendamentos_vencidos(%L::date)',
+                v_ativacao
+            )
+        );
+    END IF;
+END;
+$schedule$;
+
+COMMIT;
+```
+
+Instalação confirmada no Supabase em 07/10/2026: `pg_cron` 1.6.4, job `id=1`
+ativo em `*/15 * * * *`, executado pelo proprietário `postgres`, com data de
+ativação `2026-10-07`. A função é `SECURITY DEFINER`; `postgres` pode executá-la,
+e `service_role`, `anon` e `authenticated` não podem. O primeiro ciclo terminou
+com `succeeded` às 11:45 (São Paulo). O `return_message` do cron foi `1 row`,
+que confirma uma linha retornada pela chamada, não a quantidade de
+cancelamentos; a consulta agregada separada confirmou zero pendências vencidas
+desde a ativação e zero auditorias automáticas. As contagens permaneceram em
+17 `Pendente`, 28 `Concluido` e 3 `Cancelado`; as 16 pendências antigas por
+data e uma entrada `Aguardando` vencida (30/09) permanecem inalteradas.
+
+O job não depende de tráfego no site. A função compara a data do agendamento
+com o começo do dia local: um atendimento permanece válido durante todo o dia
+marcado. Ela seleciona somente linhas `Pendente`, bloqueia cada linha com
+`FOR UPDATE SKIP LOCKED` e testa novamente o status no `UPDATE`. Se a conclusão
+ganhar o lock, a automação não encontra mais uma pendência; se o cancelamento
+ganhar, a conclusão concorrente vê status inválido e não credita pontos. Se o
+`UPDATE` ou a inserção da auditoria falhar, a chamada inteira é revertida e o
+job pode tentar novamente no próximo ciclo. Uma repetição não gera nova
+auditoria porque o status já não é `Pendente`.
+
+O registro de auditoria usa `ator_tipo='sistema'`, `ator_email='sistema'` e
+`acao='cancelamento_automatico'`. O horário liberado já está em uma data
+passada, portanto não é oferecido novamente e não dispara e-mail da lista de
+espera. A automação não altera entradas antigas da lista de espera; a inspeção
+encontrou uma entrada `Aguardando` vencida, que deve ser revisada separadamente.
+
+Os endpoints existentes leem o status diretamente do banco: perfil e agenda
+administrativa recebem `Cancelado`, e os indicadores de pendentes e relatórios
+contam somente as linhas ainda `Pendente`. Uma tela administrativa já aberta
+mantém o cache carregado até a próxima atualização da agenda.
+
+### Verificação pós-instalação (somente leitura)
+
+Use estas consultas após a instalação para confirmar a função, as permissões,
+o job e a execução. `cron.job_run_details` registra falhas do job; o resultado
+da função pode ser conferido pela contagem de auditorias do sistema e pela
+ausência de pendências vencidas desde a data gravada no comando.
+
+```sql
+SELECT extname, extversion
+FROM pg_extension
+WHERE extname = 'pg_cron';
+
+SELECT jobid, jobname, schedule, command, active, username
+FROM cron.job
+WHERE jobname = 'spa-cancelar-agendamentos-vencidos';
+
+SELECT p.oid::regprocedure AS assinatura,
+       p.prosecdef AS security_definer,
+       has_function_privilege('postgres', p.oid, 'EXECUTE') AS postgres_pode_executar,
+       has_function_privilege('service_role', p.oid, 'EXECUTE') AS service_role_pode_executar,
+       has_function_privilege('anon', p.oid, 'EXECUTE') AS anon_pode_executar,
+       has_function_privilege('authenticated', p.oid, 'EXECUTE') AS authenticated_pode_executar
+FROM pg_proc AS p
+JOIN pg_namespace AS n ON n.oid = p.pronamespace
+WHERE n.nspname = 'public'
+  AND p.proname = 'cancelar_agendamentos_vencidos';
+
+SELECT jobid, status, start_time, end_time, return_message
+FROM cron.job_run_details
+WHERE jobid = (
+    SELECT jobid FROM cron.job
+    WHERE jobname = 'spa-cancelar-agendamentos-vencidos'
+)
+ORDER BY start_time DESC
+LIMIT 10;
+
+SELECT ator_tipo, acao, status_anterior, status_novo, count(*) AS quantidade
+FROM public.agenda_auditoria
+WHERE ator_tipo = 'sistema'
+  AND acao = 'cancelamento_automatico'
+GROUP BY ator_tipo, acao, status_anterior, status_novo;
+```
+
+As consultas de verificação não executam a função. A função não deve ser
+chamada manualmente com uma data anterior à ativação sem revisar e autorizar o
+impacto sobre o histórico.
+
+### Reversão
+
+Para interromper a automação, desagende somente o job nomeado e remova a função
+criada por esta migração:
+
+```sql
+BEGIN;
+SELECT cron.unschedule(jobid)
+FROM cron.job
+WHERE jobname = 'spa-cancelar-agendamentos-vencidos';
+DROP FUNCTION IF EXISTS public.cancelar_agendamentos_vencidos(date);
+COMMIT;
+```
+
+Mantenha a extensão `pg_cron` se houver outros jobs no projeto. Mantenha também
+a restrição ampliada enquanto existir ao menos uma auditoria com
+`ator_tipo='sistema'`; não apague nem reclassifique esses registros para
+reverter o código. Se não houver auditorias do sistema, a restrição anterior
+pode ser restaurada manualmente para `CHECK (ator_tipo IN ('admin', 'cliente'))`.
+
+O PostgreSQL local continua sem scheduler e indisponível no ambiente atual.
+Não foi adicionado scheduler aos workers Flask. Se o banco ativo mudar para
+PostgreSQL local, será necessário configurar nele um scheduler equivalente
+antes de contar com cancelamento automático.
+
 ## Movimentação atômica de estoque
 
 O endpoint administrativo `PUT /api/estoque/<id>/movimentar` envia quantidade,
