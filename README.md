@@ -21,17 +21,47 @@ que duas bases independentes recebam gravações divergentes.
 
 ## Estado do deploy verificado
 
-Na última verificação pública registrada, em 29/09/2026:
+Verificação pública pré-publicação feita em 07/10/2026:
 
-- `https://panaceia.onrender.com/api/health` respondeu HTTP 200 e informou
-  Supabase como backend ativo.
-- `https://spapanaceia.com.br/api/health` respondeu HTTP 530, Cloudflare 1033.
-  O domínio oficial não estava funcionando nessa verificação.
-- `https://www.spapanaceia.com.br/api/health` respondeu HTTP 530, Cloudflare
-  1016.
+- `https://spa-panaceia.onrender.com/` respondeu HTTP 200 com TLS válido. O
+  healthcheck e o catálogo responderam HTTP 200; o healthcheck informou
+  Supabase como banco ativo.
+- `https://spapanaceia.com.br/` e `https://www.spapanaceia.com.br/` responderam
+  HTTP 530 do Cloudflare. A conexão TLS até a borda Cloudflare foi válida, mas
+  os domínios próprios não serviram o site.
+- `https://panaceia.onrender.com/` pertence ao serviço Render separado chamado
+  `PANACEIA`; a leitura expirou após 25 segundos. Ele não é o serviço
+  `Spa Panaceia`, e esse resultado não confirma o estado do serviço separado.
+- No código que ainda estava no ar durante essa verificação,
+  `/robots.txt` e `/privacidade` respondiam 404. As rotas novas entram em vigor
+  somente depois da publicação deste commit.
 
-Esses resultados são um retrato daquela verificação; confira novamente os
-endpoints depois de qualquer ajuste no Render ou no DNS/Cloudflare.
+Esse retrato não confirma DNS, origem Cloudflare ou configuração atual do
+Render. Confira os endpoints novamente depois da publicação.
+
+## Frontend público, privacidade e publicação de ativos
+
+- A página principal é servida pelo Flask a partir de `database/servicos.html`;
+  cadastro, privacidade e página 404 são templates em `templates/`. O Dockerfile
+  precisa copiar essas duas pastas para a imagem.
+- Os fontes permanecem legíveis. Depois de editá-los, gere as cópias otimizadas
+  com `python -m pip install -r requirements-build.txt` e
+  `python scripts/build_frontend.py`; inclua fontes e arquivos `.min.html`,
+  `.min.css` e `.min.js` juntos.
+  A etapa usa uma dependência só de build, sem adicionar minificador ao runtime.
+- O catálogo usa dimensões explícitas e carregamento tardio para as fotos dos
+  tratamentos. O favicon usa o SVG leve já servido pelo aplicativo. As fotos
+  externas mantêm seus provedores e qualidade atuais.
+- Analytics permanece desativado porque não há ID nem preferência de consentimento
+  confirmados. O aviso de cookies descreve apenas armazenamento funcional visto
+  no código; não representa declaração de conformidade legal.
+- `PUBLIC_SITE_URL` é opcional e só gera canonical, `og:url` e entradas de sitemap
+  quando a URL HTTPS aponta para um host já confiável pelo backend. Não configure
+  essa variável até confirmar o domínio canônico e seu estado público. Sem essa
+  confirmação, `/sitemap.xml` responde 503 deliberadamente e `robots.txt` não
+  anuncia um sitemap incompleto.
+- O aviso em `/privacidade` descreve o comportamento observado e lista as
+  informações legais e operacionais que ainda precisam de confirmação humana.
 
 ## Variáveis obrigatórias
 

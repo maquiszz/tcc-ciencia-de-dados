@@ -1,0 +1,2 @@
+# Ferramenta usada somente para gerar HTML/CSS/JavaScript minificados versionados.
+minify-html==0.18.1

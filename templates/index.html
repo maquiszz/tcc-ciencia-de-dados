@@ -4,7 +4,24 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#5c169f">
+    <meta name="description" content="Crie sua conta no Spa Panaceia para acompanhar reservas e seus próximos momentos de cuidado.">
+    <meta name="robots" content="noindex, nofollow">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Spa Panaceia">
+    <meta property="og:title" content="Cadastro | Spa Panaceia">
+    <meta property="og:description" content="Crie sua conta para acompanhar suas reservas no Spa Panaceia.">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="Cadastro | Spa Panaceia">
+    <meta name="twitter:description" content="Crie sua conta para acompanhar suas reservas no Spa Panaceia.">
+    {% if site_url %}
+    <link rel="canonical" href="{{ site_url|e }}/cadastro">
+    <meta property="og:url" content="{{ site_url|e }}/cadastro">
+    {% endif %}
     <title>Cadastro | Spa Panaceia</title>
+    <link rel="icon" type="image/svg+xml" href="/app-icon.svg">
+    <link rel="stylesheet" href="/static/css/privacy-notice.min.css">
+    <script defer src="/static/js/privacy-notice.min.js"></script>
+    <script defer src="/static/js/registration.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
@@ -28,14 +45,19 @@
         .container h2 { margin: 0; font: 800 clamp(1.7rem,3vw,2.35rem)/1.08 var(--display); letter-spacing: -.045em; }
         .subtitle { margin: .75rem 0 2rem; color: var(--muted); } .form-group { margin-bottom: 1.15rem; }
         label { display: block; margin-bottom: .5rem; font-size: .86rem; font-weight: 700; }
+        .field-help { margin: .45rem 0 0; color: var(--muted); font-size: .78rem; line-height: 1.5; }
         input { width: 100%; min-height: 52px; padding: .85rem 1rem; color: var(--ink); border: 1px solid var(--line); border-radius: var(--radius); background: rgba(255,255,255,.78); font: inherit; transition: border-color .2s,box-shadow .2s,background .2s; }
         input:hover { border-color: rgba(106,17,203,.34); } input:focus { border-color: var(--brand); outline: 0; box-shadow: 0 0 0 4px rgba(106,17,203,.12); background: #fff; }
         .submit-button { width: 100%; min-height: 52px; margin-top: .45rem; color: #fff; border: 0; border-radius: var(--radius); background: linear-gradient(135deg,var(--brand),var(--brand-deep)); box-shadow: 0 14px 28px rgba(76,11,145,.22); font: 800 .96rem var(--body); cursor: pointer; transition: transform .2s var(--ease),box-shadow .2s,opacity .2s; }
+        .secondary-button { width: 100%; min-height: 48px; margin-top: .7rem; padding: .7rem 1rem; color: var(--brand-deep); border: 1px solid var(--line); border-radius: var(--radius); background: transparent; font: 700 .9rem var(--body); cursor: pointer; }
         .submit-button:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 18px 34px rgba(76,11,145,.29); } .submit-button:active:not(:disabled) { transform: translateY(1px) scale(.99); } .submit-button:disabled { cursor: wait; opacity: .66; }
+        .secondary-button:hover:not(:disabled) { background: var(--brand-soft); } .secondary-button:disabled { cursor: wait; opacity: .6; }
         #status { min-height: 1.5rem; margin-top: 1rem; color: var(--muted); font-size: .88rem; font-weight: 650; } #status.sucesso { color: var(--success); } #status.erro { color: var(--danger); }
+        .privacy-link { margin: .85rem 0 0; color: var(--muted); font-size: .85rem; } .privacy-link a { color: var(--brand-deep); font-weight: 700; text-underline-offset: .2em; }
         @media (max-width:760px) { body { display:block; } .layout { grid-template-columns:1fr; } .intro { min-height:310px; } .container { padding:2rem 1.25rem 2.5rem; } }
         @media (max-width:420px) { nav { padding-left:1rem; } .nav-link { padding:.65rem .75rem; } .intro { padding:2rem 1.25rem; } }
         @media (prefers-color-scheme:dark) { :root { --ink:#f6effb; --muted:#c7b9cf; --canvas:#0d0812; --surface:rgba(27,17,38,.94); --line:rgba(236,217,255,.14); --brand-soft:rgba(151,76,225,.18); color-scheme:dark; } input { background:#1b1125; } input:focus { background:#21142d; } }
+        @media (prefers-color-scheme:dark) { .brand, .privacy-link a, .secondary-button { color:#e7c9ff; } }
         @media (prefers-reduced-motion:reduce) { *,*::before,*::after { transition-duration:.01ms !important; animation-duration:.01ms !important; } }
     </style>
 </head>
@@ -44,19 +66,32 @@
         <nav aria-label="Navegação principal"><a class="brand" href="/">Spa Panaceia</a><a class="nav-link" href="/">Ver tratamentos</a></nav>
         <main class="layout">
             <section class="intro" aria-labelledby="cadastro-titulo"><div><p class="eyebrow">Sua experiência começa aqui</p><h1 id="cadastro-titulo">Cuidado que acompanha seu ritmo.</h1><p class="intro-copy">Faça seu cadastro para organizar reservas e manter seus próximos momentos de cuidado em um só lugar.</p></div><p class="intro-note">Seus dados são usados somente para atendimento e gestão das reservas.</p></section>
-            <section class="container" aria-labelledby="formulario-titulo"><h2 id="formulario-titulo">Criar cadastro</h2><p class="subtitle">Preencha seus dados de contato.</p><form id="cadastroForm"><div class="form-group"><label for="nome">Nome completo</label><input type="text" id="nome" name="nome" placeholder="Como você gostaria de ser chamado?" autocomplete="name" maxlength="100" required></div><div class="form-group"><label for="email">E-mail</label><input type="email" id="email" name="email" placeholder="voce@exemplo.com" autocomplete="email" maxlength="254" required></div><button class="submit-button" id="botaoCadastro" type="submit">Confirmar cadastro</button></form><div id="status" role="status" aria-live="polite"></div></section>
+            <section class="container" aria-labelledby="formulario-titulo">
+                <h2 id="formulario-titulo">Criar cadastro</h2>
+                <p class="subtitle">Preencha seus dados de contato.</p>
+                <form id="cadastroForm" novalidate>
+                    <div class="form-group"><label for="nome">Nome completo</label><input type="text" id="nome" name="nome" placeholder="Como você gostaria de ser chamado?" autocomplete="name" maxlength="100" required></div>
+                    <div class="form-group"><label for="email">E-mail</label><input type="email" id="email" name="email" placeholder="voce@exemplo.com" autocomplete="email" maxlength="254" required></div>
+                    <div class="form-group"><label for="senha">Senha</label><input type="password" id="senha" name="senha" autocomplete="new-password" minlength="8" maxlength="256" pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*[@$!%*?&amp;#,.]).{8,}" aria-describedby="senha-ajuda" required><p id="senha-ajuda" class="field-help">Use pelo menos 8 caracteres, com uma letra maiúscula, uma minúscula e um símbolo (@$!%*?&amp;#,.).</p></div>
+                    <button class="submit-button" id="botaoCadastro" type="submit">Confirmar cadastro</button>
+                </form>
+                <form id="verificacaoForm" hidden novalidate>
+                    <h3>Confirme seu e-mail</h3>
+                    <p>Enviamos um código de 6 dígitos para <strong id="emailVerificacao"></strong>. Digite-o para ativar sua conta.</p>
+                    <div class="form-group"><label for="codigoVerificacao">Código de verificação</label><input type="text" id="codigoVerificacao" name="codigo" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" minlength="6" maxlength="6" aria-describedby="codigo-ajuda" required><p id="codigo-ajuda" class="field-help">O código tem 6 números.</p></div>
+                    <button class="submit-button" id="botaoVerificacao" type="submit">Confirmar e-mail</button>
+                    <button class="secondary-button" id="botaoReenviar" type="button">Enviar outro código</button>
+                </form>
+                <div id="status" role="status" aria-live="polite" aria-atomic="true"></div>
+                <a id="loginAfterVerify" class="privacy-link" href="/" hidden>Ir para a página inicial e entrar</a>
+                <p class="privacy-link"><a href="/privacidade">Leia o aviso de privacidade</a></p>
+            </section>
         </main>
     </div>
-    <script>
-        document.getElementById('cadastroForm').addEventListener('submit', async (evento) => {
-            evento.preventDefault();
-            const formulario = evento.currentTarget, status = document.getElementById('status'), botao = document.getElementById('botaoCadastro');
-            const nome = document.getElementById('nome').value.trim(), email = document.getElementById('email').value.trim();
-            status.className = ''; status.textContent = 'Enviando seus dados…'; botao.disabled = true; botao.textContent = 'Enviando…';
-            try { const resposta = await fetch('/cadastrar', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({nome,email}) }); const resultado = await resposta.json().catch(() => ({})); if (!resposta.ok) throw new Error(resultado.error || 'Não foi possível concluir o cadastro.'); status.className = 'sucesso'; status.textContent = `${nome}, seu cadastro foi realizado com sucesso.`; formulario.reset(); }
-            catch (erro) { status.className = 'erro'; status.textContent = erro.message || 'Não foi possível conectar ao servidor.'; }
-            finally { botao.disabled = false; botao.textContent = 'Confirmar cadastro'; }
-        });
-    </script>
+    <footer class="rodape-publico"><a href="/privacidade">Aviso de privacidade e cookies</a></footer>
+    <aside id="aviso-cookies" class="aviso-cookies" role="region" aria-labelledby="aviso-cookies-titulo">
+        <div class="aviso-cookies__texto"><h2 id="aviso-cookies-titulo">Privacidade e cookies</h2><p>Quando você entra, usamos um cookie de sessão essencial. Preferências ficam no seu navegador. Analytics não está ativado.</p><a href="/privacidade">Leia o aviso de privacidade</a></div>
+        <button id="aviso-cookies-fechar" type="button">Entendi</button>
+    </aside>
 </body>
 </html>

@@ -6,8 +6,18 @@
     <meta name="theme-color" content="#6a11cb">
     <meta name="description" content="Conheça os tratamentos do Spa Panaceia e agende seu momento de cuidado com praticidade e segurança.">
     <meta name="color-scheme" content="light dark">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Spa Panaceia">
+    <meta property="og:title" content="Spa Panaceia | Bem-Estar e Relaxamento">
+    <meta property="og:description" content="Conheça tratamentos de bem-estar e escolha seu próximo momento de cuidado.">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="Spa Panaceia | Bem-Estar e Relaxamento">
+    <meta name="twitter:description" content="Conheça tratamentos de bem-estar e escolha seu próximo momento de cuidado.">
+    __SPA_CANONICAL_METADATA__
     <title>Spa Panaceia | Bem-Estar e Relaxamento</title>
-    <link rel="icon" type="image/png" href="/static/img/logo_panaceia.png?v=2">
+    <link rel="icon" type="image/svg+xml" href="/app-icon.svg">
+    <link rel="stylesheet" href="/static/css/privacy-notice.min.css">
+    <script defer src="/static/js/privacy-notice.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
@@ -6648,7 +6658,7 @@ body.dark-mode .spa-toast {
                     const cardHtml = `
                         <div class="card" style="animation-delay: ${Math.min(idx * 0.05, 0.3)}s">
                             <div class="card-img-wrapper">
-                                ${(() => { const imagem = imagemDoServico(servico, 760); return `<img src="${escaparHtml(imagem.src)}" width="760" height="500" style="object-position: ${escaparHtml(imagem.posicao)}" alt="${escaparHtml(servico.tipo)}" loading="lazy" decoding="async">`; })()}
+                                ${(() => { const imagem = imagemDoServico(servico, 760); return `<img src="${escaparHtml(imagem.src)}" width="760" height="500" style="object-position: ${escaparHtml(imagem.posicao)}" alt="Foto ilustrativa do atendimento de ${escaparHtml(servico.tipo)}" loading="lazy" decoding="async">`; })()}
                             </div>
                             <div class="card-conteudo">
                                 <div>
@@ -8502,5 +8512,14 @@ body.dark-mode .spa-toast {
 
 
     </script>
+    <footer class="rodape-publico"><a href="/privacidade">Aviso de privacidade e cookies</a></footer>
+    <aside id="aviso-cookies" class="aviso-cookies" role="region" aria-labelledby="aviso-cookies-titulo">
+        <div class="aviso-cookies__texto">
+            <h2 id="aviso-cookies-titulo">Privacidade e cookies</h2>
+            <p>Quando você entra, usamos um cookie de sessão essencial. Preferências ficam no seu navegador. Analytics não está ativado.</p>
+            <a href="/privacidade">Leia o aviso de privacidade</a>
+        </div>
+        <button id="aviso-cookies-fechar" type="button">Entendi</button>
+    </aside>
 </body>
 </html>

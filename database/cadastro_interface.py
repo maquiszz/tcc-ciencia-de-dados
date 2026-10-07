@@ -15,7 +15,18 @@ from zoneinfo import ZoneInfo
 
 import requests
 from dotenv import load_dotenv
-from flask import Flask, Response, g, jsonify, request, send_from_directory, session
+from flask import (
+    Flask,
+    Response,
+    g,
+    jsonify,
+    make_response,
+    redirect,
+    render_template,
+    request,
+    send_from_directory,
+    session,
+)
 from flask.sessions import SecureCookieSessionInterface
 from flask_cors import CORS
 from werkzeug.security import check_password_hash, generate_password_hash
@@ -117,6 +128,7 @@ app = Flask(
     __name__,
     static_folder=str(BASE_DIR.parent / "static"),
     static_url_path="/static",
+    template_folder=str(BASE_DIR.parent / "templates"),
 )
 secret_key = os.getenv("FLASK_SECRET_KEY")
 if not secret_key:
@@ -852,15 +864,114 @@ def email_de_recuperacao(codigo):
     """
 
 
+def obter_url_publica_canonica():
+    """Retorna apenas uma URL HTTPS explicitamente configurada e confiável."""
+    valor = os.getenv("PUBLIC_SITE_URL", "").strip()
+    if not valor:
+        return None
+    try:
+        partes = urlsplit(valor)
+        host = (partes.hostname or "").lower()
+        if (
+            partes.scheme.lower() != "https"
+            or not host
+            or host not in app.config["TRUSTED_HOSTS"]
+            or partes.username
+            or partes.password
+            or partes.path not in {"", "/"}
+            or partes.query
+            or partes.fragment
+            or partes.port not in {None, 443}
+        ):
+            return None
+    except (TypeError, ValueError):
+        return None
+    return f"https://{host}"
+
+
+def template_publico(nome):
+    """Prefere o HTML minificado gerado pelo build, mantendo o fonte como fallback."""
+    raiz_templates = Path(app.root_path).parent / "templates"
+    fonte = raiz_templates / nome
+    minificado = fonte.with_name(f"{fonte.stem}.min{fonte.suffix}")
+    escolhido = minificado.name if minificado.is_file() else fonte.name
+    return render_template(escolhido, site_url=obter_url_publica_canonica())
+
+
 @app.route("/")
 def pagina_principal():
-    filename = os.getenv("SPA_FRONTEND_FILE") or ("spa-panaceia-profissional.html" if (BASE_DIR / "spa-panaceia-profissional.html").is_file() else "servicos.html")
-    return send_from_directory(BASE_DIR, filename)
+    configurado = os.getenv("SPA_FRONTEND_FILE")
+    if configurado:
+        return send_from_directory(BASE_DIR, configurado)
+
+    nome = "spa-panaceia-profissional.html" if (BASE_DIR / "spa-panaceia-profissional.html").is_file() else "servicos.html"
+    fonte = BASE_DIR / nome
+    minificado = fonte.with_name(f"{fonte.stem}.min{fonte.suffix}")
+    escolhido = minificado if minificado.is_file() else fonte
+    conteudo = escolhido.read_text(encoding="utf-8")
+    site_url = obter_url_publica_canonica()
+    metadados = ""
+    if site_url:
+        url_escape = html.escape(site_url, quote=True)
+        metadados = (
+            f'<link rel="canonical" href="{url_escape}/">'
+            f'<meta property="og:url" content="{url_escape}/">'
+            f'<meta property="og:image" content="{url_escape}/static/img/logo_panaceia.png">'
+            '<meta property="og:image:alt" content="Símbolo do Spa Panaceia">'
+            f'<meta name="twitter:image" content="{url_escape}/static/img/logo_panaceia.png">'
+        )
+    conteudo = conteudo.replace("__SPA_CANONICAL_METADATA__", metadados)
+    resposta = make_response(conteudo)
+    resposta.headers["Cache-Control"] = "no-cache, must-revalidate"
+    return resposta
 
 
 @app.route("/cadastro")
 def pagina_cadastro():
-    return pagina_principal()
+    resposta = make_response(template_publico("index.html"))
+    resposta.headers["X-Robots-Tag"] = "noindex, nofollow"
+    return resposta
+
+
+@app.route("/privacidade")
+def pagina_privacidade():
+    return template_publico("privacidade.html")
+
+
+@app.route("/robots.txt")
+def robots_txt():
+    linhas = ["User-agent: *", "Disallow: /api/", "Disallow: /cadastro"]
+    site_url = obter_url_publica_canonica()
+    if site_url:
+        linhas.append(f"Sitemap: {site_url}/sitemap.xml")
+    return Response("\n".join(linhas) + "\n", mimetype="text/plain")
+
+
+@app.route("/sitemap.xml")
+def sitemap_xml():
+    site_url = obter_url_publica_canonica()
+    if not site_url:
+        return Response(
+            "PUBLIC_SITE_URL precisa apontar para o domínio canônico HTTPS confiável.",
+            status=503,
+            mimetype="text/plain",
+        )
+    paginas = ("/", "/privacidade")
+    itens = "".join(
+        f"<url><loc>{html.escape(site_url + caminho, quote=True)}</loc></url>"
+        for caminho in paginas
+    )
+    xml = (
+        '<?xml version="1.0" encoding="UTF-8"?>'
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
+        f"{itens}</urlset>"
+    )
+    return Response(xml, mimetype="application/xml")
+
+
+@app.route("/favicon.ico")
+def favicon():
+    return redirect("/app-icon.svg", code=308)
 
 
 @app.route("/api/health", methods=["GET"])
@@ -932,7 +1043,9 @@ self.addEventListener('fetch', event => {
 
 @app.route("/app-icon.svg")
 def icone_aplicativo():
-    return Response("""<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 512 512\"><defs><linearGradient id=\"g\" x1=\"0\" y1=\"0\" x2=\"1\" y2=\"1\"><stop stop-color=\"#8b35e8\"/><stop offset=\"1\" stop-color=\"#3d087d\"/></linearGradient></defs><rect width=\"512\" height=\"512\" rx=\"116\" fill=\"url(#g)\"/><path d=\"M256 112c27 73 71 117 144 144-73 27-117 71-144 144-27-73-71-117-144-144 73-27 117-71 144-144Z\" fill=\"#fff3d8\"/><circle cx=\"256\" cy=\"256\" r=\"38\" fill=\"#6a11cb\"/></svg>""", mimetype="image/svg+xml")
+    resposta = Response("""<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 512 512\"><defs><linearGradient id=\"g\" x1=\"0\" y1=\"0\" x2=\"1\" y2=\"1\"><stop stop-color=\"#8b35e8\"/><stop offset=\"1\" stop-color=\"#3d087d\"/></linearGradient></defs><rect width=\"512\" height=\"512\" rx=\"116\" fill=\"url(#g)\"/><path d=\"M256 112c27 73 71 117 144 144-73 27-117 71-144 144-27-73-71-117-144-144 73-27 117-71 144-144Z\" fill=\"#fff3d8\"/><circle cx=\"256\" cy=\"256\" r=\"38\" fill=\"#6a11cb\"/></svg>""", mimetype="image/svg+xml")
+    resposta.headers["Cache-Control"] = "public, max-age=604800"
+    return resposta
 
 
 @app.errorhandler(404)
@@ -942,7 +1055,9 @@ def pagina_nao_encontrada(_error):
             "error": "Rota não encontrada.",
             "code": "route_not_found",
         }), 404
-    return pagina_principal(), 404
+    resposta = make_response(template_publico("404.html"), 404)
+    resposta.headers["X-Robots-Tag"] = "noindex, nofollow"
+    return resposta
 
 
 @app.errorhandler(413)

@@ -17,6 +17,7 @@ RUN groupadd --system spa \
 # incorporados à imagem; as credenciais entram exclusivamente por --env-file.
 COPY --chown=spa:spa app.py ./
 COPY --chown=spa:spa database ./database
+COPY --chown=spa:spa templates ./templates
 COPY --chown=spa:spa static ./static
 
 USER spa

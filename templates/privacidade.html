@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#6a11cb">
+    <meta name="description" content="Saiba quais dados são usados nas funções do site do Spa Panaceia e como acessar ou solicitar a exclusão dos seus dados.">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Spa Panaceia">
+    <meta property="og:title" content="Privacidade e cookies | Spa Panaceia">
+    <meta property="og:description" content="Informações sobre dados, cookies e recursos de privacidade do site Spa Panaceia.">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="Privacidade e cookies | Spa Panaceia">
+    <meta name="twitter:description" content="Informações sobre dados, cookies e recursos de privacidade do site Spa Panaceia.">
+    {% if site_url %}
+    <link rel="canonical" href="{{ site_url|e }}/privacidade">
+    <meta property="og:url" content="{{ site_url|e }}/privacidade">
+    {% endif %}
+    <title>Privacidade e cookies | Spa Panaceia</title>
+    <link rel="icon" type="image/svg+xml" href="/app-icon.svg">
+    <link rel="stylesheet" href="/static/css/privacy-notice.min.css">
+    <script defer src="/static/js/privacy-notice.min.js"></script>
+    <style>
+        :root { color-scheme: light dark; --ink: #24182c; --muted: #62566a; --paper: #fbf8fc; --surface: #fff; --line: #ded5e4; --brand: #5c169f; }
+        * { box-sizing: border-box; }
+        body { margin: 0; min-height: 100vh; padding: 1rem; color: var(--ink); background: var(--paper); font: 1rem/1.7 system-ui, sans-serif; }
+        .privacy-shell { width: min(100%, 54rem); margin: 0 auto; }
+        .privacy-nav { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: .75rem 0 1.5rem; }
+        .privacy-nav a, .privacy-content a { color: var(--brand); font-weight: 700; text-underline-offset: .2em; }
+        .privacy-nav .brand { font-size: 1.05rem; text-decoration: none; }
+        .privacy-content { padding: clamp(1.25rem, 5vw, 3rem); border: 1px solid var(--line); border-radius: 1.25rem; background: var(--surface); box-shadow: 0 1rem 3rem rgba(35, 18, 45, .08); }
+        h1, h2 { line-height: 1.2; letter-spacing: -.025em; }
+        h1 { margin-top: 0; font-size: clamp(2rem, 6vw, 3.2rem); }
+        h2 { margin-top: 2rem; font-size: 1.25rem; }
+        .updated { color: var(--muted); font-size: .9rem; }
+        .notice { padding: 1rem; border-left: .25rem solid var(--brand); background: color-mix(in srgb, var(--brand) 8%, var(--surface)); }
+        :is(a, button):focus-visible { outline: 3px solid #8b35e8; outline-offset: 3px; }
+        @media (prefers-color-scheme: dark) { :root { --ink: #f6effb; --muted: #c8bbcf; --paper: #120c18; --surface: #21172a; --line: #493b53; --brand: #e2c0ff; } }
+        @media (max-width: 480px) { .privacy-nav { align-items: flex-start; flex-direction: column; } }
+        @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; animation: none !important; } }
+    </style>
+</head>
+<body>
+    <div class="privacy-shell">
+        <nav class="privacy-nav" aria-label="Navegação principal"><a class="brand" href="/">Spa Panaceia</a><a href="/">Voltar aos tratamentos</a></nav>
+        <main class="privacy-content">
+            <h1>Privacidade e cookies</h1>
+            <p class="updated">Resumo informativo sobre o funcionamento atual do site.</p>
+            <p class="notice"><strong>Informações que dependem de confirmação do Spa:</strong> a identidade e os dados formais do controlador, um canal específico de privacidade, os prazos de retenção, as bases legais aplicáveis e os detalhes contratuais dos fornecedores. Este resumo operacional não declara conformidade com a Lei Geral de Proteção de Dados Pessoais (LGPD) nem substitui uma política revisada pelo responsável.</p>
+
+            <h2>Dados usados nas funções do site</h2>
+            <p>Para oferecer cadastro, acesso à conta, reservas e recursos relacionados, o sistema processa dados de cadastro como nome e e-mail, credenciais armazenadas em formato protegido, informações de agendamentos, lista de espera, pontos e vouchers. Códigos temporários são usados para confirmar e-mail e recuperar acesso.</p>
+            <p>O site envia mensagens transacionais de ativação, recuperação e atendimento por um serviço de e-mail. O código integra o envio a um fornecedor externo; os termos, a região de processamento e os prazos aplicáveis precisam ser confirmados pelo Spa.</p>
+
+            <h2>Cookies e armazenamento no navegador</h2>
+            <p>Uma sessão de acesso pode usar um cookie essencial para manter a conta autenticada. O navegador também guarda itens funcionais, como preferências de aparência, o estado de leitura deste aviso e informações necessárias para continuar algumas etapas da conta. Não há integração de analytics ativada no código atual.</p>
+            <p>O site carrega fontes, componentes de calendário e algumas imagens de serviços externos, incluindo Google Fonts, jsDelivr, Unsplash e Pexels. Ao solicitar esses recursos, seu navegador pode compartilhar com os respectivos serviços informações técnicas da conexão, como endereço IP e dados do navegador. Os detalhes de privacidade desses fornecedores devem ser revistos pelo Spa.</p>
+
+            <h2>Seus recursos de privacidade</h2>
+            <p>Na área da conta, clientes autenticados podem exportar uma cópia dos dados disponíveis para essa função e preparar uma solicitação de exclusão. O pedido de exclusão passa por revisão humana e não apaga automaticamente a conta. Para outras solicitações, use os canais oficiais já divulgados pelo Spa.</p>
+
+            <h2>Atualizações e confirmação</h2>
+            <p>Este aviso descreve o comportamento observado no código do site e pode mudar quando as funções ou fornecedores forem atualizados. Antes de apresentá-lo como política oficial, o Spa deve confirmar os itens pendentes acima e revisar o texto com seu responsável jurídico ou de privacidade.</p>
+        </main>
+        <footer class="rodape-publico"><a href="/">Voltar ao Spa Panaceia</a></footer>
+    </div>
+    <aside id="aviso-cookies" class="aviso-cookies" role="region" aria-labelledby="aviso-cookies-titulo">
+        <div class="aviso-cookies__texto"><h2 id="aviso-cookies-titulo">Privacidade e cookies</h2><p>Quando você entra, usamos um cookie de sessão essencial. Preferências ficam no seu navegador. Analytics não está ativado.</p><a href="/privacidade">Leia o aviso de privacidade</a></div>
+        <button id="aviso-cookies-fechar" type="button">Entendi</button>
+    </aside>
+</body>
+</html>
