@@ -10,6 +10,7 @@ from datetime import datetime, timedelta, timezone
 from functools import wraps
 from pathlib import Path
 from threading import RLock, Thread
+from concurrent.futures import ThreadPoolExecutor
 from urllib.parse import urlsplit
 from zoneinfo import ZoneInfo
 
@@ -365,6 +366,13 @@ def proteger_requisicao():
     # páginas, arquivos estáticos, API e endereços inexistentes.
     ip_cliente = obter_ip_cliente()
     if ip_pertence_as_redes(ip_cliente, BLOCKED_IP_NETWORKS):
+        alertar_servidor_telegram(
+            "SEGURANÇA",
+            "Acesso recusado (Rede/CIDR na lista de bloqueio)",
+            {"IP": ip_cliente, "Rota": f"{request.method} {request.path}"},
+            chave_cooldown=f"cidr:{ip_cliente}",
+            janela_segundos=300,
+        )
         return jsonify({
             "error": "Acesso temporariamente indisponível para este endereço.",
             "code": "ip_blocked",
@@ -377,6 +385,13 @@ def proteger_requisicao():
             return jsonify({"error": "Filtro geográfico indisponível; tente mais tarde.", "code": "geo_unavailable"}), 503
         pais = request.headers.get(COUNTRY_HEADER, "").strip().upper()
         if not re.fullmatch(r"[A-Z]{2}", pais) or pais not in ALLOWED_COUNTRIES:
+            alertar_servidor_telegram(
+                "SEGURANÇA",
+                "Acesso bloqueado por filtro geográfico",
+                {"IP": ip_cliente, "País": pais or "desconhecido", "Rota": f"{request.method} {request.path}"},
+                chave_cooldown=f"geo:{ip_cliente}",
+                janela_segundos=300,
+            )
             return jsonify({"error": "Acesso disponível somente nos países atendidos.", "code": "country_blocked"}), 403
 
     sinal_vpn = (
@@ -394,6 +409,18 @@ def proteger_requisicao():
                 vpn_strike,
                 vpn_retry,
             )
+            alertar_servidor_telegram(
+                "SEGURANÇA",
+                "Tráfego suspeito de VPN bloqueado",
+                {
+                    "IP": ip_cliente,
+                    "Rota": f"{request.method} {request.path}",
+                    "Reincidência": f"Strike #{vpn_strike}",
+                    "Espera": f"{vpn_retry}s",
+                },
+                chave_cooldown=f"vpn:{ip_cliente}",
+                janela_segundos=120,
+            )
             return jsonify({
                 "error": "Muitas requisições deste endereço. Aguarde antes de tentar novamente.",
                 "code": "vpn_rate_limited",
@@ -410,23 +437,56 @@ def proteger_requisicao():
             strike,
             retry,
         )
+        alertar_servidor_telegram(
+            "SEGURANÇA",
+            "IP bloqueado por rajada (Anti-DDoS)",
+            {
+                "IP": ip_cliente,
+                "Rota": f"{request.method} {request.path}",
+                "Reincidência": f"Strike #{strike}",
+                "Bloqueio": f"{retry}s",
+            },
+            chave_cooldown=f"burst:{ip_cliente}",
+            janela_segundos=120,
+        )
         return jsonify({
             "error": "Muitas requisições. Aguarde antes de tentar novamente.",
             "code": "ip_temporarily_blocked",
             "retry_after": retry,
         }), 429, {"Retry-After": str(retry)}
+
     if request.method not in {"POST", "PUT", "PATCH", "DELETE"}:
         return None
+
     if not origem_permitida():
-        logger.warning("Origem bloqueada em %s: %r", request.path, request.headers.get("Origin", "")[:200])
+        origem_recebida = request.headers.get("Origin", "")[:200]
+        logger.warning("Origem bloqueada em %s: %r", request.path, origem_recebida)
+        alertar_servidor_telegram(
+            "SEGURANÇA",
+            "Tentativa de requisição de origem não autorizada (CORS)",
+            {"IP": ip_cliente, "Rota": f"{request.method} {request.path}", "Origin": origem_recebida or "vazio"},
+            chave_cooldown=f"origin:{ip_cliente}",
+            janela_segundos=180,
+        )
         return jsonify({"error": "Origem da requisição não permitida.", "code": "origin_blocked", "versao": VERSAO_BACKEND}), 403
+
     if request.method != "DELETE" and request.content_length and not request.is_json:
         return jsonify({"error": "Envie os dados no formato JSON."}), 415
-    if session.get("usuario_email") and request.path not in PUBLIC_AUTH_PATHS:
+
+    # Permite que /api/logout funcione mesmo se o token CSRF estiver dessincronizado
+    if session.get("usuario_email") and request.path not in (PUBLIC_AUTH_PATHS | {"/api/logout"}):
         expected = session.get("csrf_token", "")
         provided = request.headers.get("X-CSRF-Token", "")
         if not expected or not secrets.compare_digest(expected, provided):
+            alertar_servidor_telegram(
+                "SEGURANÇA",
+                "Falha de validação CSRF bloqueada",
+                {"IP": ip_cliente, "Rota": f"{request.method} {request.path}", "Usuário": session.get("usuario_email")},
+                chave_cooldown=f"csrf:{ip_cliente}",
+                janela_segundos=180,
+            )
             return jsonify({"error": "Sua sessão precisa ser atualizada. Recarregue a página.", "code": "csrf_invalid"}), 403
+
     limits = {
         "/api/login": (20, 900, 10),
         "/api/esqueci-senha": (10, 900, 3),
@@ -438,14 +498,33 @@ def proteger_requisicao():
     }
     if request.path in limits:
         ip_limit, window, account_limit = limits[request.path]
-        # Não confiar em X-Forwarded-For enviado diretamente pelo cliente.
-        keys = [(f"{request.path}:ip:{ip_cliente}", ip_limit)]
+        
+        # 1. Verifica o limite por IP primeiro (evita esgotamento da memória por e-mails falsos)
+        ip_key = f"{request.path}:ip:{ip_cliente}"
+        allowed, retry = rate_limiter.allow(ip_key, ip_limit, window)
+        if not allowed:
+            alertar_servidor_telegram(
+                "SEGURANÇA",
+                "Limite de tentativas por IP excedido (Força Bruta)",
+                {"IP": ip_cliente, "Rota": request.path, "Espera": f"{retry}s"},
+                chave_cooldown=f"ratelimit_ip:{request.path}:{ip_cliente}",
+                janela_segundos=120,
+            )
+            return jsonify({"error": "Muitas tentativas. Aguarde antes de tentar novamente."}), 429, {"Retry-After": str(retry)}
+
+        # 2. Só consome slot de e-mail se o IP ainda estiver dentro do limite
         email = normalizar_email(json_body().get("email"))
         if account_limit and email:
-            keys.append((f"{request.path}:account:{security.fingerprint(email)}", account_limit))
-        for key, limit in keys:
-            allowed, retry = rate_limiter.allow(key, limit, window)
+            acc_key = f"{request.path}:account:{security.fingerprint(email)}"
+            allowed, retry = rate_limiter.allow(acc_key, account_limit, window)
             if not allowed:
+                alertar_servidor_telegram(
+                    "SEGURANÇA",
+                    "Limite de tentativas por conta excedido (Força Bruta)",
+                    {"IP": ip_cliente, "Rota": request.path, "Conta alvo": email, "Espera": f"{retry}s"},
+                    chave_cooldown=f"ratelimit_acc:{request.path}:{email}",
+                    janela_segundos=120,
+                )
                 return jsonify({"error": "Muitas tentativas. Aguarde antes de tentar novamente."}), 429, {"Retry-After": str(retry)}
 
 
@@ -734,13 +813,121 @@ def iniciar_email_em_segundo_plano(destinatario, assunto, conteudo_html):
     return True
 
 
+
+
+# Pool controlado para não esgotar conexões em picos de alerta
+notificacao_executor = ThreadPoolExecutor(max_workers=2, thread_name_prefix="spa-notify")
+# Anti-flood para o Telegram (evita que ataques de rajada travem o bot)
+telegram_limiter = RateLimiter(max_keys=2_000)
+
+
+def enviar_alerta_telegram(mensagem_html):
+    """Envia alerta para o Telegram via HTTP com timeout seguro."""
+    token = (os.getenv("TELEGRAM_BOT_TOKEN") or "").strip()
+    chat_id = (os.getenv("TELEGRAM_CHAT_ID") or "").strip()
+    if not token or not chat_id:
+        return False
+
+    try:
+        resposta = requests.post(
+            f"https://api.telegram.org/bot{token}/sendMessage",
+            json={
+                "chat_id": chat_id,
+                "text": mensagem_html[:4000],  # Limite oficial de caracteres do Telegram
+                "parse_mode": "HTML",
+                "disable_web_page_preview": True,
+            },
+            timeout=8,
+        )
+        resposta.raise_for_status()
+        return True
+    except Exception:
+        # Usa warning interno do werkzeug para evitar loop infinito no handler de erro
+        logging.getLogger("werkzeug").warning("Falha ao entregar alerta ao Telegram.")
+        return False
+
+
+def alertar_servidor_telegram(categoria, titulo, detalhes=None, chave_cooldown=None, janela_segundos=60):
+    """Central de telemetria: envia alertas de qualquer parte do servidor com filtro anti-spam."""
+    if not (os.getenv("TELEGRAM_BOT_TOKEN") and os.getenv("TELEGRAM_CHAT_ID")):
+        return False
+
+    if chave_cooldown:
+        permitido, _ = telegram_limiter.allow(f"tg:{chave_cooldown}", 1, janela_segundos)
+        if not permitido:
+            return False
+
+    icones = {
+        "SEGURANÇA": "🛡️",
+        "ERRO CRÍTICO": "🚨",
+        "AGENDA": "📅",
+        "ESTOQUE": "📦",
+        "SISTEMA": "⚙️",
+        "CONTA": "👤",
+    }
+    icone = icones.get(categoria.upper(), "🔔")
+    agora_str = datetime.now(SPA_TIMEZONE).strftime("%d/%m/%Y %H:%M:%S")
+
+    linhas = [
+        f"{icone} <b>SPA PANACEIA · {html.escape(str(categoria).upper())}</b>",
+        f"<b>{html.escape(str(titulo))}</b>",
+        f"<i>Horário: {agora_str}</i>\n",
+    ]
+    for rotulo, valor in (detalhes or {}).items():
+        if valor is not None and str(valor).strip() != "":
+            linhas.append(f"• <b>{html.escape(str(rotulo))}:</b> {html.escape(str(valor)[:500])}")
+
+    notificacao_executor.submit(enviar_alerta_telegram, "\n".join(linhas))
+    return True
+
+
+class TelegramErrorLogHandler(logging.Handler):
+    """Intercepta qualquer logger.error() ou logger.exception() do servidor e manda pro Telegram."""
+
+    def emit(self, record):
+        if record.levelno < logging.ERROR:
+            return
+        try:
+            caminho_rota = request.path if request else "background/sistema"
+            metodo_http = request.method if request else "-"
+            ip_origem = obter_ip_cliente() if request else "servidor"
+        except RuntimeError:
+            caminho_rota, metodo_http, ip_origem = "background/sistema", "-", "servidor"
+
+        resumo_excecao = ""
+        if record.exc_info and record.exc_info[1]:
+            resumo_excecao = f"{type(record.exc_info[1]).__name__}: {record.exc_info[1]}"
+
+        chave = f"err:{record.module}:{record.lineno}"
+        alertar_servidor_telegram(
+            "ERRO CRÍTICO",
+            record.getMessage(),
+            {
+                "Rota": f"{metodo_http} {caminho_rota}",
+                "IP": ip_origem,
+                "Local": f"{record.filename}:{record.lineno}",
+                "Exceção": resumo_excecao or "Consulte o terminal do servidor",
+            },
+            chave_cooldown=chave,
+            janela_segundos=120,  # Mesmo erro só avisa 1x a cada 2 minutos
+        )
+
+
+# Pluga o interceptador de erros diretamente no logger principal do servidor
+if not any(isinstance(h, TelegramErrorLogHandler) for h in logger.handlers):
+    _tg_handler = TelegramErrorLogHandler(level=logging.ERROR)
+    logger.addHandler(_tg_handler)
+
+
 def email_equipe_agenda(assunto, titulo, detalhes):
+    # Dispara sempre no Telegram
+    alerta_tg = alertar_servidor_telegram("AGENDA", titulo, detalhes)
+
     destinatario = normalizar_email(
         os.getenv("SPA_ALERT_EMAIL") or os.getenv("SPA_TEAM_EMAIL") or os.getenv("BREVO_SENDER_EMAIL")
     )
     if not destinatario:
-        logger.info("Alerta da agenda sem envio: configure SPA_ALERT_EMAIL.")
-        return False
+        return alerta_tg
     corpo = "".join(
         f"<li style='margin:8px 0'><strong>{html.escape(str(rotulo))}:</strong> {html.escape(str(valor))}</li>"
         for rotulo, valor in detalhes.items()
@@ -751,7 +938,8 @@ def email_equipe_agenda(assunto, titulo, detalhes):
         f"<h2>{html.escape(titulo)}</h2><ul style='padding-left:20px;line-height:1.6'>{corpo}</ul>"
         "<p style='color:#756a7d;font-size:13px'>Acesse o painel gerencial para consultar ou atualizar a reserva.</p></div>"
     )
-    return iniciar_email_em_segundo_plano(destinatario, assunto, conteudo)
+    alerta_email = iniciar_email_em_segundo_plano(destinatario, assunto, conteudo)
+    return alerta_tg or alerta_email
 
 
 def registrar_auditoria_agenda(
@@ -2056,4 +2244,11 @@ def chat():
 
 
 if __name__ == "__main__":
+    alertar_servidor_telegram(
+        "SISTEMA",
+        "Servidor Spa Panaceia iniciado",
+        {"Ambiente": "Produção" if IS_PRODUCTION else "Desenvolvimento", "Versão": VERSAO_BACKEND},
+        chave_cooldown="server_boot",
+        janela_segundos=10,
+    )
     app.run(host="0.0.0.0", port=int(os.getenv("PORT", "5000")))

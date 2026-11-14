@@ -357,80 +357,14 @@ Mesmo com failover habilitado, as duas bases precisam ter o mesmo esquema,
 funções RPC e dados coerentes. Faça backup e reconciliação antes de mudar o banco
 primário ou reativar uma base que ficou offline.
 
-## Alternativa: PostgreSQL local no ZimaOS
+## Estado operacional
 
-Execute na pasta do repositório. Ajuste o nome do container e a porta externa
-caso a instalação use valores diferentes:
-
-```bash
-git pull --ff-only
-
-TAG="$(date +%Y%m%d-%H%M%S)"
-docker build --pull \
-  -t "spa-panaceia:$TAG" \
-  -t spa-panaceia:latest \
-  .
-
-docker stop spa-panaceia 2>/dev/null || true
-docker rm spa-panaceia 2>/dev/null || true
-
-docker run -d \
-  --name spa-panaceia \
-  --restart unless-stopped \
-  --network postgres1_database \
-  --env-file database.env \
-  -p 5000:5000 \
-  spa-panaceia:latest
-```
-
-O build copia apenas o runtime. O `database.env`, backups, datasets e arquivos
-de desenvolvimento não entram na imagem.
-
-## Validação do deploy ativo e da alternativa local
-
-```bash
-curl -fsS https://panaceia.onrender.com/api/health
-curl -i https://spapanaceia.com.br/api/health
-docker ps --filter name=spa-panaceia
-docker inspect --format '{{json .State.Health}}' spa-panaceia
-docker logs --tail 100 spa-panaceia
-```
-
-O primeiro comando verifica o endpoint Render ativo. Na última verificação, ele
-respondeu HTTP 200 com Supabase ativo. O segundo consulta o domínio oficial; na
-última verificação, retornou HTTP 530/Cloudflare 1033. Não considere o domínio
-oficial funcional até que uma nova verificação confirme isso. Os comandos Docker
-abaixo são aplicáveis somente à alternativa local/ZimaOS.
-
-A resposta observada no Render indicou:
-
-```json
-{
-  "status": "ok",
-  "database": "ok",
-  "database_backend": "supabase",
-  "databases": {
-    "postgres": {"status": "nao_testado"},
-    "supabase": {"status": "ok"}
-  },
-  "restricao_agenda": null,
-  "restricao_agenda_verificavel": false
-}
-```
-
-No Supabase, `restricao_agenda: null` significa que essa rota não consegue
-verificar o catálogo de índices e gatilhos. Não confirma presença nem ausência
-deles; confira os índices e os dois triggers no próprio Supabase antes de
-depender dessa proteção.
-
-Teste também:
-
-1. Listagem de serviços.
-2. Login de cliente e administrador.
-3. Criação, remarcação e cancelamento de um horário de teste.
-4. Conclusão administrativa e crédito de pontos.
-5. Resgate e utilização de voucher.
-6. Exportação de dados do perfil.
+A produção usa Render + Supabase; o PostgreSQL local/ZimaOS está indisponível.
+As bases não são réplicas: mantenha `DATABASE_FAILOVER_ENABLED=false`. O último
+healthcheck registrado apontou Supabase `ok`; ele não confirma índices ou
+triggers. Verifique `/api/health` e os objetos da agenda no Supabase após mudanças.
+O domínio oficial ainda teve erros Cloudflare na última verificação; confirme-o
+antes de considerá-lo ativo.
 
 ## Proteção contra horários duplicados
 
@@ -579,51 +513,14 @@ não reintroduzir a atualização separada de status e saldo.
 
 ## Cancelamento automático de agendamentos vencidos
 
-### Estado estrutural verificado antes da instalação
+No Supabase, um job `pg_cron` roda a cada 15 minutos e muda para `Cancelado` os
+agendamentos ainda `Pendente` cuja data já terminou em `America/Sao_Paulo`.
+Atualização e auditoria são atômicas; a função é idempotente e não pode ser
+chamada pelos papéis da API. O job guarda a data de ativação para não alterar
+reservas antigas automaticamente. O PostgreSQL local está indisponível e não
+tem scheduler configurado.
 
-Inspeção somente de leitura no Supabase em 07/10/2026, 11:30 (horário de São
-Paulo): `agendamentos.data_atendimento` é `timestamp without time zone` com a
-hora local do Spa, e `status` é `character varying`, padrão `Pendente`. O banco
-usa UTC e a configuração de `cron.timezone` é `GMT`; o corte do dia é calculado
-explicitamente em `America/Sao_Paulo`, e a periodicidade de 15 minutos não
-depende do fuso do cron.
-
-Antes da instalação, `pg_cron` não estava instalado, não havia schema/tabela
-`cron.job`, mas a extensão versão 1.6.4 estava disponível. `pg_net` também não
-estava instalado e não é necessário. `agenda_auditoria` tem RLS habilitado, sem
-políticas públicas, e a restrição existente era
-`CHECK (ator_tipo IN ('admin', 'cliente'))`; não havia gatilho de auditoria.
-As tabelas da agenda pertencem a `postgres`, e o acesso de aplicação é feito
-por `service_role`. O gatilho `trg_agendamentos_respeitar_bloqueio` não impede
-cancelamentos: sua função pula as verificações de horário quando o novo status
-é `Cancelado`.
-
-O índice parcial `uq_agendamentos_horario_ativo` cobre horários cujo status não
-é `Cancelado`; o índice será liberado naturalmente pela atualização do status.
-O crédito de pontos está em outra função transacional e só aceita uma reserva
-`Pendente`, de modo que o cancelamento concorrente não pode creditar pontos.
-
-### Pendências anteriores à ativação
-
-Na mesma leitura, em 07/10/2026, havia 16 agendamentos `Pendente` com data
-anterior ao dia local atual. Quantidades por dia: 16/09 (2), 17/09 (1), 22/09
-(1), 25/09 (2), 26/09 (1), 30/09 (7) e 01/10 (2). Havia também uma entrada de
-lista de espera `Aguardando` com data passada. Nenhum desses registros foi
-alterado nesta inspeção.
-
-O job guarda a data local de ativação no comando agendado e processa somente
-datas a partir desse dia. Assim, sua primeira execução não faz cancelamento em
-lote do histórico anterior; a equipe deve revisar essas 16 reservas antes de
-qualquer decisão de acerto retroativo. Uma reserva ainda `Pendente` na data da
-ativação continua válida até o fim desse dia e passa a ser elegível depois da
-meia-noite local.
-
-### Instalação no Supabase
-
-O bloco abaixo instala `pg_cron`, amplia somente a restrição de tipo de ator da
-auditoria, cria uma função transacional idempotente e agenda uma execução a cada
-15 minutos. Não altera permissões de tabela, RLS, pontos, clientes ou reservas
-existentes. Execute tudo como uma transação no SQL Editor do Supabase.
+SQL aplicado no Supabase:
 
 ```sql
 BEGIN;
@@ -710,89 +607,36 @@ $schedule$;
 COMMIT;
 ```
 
-Instalação confirmada no Supabase em 07/10/2026: `pg_cron` 1.6.4, job `id=1`
-ativo em `*/15 * * * *`, executado pelo proprietário `postgres`, com data de
-ativação `2026-10-07`. A função é `SECURITY DEFINER`; `postgres` pode executá-la,
-e `service_role`, `anon` e `authenticated` não podem. O primeiro ciclo terminou
-com `succeeded` às 11:45 (São Paulo). O `return_message` do cron foi `1 row`,
-que confirma uma linha retornada pela chamada, não a quantidade de
-cancelamentos; a consulta agregada separada confirmou zero pendências vencidas
-desde a ativação e zero auditorias automáticas. As contagens permaneceram em
-17 `Pendente`, 28 `Concluido` e 3 `Cancelado`; as 16 pendências antigas por
-data e uma entrada `Aguardando` vencida (30/09) permanecem inalteradas.
-
-O job não depende de tráfego no site. A função compara a data do agendamento
-com o começo do dia local: um atendimento permanece válido durante todo o dia
-marcado. Ela seleciona somente linhas `Pendente`, bloqueia cada linha com
-`FOR UPDATE SKIP LOCKED` e testa novamente o status no `UPDATE`. Se a conclusão
-ganhar o lock, a automação não encontra mais uma pendência; se o cancelamento
-ganhar, a conclusão concorrente vê status inválido e não credita pontos. Se o
-`UPDATE` ou a inserção da auditoria falhar, a chamada inteira é revertida e o
-job pode tentar novamente no próximo ciclo. Uma repetição não gera nova
-auditoria porque o status já não é `Pendente`.
-
-O registro de auditoria usa `ator_tipo='sistema'`, `ator_email='sistema'` e
-`acao='cancelamento_automatico'`. O horário liberado já está em uma data
-passada, portanto não é oferecido novamente e não dispara e-mail da lista de
-espera. A automação não altera entradas antigas da lista de espera; a inspeção
-encontrou uma entrada `Aguardando` vencida, que deve ser revisada separadamente.
-
-Os endpoints existentes leem o status diretamente do banco: perfil e agenda
-administrativa recebem `Cancelado`, e os indicadores de pendentes e relatórios
-contam somente as linhas ainda `Pendente`. Uma tela administrativa já aberta
-mantém o cache carregado até a próxima atualização da agenda.
-
-### Verificação pós-instalação (somente leitura)
-
-Use estas consultas após a instalação para confirmar a função, as permissões,
-o job e a execução. `cron.job_run_details` registra falhas do job; o resultado
-da função pode ser conferido pela contagem de auditorias do sistema e pela
-ausência de pendências vencidas desde a data gravada no comando.
+Verificação rápida do job e das execuções:
 
 ```sql
-SELECT extname, extversion
-FROM pg_extension
-WHERE extname = 'pg_cron';
+SELECT jobid, schedule, active, username, command
+FROM cron.job WHERE jobname = 'spa-cancelar-agendamentos-vencidos';
 
-SELECT jobid, jobname, schedule, command, active, username
-FROM cron.job
-WHERE jobname = 'spa-cancelar-agendamentos-vencidos';
-
-SELECT p.oid::regprocedure AS assinatura,
-       p.prosecdef AS security_definer,
-       has_function_privilege('postgres', p.oid, 'EXECUTE') AS postgres_pode_executar,
-       has_function_privilege('service_role', p.oid, 'EXECUTE') AS service_role_pode_executar,
-       has_function_privilege('anon', p.oid, 'EXECUTE') AS anon_pode_executar,
-       has_function_privilege('authenticated', p.oid, 'EXECUTE') AS authenticated_pode_executar
-FROM pg_proc AS p
-JOIN pg_namespace AS n ON n.oid = p.pronamespace
-WHERE n.nspname = 'public'
-  AND p.proname = 'cancelar_agendamentos_vencidos';
-
-SELECT jobid, status, start_time, end_time, return_message
+SELECT status, start_time, return_message
 FROM cron.job_run_details
-WHERE jobid = (
-    SELECT jobid FROM cron.job
-    WHERE jobname = 'spa-cancelar-agendamentos-vencidos'
-)
-ORDER BY start_time DESC
-LIMIT 10;
-
-SELECT ator_tipo, acao, status_anterior, status_novo, count(*) AS quantidade
-FROM public.agenda_auditoria
-WHERE ator_tipo = 'sistema'
-  AND acao = 'cancelamento_automatico'
-GROUP BY ator_tipo, acao, status_anterior, status_novo;
+WHERE jobid = (SELECT jobid FROM cron.job
+               WHERE jobname = 'spa-cancelar-agendamentos-vencidos')
+ORDER BY start_time DESC LIMIT 5;
 ```
 
-As consultas de verificação não executam a função. A função não deve ser
-chamada manualmente com uma data anterior à ativação sem revisar e autorizar o
-impacto sobre o histórico.
+Verifique também se há pendências vencidas desde a ativação:
 
-### Reversão
+```sql
+SELECT count(*)
+FROM public.agendamentos
+WHERE status = 'Pendente'
+  AND data_atendimento < (now() AT TIME ZONE 'America/Sao_Paulo')::date
+  AND data_atendimento >= DATE '2026-10-07';
+```
 
-Para interromper a automação, desagende somente o job nomeado e remova a função
-criada por esta migração:
+Na instalação, a consulta encontrou 16 reservas antigas pendentes e uma entrada
+vencida na lista de espera; nenhuma foi alterada. Esses casos precisam de
+revisão manual antes de qualquer acerto retroativo. O primeiro ciclo do job
+terminou com sucesso e não encontrou reservas elegíveis para cancelar; ainda
+falta observar um cancelamento real pelo cron.
+
+Para reverter, remova somente o job e a função:
 
 ```sql
 BEGIN;
@@ -803,16 +647,8 @@ DROP FUNCTION IF EXISTS public.cancelar_agendamentos_vencidos(date);
 COMMIT;
 ```
 
-Mantenha a extensão `pg_cron` se houver outros jobs no projeto. Mantenha também
-a restrição ampliada enquanto existir ao menos uma auditoria com
-`ator_tipo='sistema'`; não apague nem reclassifique esses registros para
-reverter o código. Se não houver auditorias do sistema, a restrição anterior
-pode ser restaurada manualmente para `CHECK (ator_tipo IN ('admin', 'cliente'))`.
-
-O PostgreSQL local continua sem scheduler e indisponível no ambiente atual.
-Não foi adicionado scheduler aos workers Flask. Se o banco ativo mudar para
-PostgreSQL local, será necessário configurar nele um scheduler equivalente
-antes de contar com cancelamento automático.
+Mantenha `pg_cron` se outros jobs o utilizarem. Não restaure a restrição antiga
+da auditoria enquanto houver registros com `ator_tipo='sistema'`.
 
 ## Movimentação atômica de estoque
 
@@ -957,45 +793,11 @@ um teste de concorrência contra duas sessões reais do Supabase. Esse teste nã
 foi executado porque a interface SQL disponível não permite coordenar duas
 sessões mantendo os dados sintéticos reversíveis.
 
-## Backup diário do PostgreSQL (alternativa local/ZimaOS)
+## Backups
 
-Crie no ZimaOS uma tarefa diária, por exemplo às 03:00, com o bloco abaixo. O
-backup fica fora do container e os arquivos com mais de 14 dias são removidos:
-
-```bash
-BACKUP_DIR=/DATA/AppData/spa-panaceia/backups
-mkdir -p "$BACKUP_DIR"
-chmod 700 "$BACKUP_DIR"
-
-ARQUIVO="$BACKUP_DIR/spa-$(date +%Y%m%d-%H%M%S).dump"
-docker exec postgres sh -lc \
-  'pg_dump -U "${POSTGRES_USER:-postgres}" -d "${POSTGRES_DB:-site_db}" --format=custom --no-owner --no-privileges' \
-  > "$ARQUIVO"
-
-test -s "$ARQUIVO" || { rm -f "$ARQUIVO"; exit 1; }
-find "$BACKUP_DIR" -type f -name 'spa-*.dump' -mtime +14 -delete
-```
-
-Guarde também uma cópia periódica em outro disco ou equipamento. Um backup no
-mesmo disco não protege contra falha física.
-
-## Teste de restauração (alternativa local/ZimaOS)
-
-Teste periodicamente em um banco separado; nunca restaure sobre produção para
-fazer uma verificação:
-
-```bash
-docker exec postgres createdb -U postgres spa_restore_test
-docker exec -i postgres pg_restore \
-  -U postgres \
-  -d spa_restore_test \
-  --no-owner \
-  --no-privileges \
-  < /DATA/AppData/spa-panaceia/backups/<arquivo>.dump
-```
-
-Depois compare as quantidades das tabelas e remova o banco de teste somente
-quando tiver certeza de que não é o banco de produção.
+O procedimento `pg_dump` do antigo servidor local foi removido porque esse
+servidor está indisponível. Confirme no painel Supabase que os backups e a
+retenção atendem à necessidade do Spa; este README não confirma o estado atual.
 
 ## Desenvolvimento local
 
@@ -1016,8 +818,6 @@ defina `SESSION_COOKIE_SECURE=false`; em produção ela deve permanecer `true`.
 - Segredos de produção configurados no ambiente do Render; segredos expostos
   revogados e substituídos.
 - Senha exclusiva para o usuário `site_user`.
-- Na alternativa PostgreSQL/ZimaOS, porta 5432 acessível somente pela rede Docker.
 - HTTPS, HSTS, CSP e cookies seguros ativos.
-- Na alternativa PostgreSQL/ZimaOS, backup diário e restauração testada.
 - `/api/health` monitorado.
 - Imagens antigas mantidas por alguns dias para rollback.
