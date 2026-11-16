@@ -1259,6 +1259,9 @@ def alertar_servidor_telegram(categoria, titulo, detalhes=None, chave_cooldown=N
         "ESTOQUE": "📦",
         "SISTEMA": "⚙️",
         "CONTA": "👤",
+        "FIDELIDADE": "🎁",
+        "AVALIAÇÃO": "⭐",
+        "PRIVACIDADE": "🔒",
     }
     icone = icones.get(str(categoria).upper(), "🔔")
     agora_str = datetime.now(SPA_TIMEZONE).strftime("%d/%m/%Y %H:%M:%S")
@@ -1892,7 +1895,14 @@ def validar_codigo():
             if not atualizados:
                 return jsonify(erro_uniforme), 400
             challenge_attempt_limiter.reset_key(chave_tentativas)
-            return jsonify({"message": "E-mail verificado com sucesso!"}), 200
+        alertar_servidor_telegram(
+            "CONTA",
+            "Nova conta de cliente ativada",
+            {"Cliente": usuario.get("nome") or "Cliente", "E-mail": email},
+            chave_cooldown=f"acct_active:{email}",
+            janela_segundos=30,
+        )
+        return jsonify({"message": "E-mail verificado com sucesso!"}), 200
     except (TypeError, ValueError):
         logger.exception("Data de expiração de OTP inválida")
         return jsonify({"error": "Não foi possível validar o código."}), 500
@@ -1964,6 +1974,15 @@ def login():
         session["iat"] = time.time()
         if usuario.get("sessao_versao") is not None:
             session["sessao_versao"] = int(usuario.get("sessao_versao") or 1)
+
+        if usuario.get("is_admin"):
+            alertar_servidor_telegram(
+                "SEGURANÇA",
+                "Acesso administrativo iniciado",
+                {"Administrador": usuario.get("email"), "IP": obter_ip_cliente()},
+                chave_cooldown=f"admin_login:{usuario.get('email')}:{obter_ip_cliente()}",
+                janela_segundos=60,
+            )
 
         return jsonify({"message": "Login realizado com sucesso!", "usuario": usuario_publico(usuario), "csrf_token": csrf_token()}), 200
     except Exception:
@@ -2142,7 +2161,14 @@ def redefinir_senha():
             revogar_sessoes_usuario(email, incrementar_banco=True)
             if normalizar_email(session.get("usuario_email")) == email:
                 session.clear()
-            return jsonify({"message": "Senha redefinida com sucesso! Faça login para continuar."}), 200
+        alertar_servidor_telegram(
+            "CONTA",
+            "Senha redefinida pelo usuário",
+            {"E-mail": email, "IP": obter_ip_cliente()},
+            chave_cooldown=f"pwd_reset:{email}",
+            janela_segundos=60,
+        )
+        return jsonify({"message": "Senha redefinida com sucesso! Faça login para continuar."}), 200
     except Exception:
         logger.exception("Erro ao redefinir senha")
         return jsonify({"error": "Erro ao redefinir a senha."}), 500
@@ -2307,6 +2333,13 @@ def entrar_lista_espera():
             if "23505" not in str(error) and "duplicate key" not in str(error).lower():
                 raise
             return jsonify({"message": "Você já está na lista de espera para esse horário."}), 200
+        alertar_servidor_telegram(
+            "AGENDA",
+            "Cliente entrou na lista de espera",
+            {"Cliente": g.usuario["email"], "Data e hora": data_atendimento, "Serviço ID": servico_id},
+            chave_cooldown=f"waitlist_join:{g.usuario['email']}:{data_atendimento}",
+            janela_segundos=30,
+        )
         return jsonify({"message": "Pronto. Avisaremos por e-mail se esse horário ficar livre."}), 201
     except ValueError as error:
         return jsonify({"error": str(error)}), 400
@@ -2463,6 +2496,18 @@ def avaliar_agendamento(agendamento_id):
             return jsonify({"error": "A avaliação é liberada após a conclusão do atendimento."}), 409
 
         db.table("agendamentos").update({"avaliacao": avaliacao}).eq("id", agendamento_id).execute()
+        titulo_av = "Atenção: Avaliação negativa recebida" if avaliacao == "Ruim" else "Nova avaliação de atendimento"
+        alertar_servidor_telegram(
+            "AVALIAÇÃO",
+            titulo_av,
+            {
+                "Reserva": agendamento_id,
+                "Nota": avaliacao,
+                "Cliente": agendamento.get("email_cliente") or g.usuario["email"],
+            },
+            chave_cooldown=f"rating:{agendamento_id}:{avaliacao}",
+            janela_segundos=30,
+        )
         return jsonify({"message": "Avaliação registrada!"}), 200
     except Exception:
         logger.exception("Erro ao avaliar agendamento")
@@ -2507,6 +2552,18 @@ def criar_bloqueio_agenda():
     try:
         slots = horarios_bloqueio_intervalo(dados.get("data_inicio"), dados.get("data_fim"))
         resposta = db.create_schedule_block(slots, motivo, g.usuario["email"])
+        alertar_servidor_telegram(
+            "AGENDA",
+            "Horários bloqueados na agenda",
+            {
+                "Quantidade": f"{len(slots)} horário(s)",
+                "Período": f"{slots[0]} até {slots[-1]}" if len(slots) > 1 else slots[0],
+                "Motivo": motivo,
+                "Criado por": g.usuario["email"],
+            },
+            chave_cooldown=f"block_create:{slots[0]}:{len(slots)}",
+            janela_segundos=10,
+        )
         return jsonify({
             "message": f"{len(slots)} horário(s) bloqueado(s) com sucesso.",
             "bloqueios": getattr(resposta, "data", None) or [],
@@ -2581,6 +2638,17 @@ def concluir_agendamento(agendamento_id):
             agendamento_id, "concluido", g.usuario,
             status_anterior="Pendente", status_novo="Concluido",
         )
+        alertar_servidor_telegram(
+            "AGENDA",
+            "Atendimento concluído e pontos creditados",
+            {
+                "Reserva": agendamento_id,
+                "Pontos creditados": f"+{pontos} pts",
+                "Concluído por": g.usuario["email"],
+            },
+            chave_cooldown=f"appt_done:{agendamento_id}",
+            janela_segundos=30,
+        )
         return jsonify({"message": f"Agendamento concluído e {pontos} pontos creditados ao cliente!", "pontos": pontos}), 200
     except Exception:
         logger.exception("Erro ao concluir agendamento")
@@ -2632,6 +2700,20 @@ def utilizar_voucher_admin():
         utilizado = resposta.data[0] if isinstance(resposta.data, list) and resposta.data else resposta.data
         if not utilizado:
             return jsonify({"error": "O voucher não pôde ser utilizado. Atualize a agenda e tente novamente."}), 409
+        alertar_servidor_telegram(
+            "FIDELIDADE",
+            "Voucher de fidelidade utilizado",
+            {
+                "Voucher": codigo,
+                "Benefício": voucher.get("recompensa_nome") or "Benefício de fidelidade",
+                "Desconto": f"R$ {float(voucher.get('desconto') or 0):.2f}",
+                "Cliente": voucher.get("email_cliente"),
+                "Reserva": agendamento_id,
+                "Aplicado por": g.usuario["email"],
+            },
+            chave_cooldown=f"voucher_use:{codigo}",
+            janela_segundos=30,
+        )
         return jsonify({
             "message": f"Voucher aplicado: {voucher.get('recompensa_nome') or 'benefício de fidelidade'}.",
             "voucher": {"codigo_voucher": codigo, "desconto": voucher.get("desconto") or 0, "status": "utilizado"},
@@ -2699,6 +2781,20 @@ def resgatar_pontos():
         resgate = resposta.data[0] if resposta.data else None
         if not resgate:
             raise RuntimeError("O resgate não retornou um voucher.")
+        info_rec = RECOMPENSAS_FIDELIDADE[recompensa]
+        alertar_servidor_telegram(
+            "FIDELIDADE",
+            "Novo voucher de fidelidade resgatado",
+            {
+                "Cliente": g.usuario["email"],
+                "Recompensa": info_rec["nome"],
+                "Pontos": f"-{info_rec['pontos']} pts",
+                "Desconto": f"R$ {info_rec['desconto']:.2f}",
+                "Voucher": resgate.get("codigo_voucher") if isinstance(resgate, dict) else "gerado",
+            },
+            chave_cooldown=f"redeem:{g.usuario['email']}:{recompensa}",
+            janela_segundos=10,
+        )
         return jsonify({"message": "Pontos trocados com sucesso. Apresente o código no Spa.", "resgate": resgate}), 201
     except Exception as erro:
         logger.warning("Resgate de pontos recusado para %s: %s", g.usuario["email"], type(erro).__name__)
@@ -2730,6 +2826,13 @@ def exportar_dados_pessoais():
             .limit(100)
             .execute()
             .data or []
+        )
+        alertar_servidor_telegram(
+            "PRIVACIDADE",
+            "Exportação de dados pessoais solicitada (LGPD)",
+            {"Titular": g.usuario["email"], "IP": obter_ip_cliente()},
+            chave_cooldown=f"lgpd_export:{g.usuario['email']}",
+            janela_segundos=300,
         )
         return jsonify({
             "gerado_em": datetime.now(SPA_TIMEZONE).isoformat(),
@@ -2840,6 +2943,18 @@ def adicionar_estoque():
             "quantidade_minima": quantidade_minima,
             "unidade": unidade,
         }).execute()
+        alertar_servidor_telegram(
+            "ESTOQUE",
+            "Novo produto cadastrado no estoque",
+            {
+                "Produto": nome,
+                "Saldo inicial": f"{quantidade} {unidade}",
+                "Estoque mínimo": f"{quantidade_minima} {unidade}",
+                "Cadastrado por": g.usuario["email"],
+            },
+            chave_cooldown=f"stock_add:{nome.lower()}",
+            janela_segundos=10,
+        )
         return jsonify({"message": "Item adicionado ao estoque!"}), 201
     except ValueError as error:
         return jsonify({"error": str(error)}), 400
@@ -2874,6 +2989,29 @@ def atualizar_estoque(item_id):
             resposta = db.set_stock_quantity(item_id, quantidade, quantidade_atual)
 
         item = resposta.data[0]
+        if not item.get("repetida"):
+            qtd_atual = int(item.get("quantidade") or 0)
+            qtd_min = int(item.get("quantidade_minima") or 0)
+            unid = item.get("unidade") or "un"
+            nome_prod = item.get("nome") or f"Item #{item_id}"
+            if qtd_atual == 0:
+                titulo_est = "🚨 PRODUTO ESGOTADO NO ESTOQUE"
+            elif qtd_atual <= qtd_min:
+                titulo_est = "⚠️ Alerta de estoque mínimo atingido"
+            else:
+                titulo_est = "Movimentação de estoque registrada"
+            alertar_servidor_telegram(
+                "ESTOQUE",
+                titulo_est,
+                {
+                    "Produto": nome_prod,
+                    "Saldo atual": f"{qtd_atual} {unid}",
+                    "Mínimo recomendado": f"{qtd_min} {unid}",
+                    "Operador": g.usuario["email"],
+                },
+                chave_cooldown=f"stock_move:{item_id}:{qtd_atual}",
+                janela_segundos=5,
+            )
         return jsonify({
             "message": "Estoque atualizado com sucesso!",
             "nova_quantidade": item.get("quantidade"),
@@ -2900,6 +3038,17 @@ def deletar_estoque(item_id):
         removidos = db.table("estoque").delete().eq("id", item_id).execute().data or []
         if not removidos:
             return jsonify({"error": "Item do estoque não encontrado."}), 404
+        item_rem = removidos[0]
+        alertar_servidor_telegram(
+            "ESTOQUE",
+            "Produto removido do estoque",
+            {
+                "Produto": item_rem.get("nome") or f"Item #{item_id}",
+                "Removido por": g.usuario["email"],
+            },
+            chave_cooldown=f"stock_del:{item_id}",
+            janela_segundos=10,
+        )
         return jsonify({"message": "Item removido do estoque!"}), 200
     except Exception:
         logger.exception("Erro ao remover item do estoque")
