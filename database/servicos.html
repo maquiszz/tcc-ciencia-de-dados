@@ -3912,7 +3912,7 @@ body.dark-mode .spa-toast {
                 <p>O endereço pode ter mudado ou não estar mais disponível. Retorne ao início para continuar navegando normalmente.</p>
                 <div class="erro404-acoes">
                     <a class="erro404-botao erro404-botao--principal" href="/">Voltar ao início</a>
-                    <button class="erro404-botao" type="button" data-data-onclick="voltarPaginaAnterior()">Página anterior</button>
+                    <button class="erro404-botao" type="button" data-onclick="voltarPaginaAnterior()">Página anterior</button>
                 </div>
             </section>
         </div>
@@ -3920,7 +3920,7 @@ body.dark-mode .spa-toast {
     </main>
 
 
-    <form id="authBox" class="auth-container" data-data-onsubmit="processarAutenticacaoFormulario(event)">
+    <form id="authBox" class="auth-container" data-onsubmit="processarAutenticacaoFormulario(event)">
         <h3 id="authTitulo">Entre na sua conta</h3>
         <label class="sr-only" for="authNome">Nome completo</label>
         <input type="text" id="authNome" placeholder="Seu nome completo" autocomplete="name" maxlength="100" style="display: none;">
@@ -3943,7 +3943,7 @@ body.dark-mode .spa-toast {
                 <h1 id="hero-titulo">Um tempo para cuidar de você.</h1>
                 <p>Encontre um cuidado para o seu momento. Escolha o tratamento e reserve um horário, com calma e sem complicação.</p>
                 <div class="hero-acoes">
-                    <button class="btn-hero-primario" type="button" data-data-onclick="rolarParaSecao('container-servicos')">Ver tratamentos <span>→</span></button>
+                    <button class="btn-hero-primario" type="button" data-onclick="rolarParaSecao('container-servicos')">Ver tratamentos <span>→</span></button>
                     <button class="btn-hero-secundario" type="button" data-onclick="abrirMinhaConta(event)">Minha conta</button>
                 </div>
                 <div class="hero-sinais" aria-label="Diferenciais do Spa Panaceia">
@@ -3987,7 +3987,7 @@ body.dark-mode .spa-toast {
                 <h2 id="lembreteProximoTitulo">Seu momento de cuidado está chegando.</h2>
                 <p id="lembreteProximoDescricao"></p>
             </div>
-            <button type="button" class="lembrete-proximo-acao" data-data-onclick="rolarParaSecao('container-meus-agendamentos')">Ver reserva</button>
+            <button type="button" class="lembrete-proximo-acao" data-onclick="rolarParaSecao('container-meus-agendamentos')">Ver reserva</button>
         </section>
         
         <div id="cardFidelidade" style="background: linear-gradient(135deg, #1a202c 0%, #2d3748 100%); color: white; padding: 25px; border-radius: 20px; max-width: 700px; margin: 0 auto 30px auto; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 15px 30px rgba(0,0,0,0.15); border: 1px solid rgba(255,255,255,0.1); animation: scaleIn 0.6s ease-out;">
@@ -4436,7 +4436,7 @@ body.dark-mode .spa-toast {
                 <h4>Seu momento está reservado.</h4>
                 <dl class="reserva-resumo" id="reservaConfirmacao"></dl>
                 <p id="reservaEmailStatus" class="reserva-nota"></p>
-                <button id="reservaCalendario" type="button" class="reserva-calendario" data-data-onclick="baixarCalendarioReservaAtual()">Adicionar ao calendário</button>
+                <button id="reservaCalendario" type="button" class="reserva-calendario" data-onclick="baixarCalendarioReservaAtual()">Adicionar ao calendário</button>
             </section>
             <p id="modalStatus" role="status" aria-live="polite" style="margin-top: 15px; font-weight: 600; font-size: 14px;"></p>
             <div class="reserva-rodape"><button id="reservaVoltar" type="button" class="btn-reserva-voltar" data-onclick="voltarEtapaReserva()" hidden>Voltar</button><button id="reservaContinuar" type="button" class="btn-confirmar" data-onclick="avancarEtapaReserva()">Escolher data e horário</button></div>
@@ -4606,7 +4606,7 @@ body.dark-mode .spa-toast {
             </div>
         </div>
         <div style="padding: 15px; background: white; border-top: 1px solid #e2e8f0; display: flex; gap: 10px; align-items: center;">
-            <input type="text" id="chatInput" aria-label="Mensagem para o assistente virtual" placeholder="Como podemos ajudar?" style="flex: 1; padding: 14px 18px; border: 2px solid #e2e8f0; border-radius: 20px; font-size: 14px; font-family: 'Inter', sans-serif; outline: none; transition: border 0.3s;" data-data-onkeypress="enviarMensagemChatSeEnter(event)">
+            <input type="text" id="chatInput" aria-label="Mensagem para o assistente virtual" placeholder="Como podemos ajudar?" style="flex: 1; padding: 14px 18px; border: 2px solid #e2e8f0; border-radius: 20px; font-size: 14px; font-family: 'Inter', sans-serif; outline: none; transition: border 0.3s;" data-onkeypress="enviarMensagemChatSeEnter(event)">
             <button type="button" aria-label="Enviar mensagem" data-onclick="enviarMensagemChat()" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; border: none; width: 45px; height: 45px; border-radius: 50%; cursor: pointer; font-weight: bold; font-size: 18px; display: flex; justify-content: center; align-items: center; box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3); transition: transform 0.2s;">
                 <svg class="spa-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 14-8-5 16-3-6-6-2Zm6 2 8-10"/></svg>
             </button>
@@ -4896,7 +4896,7 @@ body.dark-mode .spa-toast {
             }
 
             if (consultaDisponibilidadeFalhou) {
-                container.innerHTML = '<span class="mensagem-horarios">Não foi possível consultar a agenda agora.</span><button type="button" class="btn-tentar-horarios" data-data-onclick="recarregarHorariosBloqueadosAtual()">Tentar novamente</button>';
+                container.innerHTML = '<span class="mensagem-horarios">Não foi possível consultar a agenda agora.</span><button type="button" class="btn-tentar-horarios" data-onclick="recarregarHorariosBloqueadosAtual()">Tentar novamente</button>';
                 return;
             }
             if (new Date(`${data}T12:00:00Z`).getUTCDay() === 1) {
@@ -7888,7 +7888,7 @@ body.dark-mode .spa-toast {
             if (!mensagem || chatEnviando) return;
             if (mensagem.length > 1000) { exibirNotificacaoSpa('Mensagem muito longa', 'Escreva uma mensagem com até 1.000 caracteres.', 'aviso'); return; }
             const container = document.getElementById('chatMensagens');
-            const botao = document.querySelector('#chatbotJanela button[data-data-onclick="enviarMensagemChat()"]');
+            const botao = document.querySelector('#chatbotJanela button[data-onclick="enviarMensagemChat()"]');
             const adicionar = (texto, classe = '') => {
                 const item = document.createElement('div');
                 item.className = 'chat-mensagem ' + classe;
@@ -8471,8 +8471,8 @@ body.dark-mode .spa-toast {
             atualizarNavegacaoAtiva('catalogo');
             atualizarBotaoSenha();
             document.querySelector('.chatbot-btn').innerHTML = iconeSvg('chat');
-            document.querySelector('#chatbotJanela button[data-data-onclick="toggleChat()"]').setAttribute('aria-label', 'Fechar assistente');
-            document.querySelector('#chatbotJanela button[data-data-onclick="enviarMensagemChat()"]').setAttribute('aria-label', 'Enviar mensagem');
+            document.querySelector('#chatbotJanela button[data-onclick="toggleChat()"]').setAttribute('aria-label', 'Fechar assistente');
+            document.querySelector('#chatbotJanela button[data-onclick="enviarMensagemChat()"]').setAttribute('aria-label', 'Enviar mensagem');
             atualizarPainelUsuario();
             inicializarSincronizacaoSessao();
             const restauracaoDaSessao = garantirSessaoCarregada();

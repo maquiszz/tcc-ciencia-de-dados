@@ -125,9 +125,9 @@ trusted_hosts_padrao = {
     "www.spapanaceia.com.br",
     "localhost",
     "127.0.0.1",
+    "192.168.18.145",
+    "192.168.18.220",
 }
-if not IS_PRODUCTION:
-    trusted_hosts_padrao.add("192.168.18.220")
 trusted_hosts = {
     host.strip().lower()
     for host in os.getenv("TRUSTED_HOSTS", "").split(",")
@@ -198,7 +198,7 @@ app.config.update(
 
 
 class SessaoHttpPrivadaAware(SecureCookieSessionInterface):
-    """Mantém Secure em produção, mas permite cookies em HTTP na rede local.
+    """Mantém Secure em produção para domínios públicos/HTTPS, mas permite cookies em HTTP direto na rede local.
 
     Navegadores não enviam cookies ``Secure`` em ``http://192.168.x.x``.
     Isso fazia o login parecer concluído no cliente, enquanto as rotas do
@@ -207,11 +207,11 @@ class SessaoHttpPrivadaAware(SecureCookieSessionInterface):
     """
 
     def get_cookie_secure(self, app):
-        # Em produção, nunca reduza Secure por causa do Host usado na conexão.
-        # A exceção para IP privado existe apenas no ambiente local de desenvolvimento.
-        if IS_PRODUCTION:
-            return True
-        if request.is_secure:
+        if (
+            request.is_secure
+            or request.headers.get("X-Forwarded-Proto", "").strip().lower() == "https"
+            or "CF-Connecting-IP" in request.headers
+        ):
             return True
 
         # Não usar request.host_url: com TRUSTED_HOSTS, ler request.host para
@@ -220,16 +220,26 @@ class SessaoHttpPrivadaAware(SecureCookieSessionInterface):
             hostname = (urlsplit("//" + request.headers.get("Host", "")).hostname or "").strip("[]").lower()
         except ValueError:
             hostname = ""
-        if hostname == "localhost" or hostname.endswith(".localhost"):
-            return False
 
+        remote_addr = (request.remote_addr or "").strip("[]")
         try:
-            endereco = ipaddress.ip_address(hostname)
+            ip_remoto = ipaddress.ip_address(remote_addr)
+            conexao_lan_direta = ip_remoto.is_private or ip_remoto.is_loopback or ip_remoto.is_link_local
         except ValueError:
-            return bool(app.config.get("SESSION_COOKIE_SECURE", False))
+            conexao_lan_direta = False
 
-        if endereco.is_private or endereco.is_loopback or endereco.is_link_local:
-            return False
+        if conexao_lan_direta:
+            if hostname == "localhost" or hostname.endswith(".localhost"):
+                return False
+            try:
+                endereco_host = ipaddress.ip_address(hostname)
+                if endereco_host.is_private or endereco_host.is_loopback or endereco_host.is_link_local:
+                    return False
+            except ValueError:
+                pass
+
+        if IS_PRODUCTION:
+            return True
 
         configuracao_explicita = os.getenv("SESSION_COOKIE_SECURE")
         if configuracao_explicita is not None:
@@ -265,14 +275,15 @@ def normalizar_origem(valor):
 origens_padrao = {
     "https://spapanaceia.com.br",
     "https://www.spapanaceia.com.br",
+    "http://127.0.0.1:5000",
+    "http://localhost:5000",
+    "http://192.168.18.145:5000",
+    "http://192.168.18.220:5000",
 }
 if not IS_PRODUCTION:
     origens_padrao.update({
-        "http://127.0.0.1:5000",
-        "http://localhost:5000",
         "http://127.0.0.1:5500",
         "http://localhost:5500",
-        "http://192.168.18.220:5000",
     })
 origens_configuradas = {
     origem
