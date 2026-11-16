@@ -423,21 +423,47 @@ COUNTRY_HEADER = os.getenv("TRUSTED_COUNTRY_HEADER", "CF-IPCountry").strip()
 VPN_SIGNAL_HEADER = os.getenv("TRUSTED_VPN_HEADER", "X-Spa-VPN").strip()
 
 
+DEFAULT_TRUSTED_PROXY_CIDRS = (
+    # Loopback, Docker bridges e host local do túnel cloudflared no ZimaOS
+    "127.0.0.0/8",
+    "::1/128",
+    "192.168.18.145/32",
+    "172.16.0.0/12",
+    "10.0.0.0/8",
+    # Faixas oficiais IPv4 e IPv6 da Cloudflare (https://www.cloudflare.com/ips/)
+    "173.245.48.0/20",
+    "103.21.244.0/22",
+    "103.22.200.0/22",
+    "103.31.4.0/22",
+    "141.101.64.0/18",
+    "108.162.192.0/18",
+    "190.93.240.0/20",
+    "188.114.96.0/20",
+    "197.234.240.0/22",
+    "198.41.128.0/17",
+    "162.158.0.0/15",
+    "104.16.0.0/13",
+    "104.24.0.0/14",
+    "172.64.0.0/13",
+    "131.0.72.0/22",
+    "2400:cb00::/32",
+    "2606:4700::/32",
+    "2803:f800::/32",
+    "2405:b500::/32",
+    "2405:8100::/32",
+    "2a06:98c0::/29",
+    "2c0f:f248::/32",
+)
+
+
 def carregar_proxies_confiaveis():
-    return carregar_redes_ip("TRUSTED_PROXY_IPS")
+    configurados = carregar_redes_ip("TRUSTED_PROXY_IPS")
+    if configurados:
+        return configurados
+    return tuple(ipaddress.ip_network(cidr, strict=False) for cidr in DEFAULT_TRUSTED_PROXY_CIDRS)
 
 
 TRUSTED_PROXY_NETWORKS = carregar_proxies_confiaveis()
-if IS_PRODUCTION and os.getenv("TRUSTED_PROXY_IP_HEADER") and not TRUSTED_PROXY_NETWORKS:
-    logger.warning(
-        "TRUSTED_PROXY_IP_HEADER está configurado sem TRUSTED_PROXY_IPS; "
-        "o cabeçalho será ignorado e os limites usarão o IP do proxy."
-    )
-if IS_PRODUCTION and ALLOWED_COUNTRIES and not TRUSTED_PROXY_NETWORKS:
-    logger.error(
-        "ALLOWED_COUNTRIES está ativo sem TRUSTED_PROXY_IPS; "
-        "as requisições serão recusadas até o proxy confiável ser configurado."
-    )
 
 
 def requisicao_veio_de_proxy_confiavel():
@@ -445,19 +471,109 @@ def requisicao_veio_de_proxy_confiavel():
 
 
 def obter_ip_cliente():
-    """Só confia no IP encaminhado quando a conexão veio de um proxy permitido."""
+    """Retorna o IP real do visitante quando a conexão passa pelo Cloudflare Tunnel/proxy confiável."""
     ip_par = request.remote_addr or "desconhecido"
-    cabecalho_proxy = os.getenv("TRUSTED_PROXY_IP_HEADER", "").strip()
-    if not cabecalho_proxy or not TRUSTED_PROXY_NETWORKS:
-        return ip_par
-    if not ip_pertence_as_redes(ip_par, TRUSTED_PROXY_NETWORKS):
+    if not TRUSTED_PROXY_NETWORKS or not ip_pertence_as_redes(ip_par, TRUSTED_PROXY_NETWORKS):
         return ip_par
 
-    encaminhado = request.headers.get(cabecalho_proxy, "").strip()
+    cabecalho_configurado = _limpar_valor_env(os.getenv("TRUSTED_PROXY_IP_HEADER", "CF-Connecting-IP"))
+    candidatos = []
+    if cabecalho_configurado:
+        candidatos.append(cabecalho_configurado)
+    for padrao in ("CF-Connecting-IP", "True-Client-IP", "X-Real-IP", "X-Forwarded-For"):
+        if padrao not in candidatos:
+            candidatos.append(padrao)
+
+    for nome_cabecalho in candidatos:
+        valor_bruto = (request.headers.get(nome_cabecalho) or "").strip()
+        if not valor_bruto:
+            continue
+        primeiro_ip = valor_bruto.split(",")[0].strip()
+        try:
+            return str(ipaddress.ip_address(primeiro_ip))
+        except ValueError:
+            continue
+    return ip_par
+
+
+def _resumir_user_agent(ua_bruto):
+    ua = str(ua_bruto or "").strip()
+    if not ua:
+        return None
+    ua_lower = ua.lower()
+    if "iphone" in ua_lower or "ipad" in ua_lower:
+        so = "iOS (iPhone/iPad)"
+    elif "android" in ua_lower:
+        so = "Android"
+    elif "windows" in ua_lower:
+        so = "Windows"
+    elif "macintosh" in ua_lower or "mac os" in ua_lower:
+        so = "macOS"
+    elif "linux" in ua_lower:
+        so = "Linux"
+    else:
+        so = "Outro"
+
+    if "edg/" in ua_lower:
+        nav = "Edge"
+    elif "opr/" in ua_lower or "opera" in ua_lower:
+        nav = "Opera"
+    elif "chrome/" in ua_lower and "chromium" not in ua_lower:
+        nav = "Chrome"
+    elif "firefox/" in ua_lower:
+        nav = "Firefox"
+    elif "safari/" in ua_lower and "chrome/" not in ua_lower:
+        nav = "Safari"
+    elif "curl/" in ua_lower or "python-requests" in ua_lower:
+        nav = ua[:40]
+    else:
+        nav = "Navegador"
+    return f"{so} · {nav}"
+
+
+def _enriquecer_detalhes_origem_requisicao(detalhes_base, categoria):
+    detalhes_finais = dict(detalhes_base or {})
+    if str(categoria).upper() == "SISTEMA":
+        return detalhes_finais
     try:
-        return str(ipaddress.ip_address(encaminhado))
-    except ValueError:
-        return ip_par
+        if not request:
+            return detalhes_finais
+        ip_real = obter_ip_cliente()
+        if "IP" not in detalhes_finais:
+            detalhes_finais["IP"] = ip_real
+
+        pais_cf = (request.headers.get(COUNTRY_HEADER) or "").strip().upper()
+        cf_ray = (request.headers.get("CF-Ray") or "").strip()
+        host_req = (request.headers.get("Host") or "").strip()
+        try:
+            ip_obj = ipaddress.ip_address(ip_real)
+            eh_privado = ip_obj.is_private or ip_obj.is_loopback
+        except ValueError:
+            eh_privado = False
+
+        partes_origem = []
+        if pais_cf and pais_cf not in {"XX", "T1"}:
+            partes_origem.append(f"País: {pais_cf}")
+        elif eh_privado:
+            partes_origem.append("Rede Local (LAN)")
+
+        if cf_ray or request.headers.get("CF-Connecting-IP"):
+            partes_origem.append("via Cloudflare")
+        elif eh_privado:
+            partes_origem.append("Acesso Direto")
+
+        if host_req:
+            partes_origem.append(f"Host: {host_req}")
+
+        if partes_origem and "Origem" not in detalhes_finais:
+            detalhes_finais["Origem"] = " · ".join(partes_origem)
+
+        dispositivo = _resumir_user_agent(request.headers.get("User-Agent"))
+        if dispositivo and "Dispositivo" not in detalhes_finais:
+            detalhes_finais["Dispositivo"] = dispositivo
+    except RuntimeError:
+        pass
+    return detalhes_finais
 
 
 @app.before_request
@@ -1266,12 +1382,13 @@ def alertar_servidor_telegram(categoria, titulo, detalhes=None, chave_cooldown=N
     icone = icones.get(str(categoria).upper(), "🔔")
     agora_str = datetime.now(SPA_TIMEZONE).strftime("%d/%m/%Y %H:%M:%S")
 
+    detalhes_enriquecidos = _enriquecer_detalhes_origem_requisicao(detalhes, categoria)
     linhas = [
         f"{icone} <b>SPA PANACEIA · {html.escape(str(categoria).upper())}</b>",
         f"<b>{html.escape(str(titulo))}</b>",
         f"<i>Horário: {agora_str}</i>\n",
     ]
-    for rotulo, valor in (detalhes or {}).items():
+    for rotulo, valor in detalhes_enriquecidos.items():
         if valor is not None and str(valor).strip() != "":
             linhas.append(f"• <b>{html.escape(str(rotulo))}:</b> {html.escape(str(valor)[:500])}")
 
