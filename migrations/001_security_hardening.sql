@@ -8,6 +8,7 @@ DO $$
 BEGIN
     IF to_regclass('public.usuarios') IS NOT NULL THEN
         ALTER TABLE public.usuarios
+            ALTER COLUMN codigo_otp TYPE TEXT,
             ADD COLUMN IF NOT EXISTS token_recuperacao_expira_em TIMESTAMPTZ,
             ADD COLUMN IF NOT EXISTS token_recuperacao_tentativas INTEGER NOT NULL DEFAULT 0,
             ADD COLUMN IF NOT EXISTS codigo_otp_tentativas INTEGER NOT NULL DEFAULT 0,

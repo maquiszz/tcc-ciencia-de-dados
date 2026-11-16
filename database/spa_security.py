@@ -8,6 +8,7 @@ to validate recovery links after restart.
 
 from __future__ import annotations
 
+import base64
 import hashlib
 import heapq
 import hmac
@@ -46,13 +47,22 @@ class SecurityTools:
         normalized = (email or "").strip().casefold()
         return "v2:" + self.fingerprint(f"otp-code:{normalized}:{code}")
 
+    def hash_otp_compact(self, email: str, code: str) -> str:
+        """Compute a 6-character keyed HMAC tag ('~' + 5 base64url chars) for legacy VARCHAR(6) columns."""
+        normalized = (email or "").strip().casefold()
+        raw = hmac.new(self._secret, f"otp-code:{normalized}:{code}".encode("utf-8"), hashlib.sha256).digest()
+        return "~" + base64.urlsafe_b64encode(raw).decode("ascii")[:5]
+
     def verify_otp(self, stored_otp: str | None, email: str, code: str) -> bool:
-        """Verify an activation OTP against either v2 hashed format or legacy plaintext."""
+        """Verify an activation OTP against v2 HMAC, compact 6-char HMAC, or legacy plaintext."""
         if not isinstance(stored_otp, str) or not stored_otp or not isinstance(code, str) or not code:
             return False
         if stored_otp.startswith("v2:"):
             expected = self.hash_otp(email, code)
             return hmac.compare_digest(stored_otp, expected)
+        if stored_otp.startswith("~") and len(stored_otp) == 6:
+            expected_compact = self.hash_otp_compact(email, code)
+            return hmac.compare_digest(stored_otp, expected_compact)
         return hmac.compare_digest(stored_otp, code)
 
     def encode_recovery_record(

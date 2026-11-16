@@ -731,30 +731,57 @@ def buscar_usuario(email, campos="*"):
     return resposta.data[0] if resposta.data else None
 
 
-def atualizar_usuario_compativel(filtros, payload_completo, payload_minimo=None):
-    """Atualiza colunas em `usuarios` com fallback transparente caso colunas opcionais ainda não existam."""
+def _ajustar_otp_compacto_se_necessario(payload, otp_compacto):
+    if not otp_compacto or not isinstance(payload, dict) or "codigo_otp" not in payload:
+        return payload
+    valor = payload.get("codigo_otp")
+    if isinstance(valor, str) and len(valor) > 6:
+        copia = dict(payload)
+        copia["codigo_otp"] = otp_compacto
+        return copia
+    return payload
+
+
+def atualizar_usuario_compativel(filtros, payload_completo, payload_minimo=None, otp_compacto=None):
+    """Atualiza colunas em `usuarios` com fallback transparente caso colunas opcionais ou VARCHAR(6) legado ainda existam."""
     try:
         consulta = db.table("usuarios").update(payload_completo)
         for coluna, valor in filtros.items():
             consulta = consulta.eq(coluna, valor)
         return consulta.execute()
     except Exception as exc:
-        if payload_minimo is None:
-            raise
         texto = str(exc).lower()
-        if any(col in texto for col in (
+        eh_erro_tamanho_otp = ("22001" in texto or "character varying(6)" in texto or "value too long" in texto) and otp_compacto
+        eh_erro_coluna = any(col in texto for col in (
             "token_recuperacao_expira_em",
             "token_recuperacao_tentativas",
             "codigo_otp_tentativas",
             "sessao_versao",
             "column",
             "schema cache",
-        )):
-            consulta = db.table("usuarios").update(payload_minimo)
+        ))
+        if not eh_erro_tamanho_otp and (payload_minimo is None or not eh_erro_coluna):
+            raise
+        alvo = payload_minimo if (payload_minimo is not None and eh_erro_coluna) else payload_completo
+        if eh_erro_tamanho_otp:
+            alvo = _ajustar_otp_compacto_se_necessario(alvo, otp_compacto)
+        try:
+            consulta = db.table("usuarios").update(alvo)
             for coluna, valor in filtros.items():
                 consulta = consulta.eq(coluna, valor)
             return consulta.execute()
-        raise
+        except Exception as exc2:
+            texto2 = str(exc2).lower()
+            if otp_compacto and ("22001" in texto2 or "character varying(6)" in texto2 or "value too long" in texto2):
+                alvo_compacto = _ajustar_otp_compacto_se_necessario(
+                    payload_minimo if payload_minimo is not None else payload_completo,
+                    otp_compacto,
+                )
+                consulta = db.table("usuarios").update(alvo_compacto)
+                for coluna, valor in filtros.items():
+                    consulta = consulta.eq(coluna, valor)
+                return consulta.execute()
+            raise
 
 
 def usuario_publico(usuario):
@@ -959,15 +986,15 @@ def resposta_concierge_local(mensagem):
 
 
 def enviar_email_transacional(destinatario, assunto, conteudo_html):
-    api_key = os.getenv("BREVO_API_KEY")
+    api_key = _limpar_valor_env(os.getenv("BREVO_API_KEY") or "")
     if not api_key:
         logger.error("BREVO_API_KEY não configurada; e-mail não enviado.")
         return False
 
     payload = {
         "sender": {
-            "name": os.getenv("BREVO_SENDER_NAME", "Spa Panaceia"),
-            "email": os.getenv("BREVO_SENDER_EMAIL", "spapanaceia@gmail.com"),
+            "name": _limpar_valor_env(os.getenv("BREVO_SENDER_NAME") or "Spa Panaceia") or "Spa Panaceia",
+            "email": _limpar_valor_env(os.getenv("BREVO_SENDER_EMAIL") or "spapanaceia@gmail.com") or "spapanaceia@gmail.com",
         },
         "to": [{"email": destinatario}],
         "subject": assunto,
@@ -980,7 +1007,18 @@ def enviar_email_transacional(destinatario, assunto, conteudo_html):
             json=payload,
             timeout=10,
         )
-        resposta.raise_for_status()
+        if not resposta.ok:
+            sufixo_chave = f"***{api_key[-4:]}" if len(api_key) >= 4 else "***"
+            detalhe_brevo = (resposta.text or "")[:200]
+            logger.error(
+                "Brevo recusou envio para %s (HTTP %s, key_len=%d, key_end=%s): %s",
+                destinatario,
+                resposta.status_code,
+                len(api_key),
+                sufixo_chave,
+                detalhe_brevo,
+            )
+            return False
         return True
     except requests.RequestException:
         logger.exception("Falha ao enviar e-mail transacional para %s", destinatario)
@@ -1700,6 +1738,7 @@ def cadastrar():
     try:
         codigo = gerar_otp()
         codigo_hash = security.hash_otp(email, codigo)
+        codigo_hash_compacto = security.hash_otp_compact(email, codigo)
         expiracao = (datetime.now(timezone.utc) + timedelta(minutes=OTP_TTL_MINUTES)).isoformat()
         senha_hash = generate_password_hash(senha, method="pbkdf2:sha256")
         deve_enviar_email = False
@@ -1707,25 +1746,36 @@ def cadastrar():
         with lock_conta(email):
             existente = buscar_usuario(email, "id, nome, email, email_verificado")
             if existente is None:
+                payload_novo = {
+                    "nome": nome,
+                    "email": email,
+                    "senha": senha_hash,
+                    "email_verificado": False,
+                    "codigo_otp": codigo_hash,
+                    "codigo_expira_em": expiracao,
+                    "is_admin": False,
+                }
                 try:
-                    db.table("usuarios").insert(
-                        {
-                            "nome": nome,
-                            "email": email,
-                            "senha": senha_hash,
-                            "email_verificado": False,
-                            "codigo_otp": codigo_hash,
-                            "codigo_expira_em": expiracao,
-                            "is_admin": False,
-                        }
-                    ).execute()
+                    db.table("usuarios").insert(payload_novo).execute()
                     challenge_attempt_limiter.reset_key(f"otp_try:{security.fingerprint(email)}")
                     deve_enviar_email = True
                 except Exception as insert_err:
                     texto_err = str(insert_err).lower()
-                    if "23505" not in texto_err and "duplicate key" not in texto_err and "unique" not in texto_err:
+                    if "22001" in texto_err or "character varying(6)" in texto_err or "value too long" in texto_err:
+                        payload_novo["codigo_otp"] = codigo_hash_compacto
+                        try:
+                            db.table("usuarios").insert(payload_novo).execute()
+                            challenge_attempt_limiter.reset_key(f"otp_try:{security.fingerprint(email)}")
+                            deve_enviar_email = True
+                        except Exception as retry_err:
+                            texto_retry = str(retry_err).lower()
+                            if "23505" not in texto_retry and "duplicate key" not in texto_retry and "unique" not in texto_retry:
+                                raise
+                            existente = buscar_usuario(email, "id, nome, email, email_verificado")
+                    elif "23505" in texto_err or "duplicate key" in texto_err or "unique" in texto_err:
+                        existente = buscar_usuario(email, "id, nome, email, email_verificado")
+                    else:
                         raise
-                    existente = buscar_usuario(email, "id, nome, email, email_verificado")
 
             if existente is not None and not deve_enviar_email:
                 if existente.get("email_verificado"):
@@ -1750,6 +1800,7 @@ def cadastrar():
                                 "codigo_otp": codigo_hash,
                                 "codigo_expira_em": expiracao,
                             },
+                            otp_compacto=codigo_hash_compacto,
                         ).data
                         or []
                     )
@@ -1861,6 +1912,7 @@ def reenviar_codigo():
     try:
         codigo = gerar_otp()
         codigo_hash = security.hash_otp(email, codigo)
+        codigo_hash_compacto = security.hash_otp_compact(email, codigo)
         expiracao = (datetime.now(timezone.utc) + timedelta(minutes=OTP_TTL_MINUTES)).isoformat()
         nome_cliente = "Cliente"
         deve_enviar = False
@@ -1873,6 +1925,7 @@ def reenviar_codigo():
                     {"id": usuario["id"], "email_verificado": False},
                     {"codigo_otp": codigo_hash, "codigo_expira_em": expiracao, "codigo_otp_tentativas": 0},
                     {"codigo_otp": codigo_hash, "codigo_expira_em": expiracao},
+                    otp_compacto=codigo_hash_compacto,
                 )
                 challenge_attempt_limiter.reset_key(f"otp_try:{security.fingerprint(email)}")
                 deve_enviar = True

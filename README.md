@@ -368,25 +368,7 @@ confirme que `TELEGRAM_BOT_TOKEN` e `TELEGRAM_CHAT_ID` estão presentes no
 `database.env` do servidor ZimaOS e sem quebras de linha Windows (`\r\n`):
 
 ```bash
-git pull --ff-only
-sed -i 's/\r$//' database.env
-
-TAG="$(date +%Y%m%d-%H%M%S)"
-docker build --pull \
-  -t "spa-panaceia:$TAG" \
-  -t spa-panaceia:latest \
-  .
-
-docker stop spa-panaceia 2>/dev/null || true
-docker rm spa-panaceia 2>/dev/null || true
-
-docker run -d \
-  --name spa-panaceia \
-  --restart unless-stopped \
-  --network postgres1_database \
-  --env-file database.env \
-  -p 5000:5000 \
-  spa-panaceia:latest
+cd /DATA/AppData/projetos/tcc-ciencia-de-dados && git stash && git pull origin main && sudo docker --config /DATA/.docker image build --no-cache -t tcc-panaceia . && (sudo docker stop panaceia-spa; sudo docker rm panaceia-spa) && sudo docker run -d --name panaceia-spa --restart unless-stopped -p 5000:5000 --env-file /DATA/AppData/projetos/tcc-ciencia-de-dados/database.env tcc-panaceia
 ```
 
 Para confirmar que o container subiu com as variáveis do Telegram ativas e que o
@@ -394,7 +376,7 @@ alerta de inicialização foi entregue:
 
 ```bash
 curl -fsS http://127.0.0.1:5000/api/health
-docker logs --tail 50 spa-panaceia
+sudo docker logs --tail 50 panaceia-spa
 ```
 
 O endpoint `/api/health` retornará `"telegram_configurado": true`, e os logs do
