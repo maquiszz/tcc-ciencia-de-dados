@@ -2092,14 +2092,18 @@ def login():
         if usuario.get("sessao_versao") is not None:
             session["sessao_versao"] = int(usuario.get("sessao_versao") or 1)
 
-        if usuario.get("is_admin"):
-            alertar_servidor_telegram(
-                "SEGURANÇA",
-                "Acesso administrativo iniciado",
-                {"Administrador": usuario.get("email"), "IP": obter_ip_cliente()},
-                chave_cooldown=f"admin_login:{usuario.get('email')}:{obter_ip_cliente()}",
-                janela_segundos=60,
-            )
+        eh_admin = bool(usuario.get("is_admin"))
+        alertar_servidor_telegram(
+            "SEGURANÇA" if eh_admin else "CONTA",
+            "Acesso administrativo iniciado" if eh_admin else "Login realizado no site",
+            {
+                "Usuário": usuario.get("nome") or "Cliente",
+                "E-mail": usuario.get("email"),
+                "Perfil": "Administrador" if eh_admin else "Cliente",
+            },
+            chave_cooldown=f"user_login:{usuario.get('email')}:{obter_ip_cliente()}",
+            janela_segundos=15,
+        )
 
         return jsonify({"message": "Login realizado com sucesso!", "usuario": usuario_publico(usuario), "csrf_token": csrf_token()}), 200
     except Exception:
