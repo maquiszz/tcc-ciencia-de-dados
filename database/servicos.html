@@ -3858,7 +3858,7 @@ body.dark-mode .spa-toast {
         }
 
     </style>
-    <script>
+    <script nonce="__CSP_NONCE__">
         if (typeof location !== 'undefined' && /^https?:$/.test(location.protocol) && !new Set(['/', '/cadastro']).has(location.pathname)) {
             document.documentElement.classList.add('pagina-404-documento');
             document.title = 'Página não encontrada | Spa Panaceia';
@@ -3869,34 +3869,34 @@ body.dark-mode .spa-toast {
     <a class="skip-link" href="#secao-catalogo">Pular para o conteúdo</a>
 
     <div class="navbar-topo">
-        <button class="logo-spa" type="button" onclick="alternarAbas('catalogo')" aria-label="Voltar ao catálogo do Spa Panaceia"> Spa Panaceia</button>
+        <button class="logo-spa" type="button" data-onclick="alternarAbas('catalogo')" aria-label="Voltar ao catálogo do Spa Panaceia"> Spa Panaceia</button>
         
         <!-- Lado direito da Navbar: Tema ao lado do Perfil -->
         <div class="acoes-topo">
             
             <!-- Botão de Alternar Modo (Claro/Escuro) -->
-            <button id="btn-theme-toggle" type="button" onclick="toggleTema()" aria-label="Alternar entre tema claro e escuro" title="Alternar tema">
+            <button id="btn-theme-toggle" type="button" data-onclick="toggleTema()" aria-label="Alternar entre tema claro e escuro" title="Alternar tema">
                 
             </button>
             
             <!-- Menu do Usuário / Perfil -->
             <div class="menu-usuario-container">
-                <button class="btn-perfil-gatilho" type="button" onclick="alternarConta(event)" id="btnDropdownGatilho" aria-haspopup="true" aria-controls="menuDropdownSpa" aria-expanded="false" title="Acessar conta">
+                <button class="btn-perfil-gatilho" type="button" data-onclick="alternarConta(event)" id="btnDropdownGatilho" aria-haspopup="true" aria-controls="menuDropdownSpa" aria-expanded="false" title="Acessar conta">
                     <span class="perfil-icone" aria-hidden="true"></span>
                     <span id="nome-usuario-logado">Acessar conta</span>
                 </button>
 
                 <div class="dropdown-menu-spa" id="menuDropdownSpa" role="menu">
-                    <button class="dropdown-item" type="button" role="menuitem" onclick="alternarAbas('catalogo')"> Catálogo</button>
-                    <button class="dropdown-item" type="button" role="menuitem" id="drop-meu-perfil" onclick="alternarAbas('agendamentos')" style="display: none;"> Meu Perfil</button>
-                    <button class="dropdown-item" type="button" role="menuitem" id="drop-fidelidade" onclick="alternarAbas('fidelidade')" style="display: none;"> Clube de fidelidade</button>
-                    <button class="dropdown-item" type="button" role="menuitem" id="drop-notificacoes" onclick="alternarAbas('notificacoes')" style="display: none;"> Notificações <span class="menu-contador" id="notificacoes-contador" hidden>0</span></button>
-                    <button class="dropdown-item" type="button" role="menuitem" id="drop-privacidade" onclick="alternarAbas('privacidade')" style="display: none;"> Privacidade e dados</button>
-                    <button class="dropdown-item" type="button" role="menuitem" id="drop-admin-painel" onclick="alternarAbas('admin')" style="display: none; color: #6a11cb; font-weight: bold;"> Painel Admin</button>
-                    <button class="dropdown-item" type="button" role="menuitem" id="drop-admin-financeiro" onclick="alternarAbas('financeiro')" style="display: none; color: #10b981; font-weight: bold;"> Painel Financeiro</button>
-                    <button class="dropdown-item" type="button" role="menuitem" id="drop-admin-usuarios" onclick="alternarAbas('usuarios')" style="display: none; color: #2575fc; font-weight: bold;"> Gerenciar Usuários</button>
-                    <button class="dropdown-item" type="button" role="menuitem" id="drop-admin-estoque" onclick="alternarAbas('estoque')" style="display: none; color: #d97706; font-weight: bold;"> Gestão de Estoque</button>
-                    <button class="dropdown-item btn-sair" type="button" role="menuitem" id="drop-deslogar" onclick="deslogar()" style="display: none;"> Sair</button>                
+                    <button class="dropdown-item" type="button" role="menuitem" data-onclick="alternarAbas('catalogo')"> Catálogo</button>
+                    <button class="dropdown-item" type="button" role="menuitem" id="drop-meu-perfil" data-onclick="alternarAbas('agendamentos')" style="display: none;"> Meu Perfil</button>
+                    <button class="dropdown-item" type="button" role="menuitem" id="drop-fidelidade" data-onclick="alternarAbas('fidelidade')" style="display: none;"> Clube de fidelidade</button>
+                    <button class="dropdown-item" type="button" role="menuitem" id="drop-notificacoes" data-onclick="alternarAbas('notificacoes')" style="display: none;"> Notificações <span class="menu-contador" id="notificacoes-contador" hidden>0</span></button>
+                    <button class="dropdown-item" type="button" role="menuitem" id="drop-privacidade" data-onclick="alternarAbas('privacidade')" style="display: none;"> Privacidade e dados</button>
+                    <button class="dropdown-item" type="button" role="menuitem" id="drop-admin-painel" data-onclick="alternarAbas('admin')" style="display: none; color: #6a11cb; font-weight: bold;"> Painel Admin</button>
+                    <button class="dropdown-item" type="button" role="menuitem" id="drop-admin-financeiro" data-onclick="alternarAbas('financeiro')" style="display: none; color: #10b981; font-weight: bold;"> Painel Financeiro</button>
+                    <button class="dropdown-item" type="button" role="menuitem" id="drop-admin-usuarios" data-onclick="alternarAbas('usuarios')" style="display: none; color: #2575fc; font-weight: bold;"> Gerenciar Usuários</button>
+                    <button class="dropdown-item" type="button" role="menuitem" id="drop-admin-estoque" data-onclick="alternarAbas('estoque')" style="display: none; color: #d97706; font-weight: bold;"> Gestão de Estoque</button>
+                    <button class="dropdown-item btn-sair" type="button" role="menuitem" id="drop-deslogar" data-onclick="deslogar()" style="display: none;"> Sair</button>                
                 </div>
             </div>
         </div>
@@ -3912,7 +3912,7 @@ body.dark-mode .spa-toast {
                 <p>O endereço pode ter mudado ou não estar mais disponível. Retorne ao início para continuar navegando normalmente.</p>
                 <div class="erro404-acoes">
                     <a class="erro404-botao erro404-botao--principal" href="/">Voltar ao início</a>
-                    <button class="erro404-botao" type="button" onclick="history.length > 1 ? history.back() : location.assign('/')">Página anterior</button>
+                    <button class="erro404-botao" type="button" data-data-onclick="voltarPaginaAnterior()">Página anterior</button>
                 </div>
             </section>
         </div>
@@ -3920,7 +3920,7 @@ body.dark-mode .spa-toast {
     </main>
 
 
-    <form id="authBox" class="auth-container" onsubmit="processarAutenticacao(); return false;">
+    <form id="authBox" class="auth-container" data-data-onsubmit="processarAutenticacaoFormulario(event)">
         <h3 id="authTitulo">Entre na sua conta</h3>
         <label class="sr-only" for="authNome">Nome completo</label>
         <input type="text" id="authNome" placeholder="Seu nome completo" autocomplete="name" maxlength="100" style="display: none;">
@@ -3929,11 +3929,11 @@ body.dark-mode .spa-toast {
         <div class="wrapper-senha">
             <label class="sr-only" for="authSenha">Senha</label>
             <input type="password" id="authSenha" placeholder="Sua senha" autocomplete="current-password" maxlength="256" required>
-            <button class="btn-visibilidade-senha" type="button" onclick="toggleVisibilidadeSenha()" aria-label="Mostrar ou ocultar senha" title="Mostrar ou ocultar senha"></button>
+            <button class="btn-visibilidade-senha" type="button" data-onclick="toggleVisibilidadeSenha()" aria-label="Mostrar ou ocultar senha" title="Mostrar ou ocultar senha"></button>
         </div>
         <button id="btnAuth" type="submit">Entrar</button>
-        <button type="button" class="auth-link auth-link--danger" onclick="abrirModalEsqueciSenha()">Esqueceu sua senha?</button>
-        <button type="button" id="authToggle" class="auth-link" onclick="alternarModoAuth()">Não tem conta? Cadastre-se</button>
+        <button type="button" class="auth-link auth-link--danger" data-onclick="abrirModalEsqueciSenha()">Esqueceu sua senha?</button>
+        <button type="button" id="authToggle" class="auth-link" data-onclick="alternarModoAuth()">Não tem conta? Cadastre-se</button>
     </form>
  
     <div id="secao-catalogo" class="secao-conteudo ativa">
@@ -3943,8 +3943,8 @@ body.dark-mode .spa-toast {
                 <h1 id="hero-titulo">Um tempo para cuidar de você.</h1>
                 <p>Encontre um cuidado para o seu momento. Escolha o tratamento e reserve um horário, com calma e sem complicação.</p>
                 <div class="hero-acoes">
-                    <button class="btn-hero-primario" type="button" onclick="document.getElementById('container-servicos').scrollIntoView({ behavior: 'smooth', block: 'start' })">Ver tratamentos <span>→</span></button>
-                    <button class="btn-hero-secundario" type="button" onclick="abrirMinhaConta(event)">Minha conta</button>
+                    <button class="btn-hero-primario" type="button" data-data-onclick="rolarParaSecao('container-servicos')">Ver tratamentos <span>→</span></button>
+                    <button class="btn-hero-secundario" type="button" data-onclick="abrirMinhaConta(event)">Minha conta</button>
                 </div>
                 <div class="hero-sinais" aria-label="Diferenciais do Spa Panaceia">
                     <span> Atendimento personalizado</span>
@@ -3987,7 +3987,7 @@ body.dark-mode .spa-toast {
                 <h2 id="lembreteProximoTitulo">Seu momento de cuidado está chegando.</h2>
                 <p id="lembreteProximoDescricao"></p>
             </div>
-            <button type="button" class="lembrete-proximo-acao" onclick="document.getElementById('container-meus-agendamentos').scrollIntoView({ behavior: 'smooth', block: 'start' })">Ver reserva</button>
+            <button type="button" class="lembrete-proximo-acao" data-data-onclick="rolarParaSecao('container-meus-agendamentos')">Ver reserva</button>
         </section>
         
         <div id="cardFidelidade" style="background: linear-gradient(135deg, #1a202c 0%, #2d3748 100%); color: white; padding: 25px; border-radius: 20px; max-width: 700px; margin: 0 auto 30px auto; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 15px 30px rgba(0,0,0,0.15); border: 1px solid rgba(255,255,255,0.1); animation: scaleIn 0.6s ease-out;">
@@ -3998,7 +3998,7 @@ body.dark-mode .spa-toast {
             <div style="text-align: right; background: rgba(255,255,255,0.1); padding: 12px 20px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.1);">
                 <span style="font-size: 11px; display: block; text-transform: uppercase; font-weight: 800; letter-spacing: 1px; color: #cbd5e1;">Seus Pontos</span>
                 <strong id="contadorPontos" style="font-size: 26px; color: #10b981; font-family: 'Inter', sans-serif; font-weight: 800;">0 pts</strong>
-                <button type="button" onclick="alternarAbas('fidelidade')" style="margin-top: 10px; padding: 7px 10px; border: 1px solid rgba(255,255,255,.25); border-radius: 9px; color: #fff; background: transparent; font: 700 12px 'Inter', sans-serif; cursor: pointer;">Usar pontos</button>
+                <button type="button" data-onclick="alternarAbas('fidelidade')" style="margin-top: 10px; padding: 7px 10px; border: 1px solid rgba(255,255,255,.25); border-radius: 9px; color: #fff; background: transparent; font: 700 12px 'Inter', sans-serif; cursor: pointer;">Usar pontos</button>
             </div>
         </div>
 
@@ -4012,14 +4012,14 @@ body.dark-mode .spa-toast {
     </div>
 
     <section id="secao-fidelidade" class="secao-conteudo fidelidade-painel" aria-labelledby="fidelidade-titulo">
-        <header class="fidelidade-cabecalho"><div><span class="secao-eyebrow">CLUBE PANACEIA</span><h1 id="fidelidade-titulo">Seu cuidado rende.</h1><p>Transforme seus pontos em crédito para as próximas experiências.</p></div><button type="button" class="clientes-botao" onclick="carregarFidelidade()">Atualizar saldo</button></header>
+        <header class="fidelidade-cabecalho"><div><span class="secao-eyebrow">CLUBE PANACEIA</span><h1 id="fidelidade-titulo">Seu cuidado rende.</h1><p>Transforme seus pontos em crédito para as próximas experiências.</p></div><button type="button" class="clientes-botao" data-onclick="carregarFidelidade()">Atualizar saldo</button></header>
         <div class="fidelidade-saldo"><article class="fidelidade-saldo-card"><small>SALDO DISPONÍVEL</small><strong id="fidelidade-pontos">0 pontos</strong><p>A cada atendimento concluído, você recebe pontos automaticamente.</p></article><aside class="fidelidade-como-funciona"><h2>Como usar</h2><ol><li>Escolha uma recompensa compatível com seu saldo.</li><li>Resgate seu voucher de forma segura.</li><li>Apresente o código no Spa antes do atendimento.</li></ol></aside></div>
         <section aria-labelledby="recompensas-titulo"><h2 id="recompensas-titulo" class="sr-only">Recompensas disponíveis</h2><div id="recompensas-fidelidade" class="recompensas-grade"></div></section>
         <section class="vouchers-area" aria-labelledby="vouchers-titulo"><h2 id="vouchers-titulo">Meus vouchers</h2><div id="vouchers-fidelidade" class="vouchers-lista"></div></section>
     </section>
 
     <section id="secao-notificacoes" class="secao-conteudo central-notificacoes" aria-labelledby="notificacoes-titulo">
-        <header class="central-cabecalho"><div><span class="secao-eyebrow">SUA CENTRAL</span><h1 id="notificacoes-titulo">Notificações</h1><p>Atualizações das suas reservas, pontos e lembretes em um só lugar.</p></div><button type="button" class="clientes-botao" onclick="marcarTodasNotificacoesComoLidas()">Marcar todas como lidas</button></header>
+        <header class="central-cabecalho"><div><span class="secao-eyebrow">SUA CENTRAL</span><h1 id="notificacoes-titulo">Notificações</h1><p>Atualizações das suas reservas, pontos e lembretes em um só lugar.</p></div><button type="button" class="clientes-botao" data-onclick="marcarTodasNotificacoesComoLidas()">Marcar todas como lidas</button></header>
         <div class="central-resumo"><span class="central-resumo-marca" aria-hidden="true"></span><p id="notificacoes-resumo" role="status" aria-live="polite">Entre na sua conta para acompanhar suas atualizações.</p></div>
         <div id="lista-notificacoes" class="lista-notificacoes"></div>
     </section>
@@ -4027,26 +4027,26 @@ body.dark-mode .spa-toast {
     <section id="secao-privacidade" class="secao-conteudo privacidade-painel" aria-labelledby="privacidade-titulo">
         <header class="privacidade-cabecalho"><div><span class="secao-eyebrow">CONTROLE DA SUA CONTA</span><h1 id="privacidade-titulo">Privacidade e dados</h1><p>Escolha como acessar seus dados e gerencie sua conta com clareza.</p></div></header>
         <div class="privacidade-grid">
-            <article class="privacidade-card"><span class="privacidade-selo">SEUS DADOS</span><h2>Baixar uma cópia</h2><p>Gere um arquivo com os dados da sua conta, pontos e histórico de reservas.</p><button type="button" class="clientes-botao gerencia-primario" onclick="baixarDadosPessoais()">Exportar meus dados</button></article>
-            <article class="privacidade-card"><span class="privacidade-selo">NO SEU DISPOSITIVO</span><h2>Usar como aplicativo</h2><p id="texto-instalacao">Instale o Spa Panaceia na tela inicial para abrir sua agenda com mais rapidez.</p><button type="button" class="clientes-botao" id="btn-instalar-app" onclick="instalarAplicativo()" hidden>Instalar aplicativo</button></article>
-            <article class="privacidade-card privacidade-card--alerta"><span class="privacidade-selo">EXCLUSÃO</span><h2>Solicitar exclusão</h2><p>Prepare um e-mail para a equipe responsável. Sua conta só é excluída depois de uma revisão humana.</p><button type="button" class="clientes-botao" onclick="abrirModal('privacidadeExclusaoModal')">Solicitar exclusão</button></article>
+            <article class="privacidade-card"><span class="privacidade-selo">SEUS DADOS</span><h2>Baixar uma cópia</h2><p>Gere um arquivo com os dados da sua conta, pontos e histórico de reservas.</p><button type="button" class="clientes-botao gerencia-primario" data-onclick="baixarDadosPessoais()">Exportar meus dados</button></article>
+            <article class="privacidade-card"><span class="privacidade-selo">NO SEU DISPOSITIVO</span><h2>Usar como aplicativo</h2><p id="texto-instalacao">Instale o Spa Panaceia na tela inicial para abrir sua agenda com mais rapidez.</p><button type="button" class="clientes-botao" id="btn-instalar-app" data-onclick="instalarAplicativo()" hidden>Instalar aplicativo</button></article>
+            <article class="privacidade-card privacidade-card--alerta"><span class="privacidade-selo">EXCLUSÃO</span><h2>Solicitar exclusão</h2><p>Prepare um e-mail para a equipe responsável. Sua conta só é excluída depois de uma revisão humana.</p><button type="button" class="clientes-botao" data-onclick="abrirModal('privacidadeExclusaoModal')">Solicitar exclusão</button></article>
         </div>
         <p id="privacidade-status" class="privacidade-status" role="status" aria-live="polite"></p>
     </section>
 
     <!-- PAINEL GERENCIAL -->
     <div id="secao-admin" class="secao-conteudo clientes-painel gerencia-painel">
-        <header class="gerencia-cabecalho"><div><span class="clientes-eyebrow">AGENDA & ATENDIMENTO</span><h1>Seu dia no Spa.</h1><p>Organize as visitas, acompanhe os atendimentos e prepare seus relatórios.</p></div><button class="clientes-botao" id="gerencia-atualizar" type="button" onclick="carregarAgendamentosAdmin()">Atualizar agenda</button></header>
+        <header class="gerencia-cabecalho"><div><span class="clientes-eyebrow">AGENDA & ATENDIMENTO</span><h1>Seu dia no Spa.</h1><p>Organize as visitas, acompanhe os atendimentos e prepare seus relatórios.</p></div><button class="clientes-botao" id="gerencia-atualizar" type="button" data-onclick="carregarAgendamentosAdmin()">Atualizar agenda</button></header>
         <div class="clientes-indicadores gerencia-indicadores" aria-label="Resumo dos agendamentos filtrados">
             <article><span>Agendamentos</span><strong id="gerencia-total">—</strong><small id="gerencia-clientes">No período selecionado</small></article>
             <article class="clientes-indicador-destaque"><span>Pendentes</span><strong id="gerencia-pendentes">—</strong><small>Aguardando atendimento ou conclusão</small></article>
             <article><span>Concluídos</span><strong id="gerencia-concluidos">—</strong><small>Atendimentos finalizados</small></article>
             <article><span>Valor dos concluídos</span><strong id="gerencia-valor" class="gerencia-valor-kpi">—</strong><small>Calculado pelo preço atual dos serviços</small></article>
         </div>
-        <div class="gerencia-destaques"><div><span class="clientes-eyebrow">PRÓXIMA VISITA NA SELEÇÃO</span><p id="gerencia-proximo">Carregando agenda…</p></div><div><span class="clientes-eyebrow">ACOMPANHAMENTO</span><p id="gerencia-alerta">Consultando atendimentos…</p><button class="gerencia-link" id="gerencia-revisar" type="button" onclick="revisarPendentesGerencia()" hidden>Ver pendentes passados</button></div></div>
+        <div class="gerencia-destaques"><div><span class="clientes-eyebrow">PRÓXIMA VISITA NA SELEÇÃO</span><p id="gerencia-proximo">Carregando agenda…</p></div><div><span class="clientes-eyebrow">ACOMPANHAMENTO</span><p id="gerencia-alerta">Consultando atendimentos…</p><button class="gerencia-link" id="gerencia-revisar" type="button" data-onclick="revisarPendentesGerencia()" hidden>Ver pendentes passados</button></div></div>
         <section class="bloqueios-painel" aria-labelledby="bloqueios-titulo">
-            <div class="bloqueios-topo"><div><span class="clientes-eyebrow">DISPONIBILIDADE</span><h2 id="bloqueios-titulo">Bloquear horários</h2><p>Escolha um dia e uma faixa de horário por vez. Esses horários deixam de aparecer como disponíveis para clientes.</p></div><button type="button" class="clientes-botao" onclick="carregarBloqueiosAdmin()">Atualizar bloqueios</button></div>
-            <form id="bloqueios-form" class="bloqueios-form" onsubmit="criarBloqueioAdmin(event)">
+            <div class="bloqueios-topo"><div><span class="clientes-eyebrow">DISPONIBILIDADE</span><h2 id="bloqueios-titulo">Bloquear horários</h2><p>Escolha um dia e uma faixa de horário por vez. Esses horários deixam de aparecer como disponíveis para clientes.</p></div><button type="button" class="clientes-botao" data-onclick="carregarBloqueiosAdmin()">Atualizar bloqueios</button></div>
+            <form id="bloqueios-form" class="bloqueios-form" data-onsubmit="criarBloqueioAdmin(event)">
                 <div class="bloqueios-calendario">
                     <label for="bloqueio-datas">Selecione o dia</label>
                     <input id="bloqueio-datas" type="text" class="calendario-input" placeholder="Escolha uma data" readonly aria-label="Escolha o dia a bloquear">
@@ -4070,23 +4070,23 @@ body.dark-mode .spa-toast {
             <div id="bloqueios-lista" class="bloqueios-lista" aria-live="polite"><p class="bloqueios-vazio">Carregando bloqueios…</p></div>
         </section>
         <section class="gerencia-lista" aria-labelledby="gerencia-lista-titulo">
-            <div class="gerencia-lista-topo"><div><h2 id="gerencia-lista-titulo" tabindex="-1">Agenda de atendimentos</h2><p id="gerencia-atualizacao">Os filtros abaixo também se aplicam aos relatórios.</p></div><div class="gerencia-exportar"><button class="clientes-botao" type="button" id="gerencia-csv" onclick="exportarCSV()" disabled>Exportar CSV</button><button class="clientes-botao gerencia-primario" type="button" id="gerencia-pdf" onclick="exportarPDF()" disabled>Baixar relatório PDF</button></div></div>
+            <div class="gerencia-lista-topo"><div><h2 id="gerencia-lista-titulo" tabindex="-1">Agenda de atendimentos</h2><p id="gerencia-atualizacao">Os filtros abaixo também se aplicam aos relatórios.</p></div><div class="gerencia-exportar"><button class="clientes-botao" type="button" id="gerencia-csv" data-onclick="exportarCSV()" disabled>Exportar CSV</button><button class="clientes-botao gerencia-primario" type="button" id="gerencia-pdf" data-onclick="exportarPDF()" disabled>Baixar relatório PDF</button></div></div>
             <div class="gerencia-filtros">
-                <div class="gerencia-busca"><label for="gerencia-busca">Buscar cliente, e-mail ou número</label><input id="gerencia-busca" type="search" placeholder="Nome, e-mail ou nº da reserva" autocomplete="off" oninput="filtrarGerencia()"></div>
-                <div><label for="gerencia-status">Status</label><select id="gerencia-status" onchange="filtrarGerencia()"><option value="todos">Todos os status</option><option value="Pendente">Pendentes</option><option value="Concluido">Concluídos</option><option value="Cancelado">Cancelados</option></select></div>
-                <div><label for="gerencia-servico">Tratamento</label><select id="gerencia-servico" onchange="filtrarGerencia()"><option value="">Todos os tratamentos</option></select></div>
-                <div><label for="gerencia-inicio">De</label><input id="gerencia-inicio" type="date" onchange="filtrarGerencia()"></div>
-                <div><label for="gerencia-fim">Até</label><input id="gerencia-fim" type="date" onchange="filtrarGerencia()"></div>
-                <div><label for="gerencia-ordem">Ordenar</label><select id="gerencia-ordem" onchange="filtrarGerencia()"><option value="data-asc">Data: mais antiga primeiro</option><option value="data-desc">Data: mais recente primeiro</option><option value="valor">Maior valor</option><option value="cliente">Cliente: A a Z</option></select></div>
+                <div class="gerencia-busca"><label for="gerencia-busca">Buscar cliente, e-mail ou número</label><input id="gerencia-busca" type="search" placeholder="Nome, e-mail ou nº da reserva" autocomplete="off" data-oninput="filtrarGerencia()"></div>
+                <div><label for="gerencia-status">Status</label><select id="gerencia-status" data-onchange="filtrarGerencia()"><option value="todos">Todos os status</option><option value="Pendente">Pendentes</option><option value="Concluido">Concluídos</option><option value="Cancelado">Cancelados</option></select></div>
+                <div><label for="gerencia-servico">Tratamento</label><select id="gerencia-servico" data-onchange="filtrarGerencia()"><option value="">Todos os tratamentos</option></select></div>
+                <div><label for="gerencia-inicio">De</label><input id="gerencia-inicio" type="date" data-onchange="filtrarGerencia()"></div>
+                <div><label for="gerencia-fim">Até</label><input id="gerencia-fim" type="date" data-onchange="filtrarGerencia()"></div>
+                <div><label for="gerencia-ordem">Ordenar</label><select id="gerencia-ordem" data-onchange="filtrarGerencia()"><option value="data-asc">Data: mais antiga primeiro</option><option value="data-desc">Data: mais recente primeiro</option><option value="valor">Maior valor</option><option value="cliente">Cliente: A a Z</option></select></div>
             </div>
-            <div class="gerencia-atalhos" role="group" aria-label="Selecionar período"><button type="button" class="clientes-botao" onclick="periodoGerencia('hoje')">Hoje</button><button type="button" class="clientes-botao" onclick="periodoGerencia('semana')">Esta semana</button><button type="button" class="clientes-botao" onclick="periodoGerencia('mes')">Este mês</button><button type="button" class="gerencia-link" onclick="limparFiltrosGerencia()">Limpar filtros</button><span id="gerencia-resultados" role="status" aria-live="polite"></span></div>
+            <div class="gerencia-atalhos" role="group" aria-label="Selecionar período"><button type="button" class="clientes-botao" data-onclick="periodoGerencia('hoje')">Hoje</button><button type="button" class="clientes-botao" data-onclick="periodoGerencia('semana')">Esta semana</button><button type="button" class="clientes-botao" data-onclick="periodoGerencia('mes')">Este mês</button><button type="button" class="gerencia-link" data-onclick="limparFiltrosGerencia()">Limpar filtros</button><span id="gerencia-resultados" role="status" aria-live="polite"></span></div>
             <div class="gerencia-tabela-area"><table class="gerencia-tabela"><caption class="sr-only">Agendamentos que correspondem aos filtros selecionados</caption><thead><tr><th scope="col">Data e hora</th><th scope="col">Cliente</th><th scope="col">Tratamento</th><th scope="col">Valor</th><th scope="col">Status / avaliação</th><th scope="col">Ação</th></tr></thead><tbody id="container-admin-agendamentos"><tr><td colspan="6">Carregando…</td></tr></tbody></table></div>
-            <nav class="clientes-paginacao" aria-label="Páginas de agendamentos"><span id="gerencia-pagina-info"></span><div><button id="gerencia-anterior" class="clientes-botao" type="button" onclick="paginaGerencia(-1)" disabled>Anterior</button><button id="gerencia-proxima" class="clientes-botao" type="button" onclick="paginaGerencia(1)" disabled>Próxima</button></div></nav>
+            <nav class="clientes-paginacao" aria-label="Páginas de agendamentos"><span id="gerencia-pagina-info"></span><div><button id="gerencia-anterior" class="clientes-botao" type="button" data-onclick="paginaGerencia(-1)" disabled>Anterior</button><button id="gerencia-proxima" class="clientes-botao" type="button" data-onclick="paginaGerencia(1)" disabled>Próxima</button></div></nav>
             <p class="clientes-nota">Horários de São Paulo. PDF e CSV incluem todos os resultados filtrados, não apenas esta página. Os valores usam o preço atual dos serviços e não comprovam pagamentos.</p>
         </section>
     </div>
-    <div class="modal-overlay" id="gerencia-conclusao-modal"><div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="gerencia-conclusao-titulo"><button class="btn-fechar" type="button" aria-label="Fechar confirmação" onclick="fecharModal('gerencia-conclusao-modal')">&times;</button><h3 id="gerencia-conclusao-titulo">Concluir atendimento?</h3><p class="gerencia-confirmacao-texto">Confirme apenas depois de realizar o atendimento. Essa ação também solicita o crédito dos pontos de fidelidade.</p><dl id="gerencia-conclusao-resumo" class="reserva-resumo"></dl><button id="gerencia-confirmar" class="btn-confirmar" type="button" onclick="confirmarConclusaoGerencial()">Sim, atendimento realizado</button><p id="gerencia-conclusao-status" role="status" aria-live="polite"></p></div></div>
-    <div class="modal-overlay" id="gerencia-voucher-modal"><div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="gerencia-voucher-titulo"><button class="btn-fechar" type="button" aria-label="Fechar aplicação de voucher" onclick="fecharModal('gerencia-voucher-modal')">&times;</button><h3 id="gerencia-voucher-titulo">Aplicar voucher</h3><p class="gerencia-confirmacao-texto">Confira o código apresentado pelo cliente. O voucher será vinculado a este atendimento e não poderá ser usado novamente.</p><div id="gerencia-voucher-resumo" class="gerencia-voucher-resumo"></div><label for="gerencia-voucher-codigo">Código do voucher</label><input id="gerencia-voucher-codigo" class="gerencia-voucher-campo" type="text" maxlength="14" autocomplete="off" spellcheck="false" placeholder="PAN-XXXXXXXXXX"><button id="gerencia-voucher-confirmar" class="btn-confirmar" type="button" onclick="confirmarUsoVoucher()">Validar e aplicar</button><p id="gerencia-voucher-status" role="status" aria-live="polite"></p></div></div>
+    <div class="modal-overlay" id="gerencia-conclusao-modal"><div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="gerencia-conclusao-titulo"><button class="btn-fechar" type="button" aria-label="Fechar confirmação" data-onclick="fecharModal('gerencia-conclusao-modal')">&times;</button><h3 id="gerencia-conclusao-titulo">Concluir atendimento?</h3><p class="gerencia-confirmacao-texto">Confirme apenas depois de realizar o atendimento. Essa ação também solicita o crédito dos pontos de fidelidade.</p><dl id="gerencia-conclusao-resumo" class="reserva-resumo"></dl><button id="gerencia-confirmar" class="btn-confirmar" type="button" data-onclick="confirmarConclusaoGerencial()">Sim, atendimento realizado</button><p id="gerencia-conclusao-status" role="status" aria-live="polite"></p></div></div>
+    <div class="modal-overlay" id="gerencia-voucher-modal"><div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="gerencia-voucher-titulo"><button class="btn-fechar" type="button" aria-label="Fechar aplicação de voucher" data-onclick="fecharModal('gerencia-voucher-modal')">&times;</button><h3 id="gerencia-voucher-titulo">Aplicar voucher</h3><p class="gerencia-confirmacao-texto">Confira o código apresentado pelo cliente. O voucher será vinculado a este atendimento e não poderá ser usado novamente.</p><div id="gerencia-voucher-resumo" class="gerencia-voucher-resumo"></div><label for="gerencia-voucher-codigo">Código do voucher</label><input id="gerencia-voucher-codigo" class="gerencia-voucher-campo" type="text" maxlength="14" autocomplete="off" spellcheck="false" placeholder="PAN-XXXXXXXXXX"><button id="gerencia-voucher-confirmar" class="btn-confirmar" type="button" data-onclick="confirmarUsoVoucher()">Validar e aplicar</button><p id="gerencia-voucher-status" role="status" aria-live="polite"></p></div></div>
 
     <!-- PAINEL DE ESTOQUE -->
     <section id="secao-estoque" class="secao-conteudo clientes-painel estoque-painel" aria-labelledby="estoque-titulo">
@@ -4096,7 +4096,7 @@ body.dark-mode .spa-toast {
                 <h1 id="estoque-titulo">Estoque sob controle.</h1>
                 <p>Acompanhe insumos, antecipe reposições e registre entradas e retiradas sem perder o histórico operacional do dia.</p>
             </div>
-            <button class="clientes-botao" id="estoque-atualizar" type="button" onclick="carregarEstoque()">Atualizar estoque</button>
+            <button class="clientes-botao" id="estoque-atualizar" type="button" data-onclick="carregarEstoque()">Atualizar estoque</button>
         </header>
 
         <div class="estoque-indicadores" aria-label="Resumo do estoque">
@@ -4110,7 +4110,7 @@ body.dark-mode .spa-toast {
             <div class="estoque-card-topo">
                 <div><h2 id="estoque-cadastro-titulo">Cadastrar insumo</h2><p>Inclua produtos de uso diário e defina quando o painel deve sinalizar reposição.</p></div>
             </div>
-            <form id="estoque-form" class="estoque-form" onsubmit="adicionarItemEstoque(event)">
+            <form id="estoque-form" class="estoque-form" data-onsubmit="adicionarItemEstoque(event)">
                 <div class="estoque-campo"><label for="est-nome">Nome do produto</label><input type="text" id="est-nome" maxlength="120" autocomplete="off" placeholder="Ex.: Óleo de lavanda" required></div>
                 <div class="estoque-campo"><label for="est-qtd">Quantidade inicial</label><input type="number" id="est-qtd" min="0" step="1" inputmode="numeric" placeholder="0" required></div>
                 <div class="estoque-campo"><label for="est-min">Estoque mínimo</label><input type="number" id="est-min" min="0" step="1" inputmode="numeric" value="5" required></div>
@@ -4123,8 +4123,8 @@ body.dark-mode .spa-toast {
             <div class="estoque-card-topo estoque-lista-topo">
                 <div><h2 id="estoque-lista-titulo">Insumos cadastrados</h2><p>Busque um produto ou mostre apenas os itens que precisam de reposição.</p></div>
                 <div class="estoque-controles">
-                    <div class="estoque-controle"><label for="estoque-busca">Buscar produto</label><input id="estoque-busca" type="search" autocomplete="off" placeholder="Digite o nome" oninput="filtrarEstoque()"></div>
-                    <div class="estoque-controle"><label for="estoque-filtro">Situação</label><select id="estoque-filtro" onchange="filtrarEstoque()"><option value="todos">Todos os itens</option><option value="baixo">Pedem atenção</option><option value="zerado">Sem saldo</option><option value="normal">Nível adequado</option></select></div>
+                    <div class="estoque-controle"><label for="estoque-busca">Buscar produto</label><input id="estoque-busca" type="search" autocomplete="off" placeholder="Digite o nome" data-oninput="filtrarEstoque()"></div>
+                    <div class="estoque-controle"><label for="estoque-filtro">Situação</label><select id="estoque-filtro" data-onchange="filtrarEstoque()"><option value="todos">Todos os itens</option><option value="baixo">Pedem atenção</option><option value="zerado">Sem saldo</option><option value="normal">Nível adequado</option></select></div>
                 </div>
             </div>
             <p id="estoque-resultados" class="estoque-resultados" role="status" aria-live="polite">Carregando estoque…</p>
@@ -4139,11 +4139,11 @@ body.dark-mode .spa-toast {
     </section>
     <div class="modal-overlay" id="estoque-exclusao-modal">
         <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="estoque-exclusao-titulo">
-            <button class="btn-fechar" type="button" aria-label="Fechar confirmação" onclick="fecharModal('estoque-exclusao-modal')">&times;</button>
+            <button class="btn-fechar" type="button" aria-label="Fechar confirmação" data-onclick="fecharModal('estoque-exclusao-modal')">&times;</button>
             <h3 id="estoque-exclusao-titulo">Excluir produto?</h3>
             <p class="gerencia-confirmacao-texto">O item deixará de aparecer no controle de estoque. Use esta opção apenas quando ele não fizer mais parte da operação.</p>
             <p id="estoque-exclusao-nome" class="estoque-confirmacao-nome"></p>
-            <div class="estoque-modal-acoes"><button class="clientes-botao" type="button" onclick="fecharModal('estoque-exclusao-modal')">Manter produto</button><button class="clientes-botao estoque-botao-perigo" id="estoque-confirmar-exclusao" type="button" onclick="executarExclusaoEstoqueConfirmada()">Excluir definitivamente</button></div>
+            <div class="estoque-modal-acoes"><button class="clientes-botao" type="button" data-onclick="fecharModal('estoque-exclusao-modal')">Manter produto</button><button class="clientes-botao estoque-botao-perigo" id="estoque-confirmar-exclusao" type="button" data-onclick="executarExclusaoEstoqueConfirmada()">Excluir definitivamente</button></div>
             <p id="estoque-status-modal" role="status" aria-live="polite"></p>
         </div>
     </div>
@@ -4160,7 +4160,7 @@ body.dark-mode .spa-toast {
             <div class="seletor-financeiro" style="display: flex; flex-direction: column; align-items: flex-end; gap: 8px;">
                 <div id="container-filtro-mes" style="background: white; padding: 6px 12px; border-radius: 50px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; display: flex; align-items: center; gap: 15px; transition: all 0.3s;">
                     <!-- Seta para voltar -->
-                    <button onclick="mudarMesBI(-1)" class="btn-seta-mes" title="Mês anterior">&#10094;</button>
+                    <button data-onclick="mudarMesBI(-1)" class="btn-seta-mes" title="Mês anterior">&#10094;</button>
                     
                     <!-- Mês e Ano -->
                     <div style="text-align: center; min-width: 140px;">
@@ -4168,10 +4168,10 @@ body.dark-mode .spa-toast {
                     </div>
                     
                     <!-- Seta para avançar -->
-                    <button onclick="mudarMesBI(1)" class="btn-seta-mes" title="Próximo mês">&#10095;</button>
+                    <button data-onclick="mudarMesBI(1)" class="btn-seta-mes" title="Próximo mês">&#10095;</button>
                 </div>
                 <!-- Link discreto para ver tudo -->
-                <button onclick="mostrarTodosOsMeses()" style="background: none; border: none; color: #64748b; font-size: 12px; cursor: pointer; text-decoration: underline; font-weight: 600; padding: 0;">Ver todos os meses</button>
+                <button data-onclick="mostrarTodosOsMeses()" style="background: none; border: none; color: #64748b; font-size: 12px; cursor: pointer; text-decoration: underline; font-weight: 600; padding: 0;">Ver todos os meses</button>
             </div>
         </header>
 
@@ -4293,7 +4293,7 @@ body.dark-mode .spa-toast {
                         <div style="display: flex; align-items: center; margin-top: 5px;">
                             <span style="color: #ef4444; font-weight: 700; font-size: 18px; margin-right: 5px;">R$</span>
                             <label class="sr-only" for="input-custos-dre">Custos e despesas</label>
-                            <input type="text" id="input-custos-dre" value="0" oninput="calcularDRE()" style="width: 100%; border: none; background: transparent; color: #ef4444; font-size: 22px; font-weight: 800; outline: none; border-bottom: 2px dashed #fca5a5;">
+                            <input type="text" id="input-custos-dre" value="0" data-oninput="calcularDRE()" style="width: 100%; border: none; background: transparent; color: #ef4444; font-size: 22px; font-weight: 800; outline: none; border-bottom: 2px dashed #fca5a5;">
                         </div>
                     </div>
 
@@ -4359,7 +4359,7 @@ body.dark-mode .spa-toast {
     <div id="secao-usuarios" class="secao-conteudo clientes-painel">
         <header class="clientes-cabecalho">
             <div><span class="clientes-eyebrow">RELACIONAMENTO</span><h1>Conheça seus clientes.</h1><p>Cada visita conta uma história. Acompanhe quem já passou por aqui e quem está chegando.</p></div>
-            <button class="clientes-botao" type="button" id="clientes-atualizar" onclick="carregarUsuariosCadastrados()">Atualizar lista</button>
+            <button class="clientes-botao" type="button" id="clientes-atualizar" data-onclick="carregarUsuariosCadastrados()">Atualizar lista</button>
         </header>
         <div class="clientes-indicadores" aria-label="Resumo de todos os clientes">
             <article><span>Pessoas cadastradas</span><strong id="clientes-kpi-total">—</strong><small>Contas na lista de clientes</small></article>
@@ -4371,24 +4371,24 @@ body.dark-mode .spa-toast {
             <section class="clientes-lista" aria-labelledby="clientes-lista-titulo">
                 <div class="clientes-lista-cabecalho"><div><h2 id="clientes-lista-titulo">Sua comunidade</h2><p id="clientes-atualizacao">Carregando seus clientes…</p></div><span class="clientes-selo">Spa Panaceia</span></div>
                 <div class="clientes-controles">
-                    <div class="clientes-busca"><label for="clientes-busca">Buscar cliente</label><input id="clientes-busca" type="search" placeholder="Nome ou e-mail" autocomplete="off" oninput="filtrarClientes()"></div>
-                    <div class="clientes-ordem"><label for="clientes-ordem">Organizar por</label><select id="clientes-ordem" onchange="filtrarClientes()"><option value="nome">Nome: A a Z</option><option value="visitas">Mais visitas concluídas</option><option value="pendentes">Mais reservas pendentes</option><option value="gastos">Maior valor em serviços</option></select></div>
+                    <div class="clientes-busca"><label for="clientes-busca">Buscar cliente</label><input id="clientes-busca" type="search" placeholder="Nome ou e-mail" autocomplete="off" data-oninput="filtrarClientes()"></div>
+                    <div class="clientes-ordem"><label for="clientes-ordem">Organizar por</label><select id="clientes-ordem" data-onchange="filtrarClientes()"><option value="nome">Nome: A a Z</option><option value="visitas">Mais visitas concluídas</option><option value="pendentes">Mais reservas pendentes</option><option value="gastos">Maior valor em serviços</option></select></div>
                 </div>
                 <div class="clientes-filtros" role="group" aria-label="Filtrar clientes">
-                    <button type="button" data-filtro-cliente="todos" aria-pressed="true" onclick="filtrarClientes('todos')">Todos</button>
-                    <button type="button" data-filtro-cliente="retorno" aria-pressed="false" onclick="filtrarClientes('retorno')">Recorrentes</button>
-                    <button type="button" data-filtro-cliente="pendentes" aria-pressed="false" onclick="filtrarClientes('pendentes')">Com reserva pendente</button>
-                    <button type="button" data-filtro-cliente="sem_visitas" aria-pressed="false" onclick="filtrarClientes('sem_visitas')">Sem visita concluída</button>
+                    <button type="button" data-filtro-cliente="todos" aria-pressed="true" data-onclick="filtrarClientes('todos')">Todos</button>
+                    <button type="button" data-filtro-cliente="retorno" aria-pressed="false" data-onclick="filtrarClientes('retorno')">Recorrentes</button>
+                    <button type="button" data-filtro-cliente="pendentes" aria-pressed="false" data-onclick="filtrarClientes('pendentes')">Com reserva pendente</button>
+                    <button type="button" data-filtro-cliente="sem_visitas" aria-pressed="false" data-onclick="filtrarClientes('sem_visitas')">Sem visita concluída</button>
                 </div>
                 <p class="clientes-resultados" id="clientes-resultados" role="status" aria-live="polite"></p>
                 <div class="clientes-tabela-area">
                     <table class="clientes-tabela"><caption class="sr-only">Clientes e resumo dos atendimentos</caption><thead><tr><th scope="col">Cliente</th><th scope="col">Relacionamento</th><th scope="col">Agendamentos</th><th scope="col">Valor em serviços</th><th scope="col"><span class="sr-only">Detalhes</span></th></tr></thead><tbody id="container-admin-usuarios"><tr><td colspan="5">Carregando…</td></tr></tbody></table>
                 </div>
-                <nav class="clientes-paginacao" aria-label="Páginas de clientes"><span id="clientes-pagina-info"></span><div><button type="button" class="clientes-botao" id="clientes-anterior" onclick="mudarPaginaClientes(-1)" disabled>Anterior</button><button type="button" class="clientes-botao" id="clientes-proxima" onclick="mudarPaginaClientes(1)" disabled>Próxima</button></div></nav>
+                <nav class="clientes-paginacao" aria-label="Páginas de clientes"><span id="clientes-pagina-info"></span><div><button type="button" class="clientes-botao" id="clientes-anterior" data-onclick="mudarPaginaClientes(-1)" disabled>Anterior</button><button type="button" class="clientes-botao" id="clientes-proxima" data-onclick="mudarPaginaClientes(1)" disabled>Próxima</button></div></nav>
                 <p class="clientes-nota">Valores dos atendimentos concluídos, calculados pelo preço atual dos serviços. Não representam um extrato de pagamentos.</p>
             </section>
             <aside class="clientes-detalhe" id="clientes-detalhe" aria-labelledby="clientes-detalhe-titulo" hidden tabindex="-1">
-                <div class="clientes-detalhe-topo"><span class="clientes-eyebrow">PERFIL DO CLIENTE</span><button type="button" class="clientes-botao" onclick="fecharDetalheCliente()" aria-label="Fechar perfil do cliente">Fechar</button></div>
+                <div class="clientes-detalhe-topo"><span class="clientes-eyebrow">PERFIL DO CLIENTE</span><button type="button" class="clientes-botao" data-onclick="fecharDetalheCliente()" aria-label="Fechar perfil do cliente">Fechar</button></div>
                 <div id="clientes-detalhe-conteudo"></div>
                 <section class="clientes-historico" aria-labelledby="clientes-historico-titulo"><h3 id="clientes-historico-titulo">Histórico de visitas</h3><div id="clientes-historico-conteudo" role="status" aria-live="polite"></div></section>
             </aside>
@@ -4398,7 +4398,7 @@ body.dark-mode .spa-toast {
     <!-- MODAIS RESTANTES -->
     <div class="modal-overlay" id="agendamentoModal">
         <div class="modal-box reserva-box" role="dialog" aria-modal="true" aria-labelledby="modalTitulo">
-            <button class="btn-fechar" type="button" aria-label="Fechar agendamento" onclick="fecharModal('agendamentoModal')">&times;</button>
+            <button class="btn-fechar" type="button" aria-label="Fechar agendamento" data-onclick="fecharModal('agendamentoModal')">&times;</button>
             <h3 id="modalTitulo" tabindex="-1">Sua experiência</h3>
             <ol class="reserva-etapas" aria-label="Etapas da reserva">
                 <li data-etapa="1" aria-current="step">1. Serviço</li><li data-etapa="2">2. Data e hora</li><li data-etapa="3">3. Revisão</li><li data-etapa="4">4. Confirmação</li>
@@ -4436,16 +4436,16 @@ body.dark-mode .spa-toast {
                 <h4>Seu momento está reservado.</h4>
                 <dl class="reserva-resumo" id="reservaConfirmacao"></dl>
                 <p id="reservaEmailStatus" class="reserva-nota"></p>
-                <button id="reservaCalendario" type="button" class="reserva-calendario" onclick="baixarCalendarioReserva(reservaAtual?.resultado?.id)">Adicionar ao calendário</button>
+                <button id="reservaCalendario" type="button" class="reserva-calendario" data-data-onclick="baixarCalendarioReservaAtual()">Adicionar ao calendário</button>
             </section>
             <p id="modalStatus" role="status" aria-live="polite" style="margin-top: 15px; font-weight: 600; font-size: 14px;"></p>
-            <div class="reserva-rodape"><button id="reservaVoltar" type="button" class="btn-reserva-voltar" onclick="voltarEtapaReserva()" hidden>Voltar</button><button id="reservaContinuar" type="button" class="btn-confirmar" onclick="avancarEtapaReserva()">Escolher data e horário</button></div>
+            <div class="reserva-rodape"><button id="reservaVoltar" type="button" class="btn-reserva-voltar" data-onclick="voltarEtapaReserva()" hidden>Voltar</button><button id="reservaContinuar" type="button" class="btn-confirmar" data-onclick="avancarEtapaReserva()">Escolher data e horário</button></div>
         </div>
     </div>
 
     <div class="modal-overlay" id="detalhesServicoModal">
         <div class="modal-box detalhes-servico-box" role="dialog" aria-modal="true" aria-labelledby="detalhesServicoTitulo">
-            <button class="btn-fechar" type="button" aria-label="Fechar detalhes do tratamento" onclick="fecharModal('detalhesServicoModal')">&times;</button>
+            <button class="btn-fechar" type="button" aria-label="Fechar detalhes do tratamento" data-onclick="fecharModal('detalhesServicoModal')">&times;</button>
             <div class="detalhes-servico-imagem"><img id="detalhesServicoImagem" src="" alt="" width="760" height="500" decoding="async"></div>
             <div class="detalhes-servico-corpo">
                 <span class="detalhes-servico-selo">EXPERIÊNCIA PANACEIA</span>
@@ -4457,7 +4457,7 @@ body.dark-mode .spa-toast {
                     <section><h4>Antes da sua chegada</h4><p id="detalhesServicoPreparo"></p></section>
                     <section><h4>Cuidados importantes</h4><p id="detalhesServicoContraindicacoes"></p></section>
                 </div>
-                <button type="button" class="btn-confirmar detalhes-servico-agendar" onclick="agendarServicoDosDetalhes()">Escolher horário</button>
+                <button type="button" class="btn-confirmar detalhes-servico-agendar" data-onclick="agendarServicoDosDetalhes()">Escolher horário</button>
             </div>
         </div>
     </div>
@@ -4465,7 +4465,7 @@ body.dark-mode .spa-toast {
     <!--  NOVO: MODAL DE DETALHES DO HEATMAP (DRILL-DOWN) -->
     <div class="modal-overlay" id="modalDetalhesHeatmap">
         <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="tituloDetalhesHeatmap" style="max-width: 500px;">
-            <button class="btn-fechar" type="button" aria-label="Fechar detalhes" onclick="fecharModal('modalDetalhesHeatmap')">&times;</button>
+            <button class="btn-fechar" type="button" aria-label="Fechar detalhes" data-onclick="fecharModal('modalDetalhesHeatmap')">&times;</button>
             <h3 id="tituloDetalhesHeatmap" style="margin-bottom: 5px;">Detalhes do Horário</h3>
             <p style="font-size: 13px; color: #64748b; margin-top: 0; margin-bottom: 20px;">Listagem de clientes com reservas ativas nesta faixa.</p>
             
@@ -4477,7 +4477,7 @@ body.dark-mode .spa-toast {
  
     <div class="modal-overlay" id="reagendamentoModal">
         <div class="modal-box" role="dialog" aria-modal="true" aria-label="Alterar horário">
-            <button class="btn-fechar" type="button" aria-label="Fechar alteração de horário" onclick="fecharModal('reagendamentoModal')">&times;</button>
+            <button class="btn-fechar" type="button" aria-label="Fechar alteração de horário" data-onclick="fecharModal('reagendamentoModal')">&times;</button>
             <h3>Alterar Horário</h3>
             <input type="hidden" id="reagendarId">
             <label for="novaDia">1. Escolha a nova data:</label>
@@ -4496,14 +4496,14 @@ body.dark-mode .spa-toast {
                     <span class="mensagem-horarios">Escolha uma data para ver os horários disponíveis.</span>
                 </div>
             </div>
-            <button class="btn-confirmar" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);" onclick="salvarRemarcacao()">Atualizar Horário</button>
+            <button class="btn-confirmar" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);" data-onclick="salvarRemarcacao()">Atualizar Horário</button>
             <p id="reagendarStatus" role="status" aria-live="polite" style="margin-top: 15px; font-weight: 600;"></p>
         </div>
     </div>
 
     <div class="modal-overlay" id="gerencia-historico-modal">
         <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="gerencia-historico-titulo">
-            <button class="btn-fechar" type="button" aria-label="Fechar histórico" onclick="fecharModal('gerencia-historico-modal')">&times;</button>
+            <button class="btn-fechar" type="button" aria-label="Fechar histórico" data-onclick="fecharModal('gerencia-historico-modal')">&times;</button>
             <h3 id="gerencia-historico-titulo">Histórico da reserva</h3>
             <p class="gerencia-confirmacao-texto">Alterações de horário e status registradas para esta reserva.</p>
             <div id="gerencia-historico-lista" class="gerencia-historico-lista" role="status" aria-live="polite">Carregando histórico…</div>
@@ -4515,7 +4515,7 @@ body.dark-mode .spa-toast {
             <div id="notificacaoIcone" style="font-size: 55px; margin-bottom: 15px; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1));"></div>
             <h3 id="notificacaoTitulo">Mensagem</h3>
             <p id="notificacaoTexto" style="color: #4a5568; line-height: 1.6; font-size: 15px; margin-bottom: 25px;"></p>
-            <button class="btn-confirmar" style="background: #1e293b; margin-top: 0;" onclick="fecharModal('notificacaoModal')">Compreendido</button>
+            <button class="btn-confirmar" style="background: #1e293b; margin-top: 0;" data-onclick="fecharModal('notificacaoModal')">Compreendido</button>
         </div>
     </div>
 
@@ -4526,8 +4526,8 @@ body.dark-mode .spa-toast {
             <p style="color: #4a5568; line-height: 1.6; margin-bottom: 25px;">A reserva será cancelada e o horário poderá ficar disponível para outra pessoa. Deseja continuar?</p>
             <input type="hidden" id="cancelarAgendamentoId">
             <div style="display: flex; gap: 15px;">
-                <button type="button" class="btn-acao btn-acao--neutral" style="flex: 1;" onclick="fecharModal('confirmarCancelamentoModal')">Manter Reserva</button>
-                <button type="button" class="btn-acao btn-acao--danger" style="flex: 1;" onclick="ejecutarCancelamentoConfirmado()">Sim, Cancelar</button>
+                <button type="button" class="btn-acao btn-acao--neutral" style="flex: 1;" data-onclick="fecharModal('confirmarCancelamentoModal')">Manter Reserva</button>
+                <button type="button" class="btn-acao btn-acao--danger" style="flex: 1;" data-onclick="ejecutarCancelamentoConfirmado()">Sim, Cancelar</button>
             </div>
             <p id="cancelamentoStatus" role="alert" aria-live="polite"></p>
         </div>
@@ -4538,25 +4538,25 @@ body.dark-mode .spa-toast {
             <div id="modalIcone" style="font-size: 55px; margin-bottom: 15px;"></div>
             <h3 id="modalTituloNotificacao">Até logo!</h3>
             <p id="modalMensagem" style="color: #4a5568; margin-bottom: 25px; line-height: 1.6;">Sua sessão foi encerrada.</p>
-            <button id="modalBtn" class="btn-confirmar" style="background: #1e293b; margin-top: 0;" onclick="fecharModalNotificacao()">Compreendido</button>
+            <button id="modalBtn" class="btn-confirmar" style="background: #1e293b; margin-top: 0;" data-onclick="fecharModalNotificacao()">Compreendido</button>
         </div>
     </div>
 
     <div class="modal-overlay" id="recuperarSenhaModal">
         <div class="modal-box" role="dialog" aria-modal="true" aria-label="Recuperar senha">
-            <button class="btn-fechar" type="button" aria-label="Fechar recuperação de senha" onclick="fecharModal('recuperarSenhaModal')">&times;</button>
+            <button class="btn-fechar" type="button" aria-label="Fechar recuperação de senha" data-onclick="fecharModal('recuperarSenhaModal')">&times;</button>
             <h3>Recuperar Senha</h3>
             <div id="etapaEmailRecup">
                 <label for="recupEmail">E-mail Cadastrado:</label>
                 <input type="email" id="recupEmail" placeholder="seuemail@gmail.com" autocomplete="email">
-                <button class="btn-confirmar" style="background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);" onclick="solicitarCodigoRecuperacao()">Enviar Código</button>
+                <button class="btn-confirmar" style="background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);" data-onclick="solicitarCodigoRecuperacao()">Enviar Código</button>
             </div>
             <div id="etapaCodigoRecup" style="display: none; margin-top: 15px;">
                 <label for="recupCodigo">Código Numérico:</label>
                 <input type="text" id="recupCodigo" placeholder="123456" maxlength="6" inputmode="numeric" autocomplete="one-time-code">
                 <label for="recupNovaSenha">Nova Senha Forte:</label>
                 <input type="password" id="recupNovaSenha" placeholder="Sua nova senha" autocomplete="new-password">
-                <button class="btn-confirmar" onclick="salvarNovaSenha()">Redefinir Senha</button>
+                <button class="btn-confirmar" data-onclick="salvarNovaSenha()">Redefinir Senha</button>
             </div>
             <p id="recupStatus" role="status" aria-live="polite" style="margin-top: 15px; font-weight: 600; font-size: 14px;"></p>
         </div>
@@ -4564,12 +4564,12 @@ body.dark-mode .spa-toast {
 
     <div class="modal-overlay" id="privacidadeExclusaoModal">
         <div class="modal-box privacidade-modal" role="dialog" aria-modal="true" aria-labelledby="privacidade-exclusao-titulo">
-            <button class="btn-fechar" type="button" aria-label="Fechar solicitação de exclusão" onclick="fecharModal('privacidadeExclusaoModal')">&times;</button>
+            <button class="btn-fechar" type="button" aria-label="Fechar solicitação de exclusão" data-onclick="fecharModal('privacidadeExclusaoModal')">&times;</button>
             <h3 id="privacidade-exclusao-titulo">Solicitar exclusão da conta</h3>
             <p>Vamos abrir seu aplicativo de e-mail com o pedido preenchido para a equipe responsável. A conta não será excluída automaticamente.</p>
             <label for="confirmacao-exclusao">Para confirmar, digite EXCLUIR</label>
             <input id="confirmacao-exclusao" type="text" autocomplete="off" spellcheck="false" placeholder="EXCLUIR">
-            <button type="button" class="btn-confirmar" onclick="solicitarExclusaoDaConta()">Preparar e-mail</button>
+            <button type="button" class="btn-confirmar" data-onclick="solicitarExclusaoDaConta()">Preparar e-mail</button>
             <p id="privacidade-exclusao-status" role="status" aria-live="polite"></p>
         </div>
     </div>
@@ -4586,19 +4586,19 @@ body.dark-mode .spa-toast {
                 <input type="text" maxlength="1" class="otp-input" pattern="[0-9]*" inputmode="numeric" aria-label="Dígito 5 do código" style="width: 45px; height: 55px; font-size: 24px; text-align: center; border: 2px solid #cbd5e1; border-radius: 12px; font-family: 'Inter', sans-serif;" />
                 <input type="text" maxlength="1" class="otp-input" pattern="[0-9]*" inputmode="numeric" aria-label="Dígito 6 do código" style="width: 45px; height: 55px; font-size: 24px; text-align: center; border: 2px solid #cbd5e1; border-radius: 12px; font-family: 'Inter', sans-serif;" />
             </div>
-            <button type="button" class="btn-confirmar" onclick="confirmarCodigoOTP()">Ativar Conta</button>
-            <button id="btn-reenviar-otp" type="button" class="auth-link" style="margin-top: 14px;" onclick="reenviarCodigoOTP()">Reenviar código de acesso</button>
+            <button type="button" class="btn-confirmar" data-onclick="confirmarCodigoOTP()">Ativar Conta</button>
+            <button id="btn-reenviar-otp" type="button" class="auth-link" style="margin-top: 14px;" data-onclick="reenviarCodigoOTP()">Reenviar código de acesso</button>
             <span id="msg-otp-status" role="status" aria-live="polite" style="display: block; margin-top: 15px; font-weight: bold;"></span>
         </div>
     </div>
 
     <!-- BOTÃO DO CHATBOT ANIMADO -->
-    <button class="chatbot-btn" type="button" onclick="toggleChat()" aria-label="Abrir assistente virtual" aria-expanded="false" aria-controls="chatbotJanela"></button>
+    <button class="chatbot-btn" type="button" data-onclick="toggleChat()" aria-label="Abrir assistente virtual" aria-expanded="false" aria-controls="chatbotJanela"></button>
 
     <div id="chatbotJanela" role="dialog" aria-label="Assistente virtual Panaceia" style="display: none; position: fixed; bottom: 110px; right: 30px; width: 350px; height: 480px; background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(15px); border-radius: 24px; box-shadow: 0 20px 40px rgba(0,0,0,0.15); z-index: 10000; flex-direction: column; overflow: hidden; border: 1px solid rgba(255,255,255,0.8); animation: scaleIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);">
         <div style="background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%); color: white; padding: 20px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
             <span style="font-size: 16px; font-family: 'Poppins', sans-serif; display: flex; align-items: center; gap: 8px;"> Assistente Panaceia</span>
-            <button type="button" aria-label="Fechar assistente" onclick="toggleChat()" style="background: rgba(255,255,255,0.2); border: none; color: white; width: 30px; height: 30px; border-radius: 50%; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.2s;">&times;</button>
+            <button type="button" aria-label="Fechar assistente" data-onclick="toggleChat()" style="background: rgba(255,255,255,0.2); border: none; color: white; width: 30px; height: 30px; border-radius: 50%; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.2s;">&times;</button>
         </div>
         <div id="chatMensagens" style="flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; background: transparent;">
             <div style="background: #f1f5f9; color: #334155; padding: 14px 18px; border-radius: 18px; border-bottom-left-radius: 4px; max-width: 85%; align-self: flex-start; font-size: 14px; line-height: 1.5; font-weight: 500;">
@@ -4606,8 +4606,8 @@ body.dark-mode .spa-toast {
             </div>
         </div>
         <div style="padding: 15px; background: white; border-top: 1px solid #e2e8f0; display: flex; gap: 10px; align-items: center;">
-            <input type="text" id="chatInput" aria-label="Mensagem para o assistente virtual" placeholder="Como podemos ajudar?" style="flex: 1; padding: 14px 18px; border: 2px solid #e2e8f0; border-radius: 20px; font-size: 14px; font-family: 'Inter', sans-serif; outline: none; transition: border 0.3s;" onkeypress="if(event.key === 'Enter') enviarMensagemChat()">
-            <button type="button" aria-label="Enviar mensagem" onclick="enviarMensagemChat()" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; border: none; width: 45px; height: 45px; border-radius: 50%; cursor: pointer; font-weight: bold; font-size: 18px; display: flex; justify-content: center; align-items: center; box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3); transition: transform 0.2s;">
+            <input type="text" id="chatInput" aria-label="Mensagem para o assistente virtual" placeholder="Como podemos ajudar?" style="flex: 1; padding: 14px 18px; border: 2px solid #e2e8f0; border-radius: 20px; font-size: 14px; font-family: 'Inter', sans-serif; outline: none; transition: border 0.3s;" data-data-onkeypress="enviarMensagemChatSeEnter(event)">
+            <button type="button" aria-label="Enviar mensagem" data-onclick="enviarMensagemChat()" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; border: none; width: 45px; height: 45px; border-radius: 50%; cursor: pointer; font-weight: bold; font-size: 18px; display: flex; justify-content: center; align-items: center; box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3); transition: transform 0.2s;">
                 <svg class="spa-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 14-8-5 16-3-6-6-2Zm6 2 8-10"/></svg>
             </button>
         </div>
@@ -4615,7 +4615,7 @@ body.dark-mode .spa-toast {
 
 
     <div id="toast-container" style="position: fixed; top: 20px; right: 20px; z-index: 999999; display: flex; flex-direction: column; gap: 10px; pointer-events: none;"></div>
-    <script>
+    <script nonce="__CSP_NONCE__">
         let servicosDados = [];
         let promessaCarregamentoServicos = null;
         let modoAuth = 'login';
@@ -4896,7 +4896,7 @@ body.dark-mode .spa-toast {
             }
 
             if (consultaDisponibilidadeFalhou) {
-                container.innerHTML = '<span class="mensagem-horarios">Não foi possível consultar a agenda agora.</span><button type="button" class="btn-tentar-horarios" onclick="carregarHorariosBloqueados(agendamentoIgnoradoNaConsulta)">Tentar novamente</button>';
+                container.innerHTML = '<span class="mensagem-horarios">Não foi possível consultar a agenda agora.</span><button type="button" class="btn-tentar-horarios" data-data-onclick="recarregarHorariosBloqueadosAtual()">Tentar novamente</button>';
                 return;
             }
             if (new Date(`${data}T12:00:00Z`).getUTCDay() === 1) {
@@ -4912,9 +4912,9 @@ body.dark-mode .spa-toast {
                 const selecionado = campoFinal.value === `${data}T${horario}`;
                 const descricaoAcessivel = indisponivel ? `${horario}: ${motivo.toLowerCase()}` : `${horario}: horário disponível`;
                 if (servicoIdListaEspera > 0 && !horarioJaPassou(data, horario) && horarioEstaOcupado(data, horario) && !horarioBloqueadoPelaEquipe(data, horario)) {
-                    return `<div class="horario-bloqueado"><button type="button" class="btn-horario" disabled aria-label="${descricaoAcessivel}">${horario}</button><button type="button" class="btn-aviso-liberacao" onclick="entrarListaEspera('${data}', '${horario}', ${servicoIdListaEspera}, this)">Avisar</button></div>`;
+                    return `<div class="horario-bloqueado"><button type="button" class="btn-horario" disabled aria-label="${descricaoAcessivel}">${horario}</button><button type="button" class="btn-aviso-liberacao" data-onclick="entrarListaEspera('${data}', '${horario}', ${servicoIdListaEspera}, this)">Avisar</button></div>`;
                 }
-                return `<button type="button" class="btn-horario${selecionado ? ' ativo' : ''}" data-horario="${horario}" aria-pressed="${selecionado}" aria-label="${descricaoAcessivel}" ${indisponivel ? `disabled title="${motivo}"` : ''} onclick="selecionarHorario('${campoOculto}', '${grade}', '${data}', '${horario}')">${horario}</button>`;
+                return `<button type="button" class="btn-horario${selecionado ? ' ativo' : ''}" data-horario="${horario}" aria-pressed="${selecionado}" aria-label="${descricaoAcessivel}" ${indisponivel ? `disabled title="${motivo}"` : ''} data-onclick="selecionarHorario('${campoOculto}', '${grade}', '${data}', '${horario}')">${horario}</button>`;
             }).join('');
             if (HORARIOS_ATENDIMENTO.every(horario => horarioJaPassou(data, horario) || horarioEstaOcupado(data, horario))) container.insertAdjacentHTML('afterbegin', '<span class="mensagem-horarios">Não há mais horários neste dia. Escolha outra data.</span>');
         }
@@ -5640,7 +5640,7 @@ body.dark-mode .spa-toast {
                 usuarioLogado.pontos = Number(dados.pontos || 0);
                 if (pontos) pontos.textContent = `${usuarioLogado.pontos} ${usuarioLogado.pontos === 1 ? 'ponto' : 'pontos'}`;
                 const contador = document.getElementById('contadorPontos'); if (contador) contador.textContent = `${usuarioLogado.pontos} pts`;
-                if (recompensas) recompensas.innerHTML = (dados.recompensas || []).map((item) => `<article class="recompensa-card"><small>${escaparHtml(item.codigo).toUpperCase()}</small><h2>${escaparHtml(item.nome)}</h2><p>${escaparHtml(item.descricao)}</p><div class="recompensa-custo">${Number(item.pontos)} pontos</div><button type="button" class="clientes-botao gerencia-primario" ${usuarioLogado.pontos < Number(item.pontos) ? 'disabled' : ''} onclick="resgatarPontos('${escaparHtml(item.codigo)}', ${Number(item.pontos)}, this)">Trocar por ${formatarMoeda(item.desconto)}</button></article>`).join('') || '<div class="fidelidade-vazio">Nenhuma recompensa disponível no momento.</div>';
+                if (recompensas) recompensas.innerHTML = (dados.recompensas || []).map((item) => `<article class="recompensa-card"><small>${escaparHtml(item.codigo).toUpperCase()}</small><h2>${escaparHtml(item.nome)}</h2><p>${escaparHtml(item.descricao)}</p><div class="recompensa-custo">${Number(item.pontos)} pontos</div><button type="button" class="clientes-botao gerencia-primario" ${usuarioLogado.pontos < Number(item.pontos) ? 'disabled' : ''} data-onclick="resgatarPontos('${escaparHtml(item.codigo)}', ${Number(item.pontos)}, this)">Trocar por ${formatarMoeda(item.desconto)}</button></article>`).join('') || '<div class="fidelidade-vazio">Nenhuma recompensa disponível no momento.</div>';
                 const vouchersAtivos = Array.isArray(dados.vouchers) ? dados.vouchers : [];
                 usuarioLogado.vouchersAtivos = vouchersAtivos;
                 if (vouchers) vouchers.innerHTML = vouchersAtivos.map((voucher) => `<article class="voucher-item"><div><h3>${escaparHtml(voucher.recompensa_nome)}</h3><p>${formatarMoeda(voucher.desconto)} de crédito · válido até ${formatarDataVoucher(voucher.expira_em)}</p></div><code class="voucher-codigo">${escaparHtml(voucher.codigo_voucher)}</code></article>`).join('') || '<div class="fidelidade-vazio">Você ainda não tem vouchers ativos. Ao trocar pontos, seu código aparecerá aqui automaticamente.</div>';
@@ -6114,7 +6114,7 @@ body.dark-mode .spa-toast {
             const exibirConviteLogin = () => {
                 if (lembrete) lembrete.hidden = true;
                 document.getElementById('perfilListaEspera').hidden = true;
-                container.innerHTML = '<div class="perfil-estado-vazio" role="status"><span class="perfil-estado-marca" aria-hidden="true"></span><div><h2>Entre para ver seus agendamentos</h2><p>Faça login para acompanhar seus horários, pontos e próximos momentos de cuidado.</p></div><button type="button" class="btn-contratar" onclick="alternarAbas(\'login_tela\')">Entrar na minha conta</button></div>';
+                container.innerHTML = '<div class="perfil-estado-vazio" role="status"><span class="perfil-estado-marca" aria-hidden="true"></span><div><h2>Entre para ver seus agendamentos</h2><p>Faça login para acompanhar seus horários, pontos e próximos momentos de cuidado.</p></div><button type="button" class="btn-contratar" data-onclick="alternarAbas(\'login_tela\')">Entrar na minha conta</button></div>';
             };
 
             if (!usuarioLogado && !sessaoInicializada) {
@@ -6123,7 +6123,7 @@ body.dark-mode .spa-toast {
             }
             if (!usuarioLogado) {
                 if (sessaoEstado === 'anonima') exibirConviteLogin();
-                else container.innerHTML = '<div class="perfil-estado-vazio" role="alert"><span class="perfil-estado-marca perfil-estado-marca--erro" aria-hidden="true"></span><div><h2>Não conseguimos confirmar sua conta</h2><p>Sua sessão não foi confirmada como encerrada. Confira sua conexão e tente novamente.</p></div><button type="button" class="btn-reserva-voltar" onclick="carregarMeusAgendamentos()">Tentar novamente</button></div>';
+                else container.innerHTML = '<div class="perfil-estado-vazio" role="alert"><span class="perfil-estado-marca perfil-estado-marca--erro" aria-hidden="true"></span><div><h2>Não conseguimos confirmar sua conta</h2><p>Sua sessão não foi confirmada como encerrada. Confira sua conexão e tente novamente.</p></div><button type="button" class="btn-reserva-voltar" data-onclick="carregarMeusAgendamentos()">Tentar novamente</button></div>';
                 return;
             }
 
@@ -6155,7 +6155,7 @@ body.dark-mode .spa-toast {
                 carregarListaEsperaPerfil();
             } catch (erro) {
                 if (versaoDaConsulta === versaoSessao) marcarSessaoIndisponivel();
-                container.innerHTML = `<div class="perfil-estado-vazio" role="alert"><span class="perfil-estado-marca perfil-estado-marca--erro" aria-hidden="true"></span><div><h2>Não conseguimos confirmar sua conta</h2><p>${escaparHtml(erro.message || 'Confira sua conexão e tente novamente.')}</p></div><button type="button" class="btn-reserva-voltar" onclick="carregarMeusAgendamentos()">Tentar novamente</button></div>`;
+                container.innerHTML = `<div class="perfil-estado-vazio" role="alert"><span class="perfil-estado-marca perfil-estado-marca--erro" aria-hidden="true"></span><div><h2>Não conseguimos confirmar sua conta</h2><p>${escaparHtml(erro.message || 'Confira sua conexão e tente novamente.')}</p></div><button type="button" class="btn-reserva-voltar" data-onclick="carregarMeusAgendamentos()">Tentar novamente</button></div>`;
                 return;
             }
 
@@ -6193,7 +6193,7 @@ body.dark-mode .spa-toast {
                 atualizarContadorNotificacoes();
  
                 if(!dados || dados.length === 0) {
-                    container.innerHTML = '<div class="catalogo-vazio"><p>Você ainda não tem agendamentos.</p><button type="button" class="btn-reserva-voltar" onclick="alternarAbas(\'catalogo\')">Conhecer os tratamentos</button></div>';
+                    container.innerHTML = '<div class="catalogo-vazio"><p>Você ainda não tem agendamentos.</p><button type="button" class="btn-reserva-voltar" data-onclick="alternarAbas(\'catalogo\')">Conhecer os tratamentos</button></div>';
                     return;
                 }
  
@@ -6214,13 +6214,13 @@ body.dark-mode .spa-toast {
                                 <section class="avaliacao-atendimento" aria-label="Avaliação do atendimento">
                                     <p class="avaliacao-pergunta">Como foi a sua experiência?</p>
                                     <div class="avaliacao-opcoes">
-                                        <button type="button" class="avaliacao-opcao avaliacao-opcao--boa" onclick="avaliarServico(${agend.id}, 'Bom', this)">
+                                        <button type="button" class="avaliacao-opcao avaliacao-opcao--boa" data-onclick="avaliarServico(${Number(agend.id)}, 'Bom', this)">
                                             Excelente
                                         </button>
-                                        <button type="button" class="avaliacao-opcao avaliacao-opcao--media" onclick="avaliarServico(${agend.id}, 'Médio', this)">
+                                        <button type="button" class="avaliacao-opcao avaliacao-opcao--media" data-onclick="avaliarServico(${Number(agend.id)}, 'Médio', this)">
                                              Razoável
                                         </button>
-                                        <button type="button" class="avaliacao-opcao avaliacao-opcao--ruim" onclick="avaliarServico(${agend.id}, 'Ruim', this)">
+                                        <button type="button" class="avaliacao-opcao avaliacao-opcao--ruim" data-onclick="avaliarServico(${Number(agend.id)}, 'Ruim', this)">
                                              Fraco
                                         </button>
                                     </div>
@@ -6245,15 +6245,15 @@ body.dark-mode .spa-toast {
                             <div class="item-agendamento-cabecalho">
                                 <div class="item-agendamento-info">
                                     <h4>${servicoNome} <span class="badge-status ${agendStatus === 'Concluido' ? 'badge-concluido' : 'badge-pendente'}">${escaparHtml(agendStatus)}</span></h4>
-                                    <p> <strong>Data:</strong> ${dataFormatada}</p>
+                                    <p> <strong>Data:</strong> ${escaparHtml(dataFormatada)}</p>
                                     <p> <strong>Valor:</strong> ${servicoValor}</p>
                                 </div>
                                 <div class="item-agendamento-acoes">
                                     ${agendStatus === 'Pendente' ? `
-                                        <button type="button" class="btn-remarcar" onclick="abrirModalRemarcar(${agend.id})">Remarcar</button>
-                                        <button type="button" class="btn-cancelar" onclick="solicitarCancelamento(${agend.id})">Cancelar</button>
+                                        <button type="button" class="btn-remarcar" data-onclick="abrirModalRemarcar(${Number(agend.id)})">Remarcar</button>
+                                        <button type="button" class="btn-cancelar" data-onclick="solicitarCancelamento(${Number(agend.id)})">Cancelar</button>
                                     ` : `<p class="status-atendimento-concluido">${agendStatus === 'Concluido' ? 'Atendimento concluído' : 'Reserva cancelada'}</p>`}
-                                    ${podeRefazer ? `<button type="button" class="btn-refazer-reserva" onclick="refazerReserva(${servicoId})">Agendar novamente</button>` : ''}
+                                    ${podeRefazer ? `<button type="button" class="btn-refazer-reserva" data-onclick="refazerReserva(${servicoId})">Agendar novamente</button>` : ''}
                                 </div>
                             </div>
                             ${blocoAvaliacao}
@@ -6267,7 +6267,7 @@ body.dark-mode .spa-toast {
                     exibirConviteLogin();
                     return;
                 }
-                container.innerHTML = '<div class="perfil-estado-vazio" role="alert"><span class="perfil-estado-marca perfil-estado-marca--erro" aria-hidden="true"></span><div><h2>Não conseguimos carregar seus agendamentos</h2><p>Confira sua conexão e tente novamente. Seus dados permanecem salvos.</p></div><button type="button" class="btn-reserva-voltar" onclick="carregarMeusAgendamentos()">Tentar novamente</button></div>';
+                container.innerHTML = '<div class="perfil-estado-vazio" role="alert"><span class="perfil-estado-marca perfil-estado-marca--erro" aria-hidden="true"></span><div><h2>Não conseguimos carregar seus agendamentos</h2><p>Confira sua conexão e tente novamente. Seus dados permanecem salvos.</p></div><button type="button" class="btn-reserva-voltar" data-onclick="carregarMeusAgendamentos()">Tentar novamente</button></div>';
             }
         }
 
@@ -6298,7 +6298,7 @@ body.dark-mode .spa-toast {
                 lista.innerHTML = ativas.map((entrada) => {
                     const servico = servicosDados.find((item) => Number(item.id) === Number(entrada.servico_id));
                     const estado = entrada.status === 'Notificado' ? 'Aviso enviado por e-mail' : entrada.status === 'Notificando' ? 'Preparando o aviso' : 'Aguardando uma liberação';
-                    const acao = entrada.status === 'Aguardando' ? `<button type="button" onclick="cancelarAvisoListaEspera(${Number(entrada.id)}, this)">Remover aviso</button>` : '';
+                    const acao = entrada.status === 'Aguardando' ? `<button type="button" data-onclick="cancelarAvisoListaEspera(${Number(entrada.id)}, this)">Remover aviso</button>` : '';
                     return `<article class="perfil-espera-item"><div><strong>${escaparHtml(servico?.tipo || 'Tratamento')} · ${escaparHtml(formatarDataSpa(entrada.data_atendimento))}</strong><span>${estado}</span></div>${acao}</article>`;
                 }).join('');
             } catch (_) {
@@ -6668,8 +6668,8 @@ body.dark-mode .spa-toast {
                                     <span class="card-contratos">60 minutos de cuidado</span>
                                 </div>
                                 <div class="card-acoes">
-                                    <button type="button" class="btn-detalhes-servico" onclick="abrirDetalhesServico(${Number(servico.id)})">Ver detalhes</button>
-                                    <button type="button" class="btn-contratar" onclick="abrirModalAgendamentoPorId(${Number(servico.id)})">Agendar</button>
+                                    <button type="button" class="btn-detalhes-servico" data-onclick="abrirDetalhesServico(${Number(servico.id)})">Ver detalhes</button>
+                                    <button type="button" class="btn-contratar" data-onclick="abrirModalAgendamentoPorId(${Number(servico.id)})">Agendar</button>
                                 </div>
                             </div>
                         </div>
@@ -6684,7 +6684,7 @@ body.dark-mode .spa-toast {
                     container.querySelectorAll('.card').forEach(card => { card.classList.add('aguarda-entrada'); observador.observe(card); });
                 }
             } catch (error) {
-                container.innerHTML = '<div class="catalogo-vazio" role="status"><p>Não conseguimos carregar os tratamentos.</p><button type="button" class="btn-reserva-voltar" onclick="carregarServicos()">Tentar novamente</button></div>';
+                container.innerHTML = '<div class="catalogo-vazio" role="status"><p>Não conseguimos carregar os tratamentos.</p><button type="button" class="btn-reserva-voltar" data-onclick="carregarServicos()">Tentar novamente</button></div>';
             } finally {
                 container.dataset.carregando = 'false';
                 container.setAttribute('aria-busy', 'false');
@@ -6931,7 +6931,7 @@ body.dark-mode .spa-toast {
                 lista.innerHTML = futuros.map((item) => {
                     const id = Number(item.id);
                     if (!Number.isSafeInteger(id) || id < 1) return '';
-                    return `<article class="bloqueios-item"><div class="bloqueios-item-info"><strong>${escaparHtml(formatarDataSpa(item.data_atendimento))}</strong><small>${escaparHtml(item.motivo || 'Bloqueio administrativo')} · ${escaparHtml(item.criado_por || 'Equipe')}</small></div><button type="button" class="bloqueios-remover" aria-label="Liberar horário ${escaparHtml(formatarDataSpa(item.data_atendimento))}" onclick="removerBloqueioAdmin(${id}, this)">Liberar horário</button></article>`;
+                    return `<article class="bloqueios-item"><div class="bloqueios-item-info"><strong>${escaparHtml(formatarDataSpa(item.data_atendimento))}</strong><small>${escaparHtml(item.motivo || 'Bloqueio administrativo')} · ${escaparHtml(item.criado_por || 'Equipe')}</small></div><button type="button" class="bloqueios-remover" aria-label="Liberar horário ${escaparHtml(formatarDataSpa(item.data_atendimento))}" data-onclick="removerBloqueioAdmin(${id}, this)">Liberar horário</button></article>`;
                 }).join('');
             } catch (erro) {
                 if (usuario === usuarioLogado) {
@@ -7078,7 +7078,7 @@ body.dark-mode .spa-toast {
             ['pdf','csv'].forEach(id => document.getElementById('gerencia-' + id).disabled = !lista.length || !pronto || !!invalido || gerenciaEstado.exportando);
             document.getElementById('gerencia-resultados').textContent = invalido ? 'A data inicial deve ser anterior ou igual à final.' : pronto ? `${lista.length} agendamentos${filtros.revisar ? ' · pendentes passados' : ''}` : gerenciaEstado.estado === 'erro' ? 'Agenda indisponível' : 'Carregando…';
             const container = document.getElementById('container-admin-agendamentos');
-            if (!pronto || !lista.length) { container.innerHTML = `<tr><td colspan="6"><div class="clientes-vazio"><p>${gerenciaEstado.estado === 'erro' ? 'Não conseguimos carregar a agenda.' : !pronto ? 'Carregando atendimentos…' : invalido ? 'Ajuste o período para continuar.' : 'Nenhum agendamento corresponde aos filtros.'}</p>${gerenciaEstado.estado === 'erro' ? '<button type="button" class="clientes-botao" onclick="carregarAgendamentosAdmin()">Tentar novamente</button>' : ''}</div></td></tr>`; return; }
+            if (!pronto || !lista.length) { container.innerHTML = `<tr><td colspan="6"><div class="clientes-vazio"><p>${gerenciaEstado.estado === 'erro' ? 'Não conseguimos carregar a agenda.' : !pronto ? 'Carregando atendimentos…' : invalido ? 'Ajuste o período para continuar.' : 'Nenhum agendamento corresponde aos filtros.'}</p>${gerenciaEstado.estado === 'erro' ? '<button type="button" class="clientes-botao" data-onclick="carregarAgendamentosAdmin()">Tentar novamente</button>' : ''}</div></td></tr>`; return; }
             container.innerHTML = lista.slice(inicio,inicio + gerenciaEstado.porPagina).map(ag => {
                 const id = Number(ag.id);
                 const podeConcluir = ag.status === 'Pendente' && Number.isSafeInteger(id) && id > 0;
@@ -7087,7 +7087,7 @@ body.dark-mode .spa-toast {
                 return `<tr><td data-label="Data e hora"><strong>${escaparHtml(formatarDataSpa(ag.data_atendimento))}</strong><small>Reserva #${escaparHtml(ag.id)}</small>${pendentePassado(ag) ? '<small class="gerencia-pendente-passado">Conferir conclusão</small>' : ''}</td>
                     <td data-label="Cliente"><strong>${escaparHtml(nomeGerencia(ag))}</strong><small>${escaparHtml(ag.email_cliente || '')}</small></td><td data-label="Tratamento">${escaparHtml(ag.servico?.tipo || 'Não informado')}</td>
                     <td data-label="Valor">${valorEmReais(valorGerencia(ag))}</td><td data-label="Status / avaliação"><span class="gerencia-status ${['Pendente','Concluido','Cancelado'].includes(ag.status) ? ag.status.toLowerCase() : ''}">${statusGerencia(ag)}</span><small>${['Bom','Médio','Ruim'].includes(ag.avaliacao) ? 'Avaliação: ' + ag.avaliacao : 'Sem avaliação'}</small></td>
-                    <td><div class="gerencia-acoes">${podeConcluir ? `<button class="clientes-botao gerencia-finalizar" type="button" onclick="concluirAgendamentoAdmin(${id})">Finalizar atendimento</button>` : '<small>' + (ag.status === 'Concluido' ? 'Atendimento finalizado' : ag.status === 'Cancelado' ? 'Atendimento cancelado' : 'Indisponível') + '</small>'}${podeCancelar ? `<button class="clientes-botao btn-cancelar" type="button" onclick="solicitarCancelamento(${id})">Cancelar reserva</button>` : ''}${podeUsarVoucher ? `<button class="clientes-botao gerencia-voucher" type="button" onclick="abrirUsoVoucher(${id})">Aplicar voucher</button>` : ''}<button class="clientes-botao gerencia-historico" type="button" onclick="abrirHistoricoAgendamento(${id})">Ver histórico</button></div></td></tr>`;
+                    <td><div class="gerencia-acoes">${podeConcluir ? `<button class="clientes-botao gerencia-finalizar" type="button" data-onclick="concluirAgendamentoAdmin(${id})">Finalizar atendimento</button>` : '<small>' + (ag.status === 'Concluido' ? 'Atendimento finalizado' : ag.status === 'Cancelado' ? 'Atendimento cancelado' : 'Indisponível') + '</small>'}${podeCancelar ? `<button class="clientes-botao btn-cancelar" type="button" data-onclick="solicitarCancelamento(${id})">Cancelar reserva</button>` : ''}${podeUsarVoucher ? `<button class="clientes-botao gerencia-voucher" type="button" data-onclick="abrirUsoVoucher(${id})">Aplicar voucher</button>` : ''}<button class="clientes-botao gerencia-historico" type="button" data-onclick="abrirHistoricoAgendamento(${id})">Ver histórico</button></div></td></tr>`;
             }).join('');
         }
 
@@ -7452,7 +7452,7 @@ body.dark-mode .spa-toast {
                 container.innerHTML = '<span class="remarcar-sugestoes-vazio">Não encontramos horários livres próximos. Escolha outra data no calendário.</span>';
                 return;
             }
-            container.innerHTML = sugestoes.map((item) => `<button type="button" class="remarcar-sugestao" onclick="selecionarSugestaoRemarcacao('${item.data}', '${item.horario}')">${escaparHtml(item.rotulo)}</button>`).join('');
+            container.innerHTML = sugestoes.map((item) => `<button type="button" class="remarcar-sugestao" data-onclick="selecionarSugestaoRemarcacao('${item.data}', '${item.horario}')">${escaparHtml(item.rotulo)}</button>`).join('');
         }
 
         function selecionarSugestaoRemarcacao(data, horario) {
@@ -7493,7 +7493,7 @@ body.dark-mode .spa-toast {
             const id = document.getElementById('reagendarId').value;
             const novaData = document.getElementById('novaData').value;
             const status = document.getElementById('reagendarStatus');
-            const botao = document.querySelector('#reagendamentoModal button[onclick="salvarRemarcacao()"]');
+            const botao = document.querySelector('#reagendamentoModal button[data-onclick="salvarRemarcacao()"]');
             if (!botao || botao.disabled) return;
  
             if(!novaData) { 
@@ -7550,7 +7550,7 @@ body.dark-mode .spa-toast {
 
         async function ejecutarCancelamentoConfirmado() {
             const id = document.getElementById('cancelarAgendamentoId').value;
-            const botao = document.querySelector('#confirmarCancelamentoModal button[onclick="ejecutarCancelamentoConfirmado()"]');
+            const botao = document.querySelector('#confirmarCancelamentoModal button[data-onclick="ejecutarCancelamentoConfirmado()"]');
             const status = document.getElementById('cancelamentoStatus');
             if (!id || !botao || botao.disabled) return;
             const textoOriginal = botao.textContent;
@@ -7692,7 +7692,7 @@ body.dark-mode .spa-toast {
             document.getElementById('clientes-proxima').disabled = !pronto || clientesEstado.pagina >= paginas;
             if (!pronto || !lista.length) {
                 const mensagem = clientesEstado.estado === 'erro' ? 'Não conseguimos carregar seus clientes. Confira a conexão e tente novamente.' : !pronto ? 'Carregando clientes…' : clientesEstado.lista.length ? 'Nenhum cliente corresponde a essa busca.' : 'Sua lista de clientes ainda está vazia.';
-                const acao = clientesEstado.estado === 'erro' ? '<button type="button" class="clientes-botao" onclick="carregarUsuariosCadastrados()">Tentar novamente</button>' : pronto && clientesEstado.lista.length ? '<button type="button" class="clientes-botao" onclick="limparFiltrosClientes()">Limpar filtros</button>' : '';
+                const acao = clientesEstado.estado === 'erro' ? '<button type="button" class="clientes-botao" data-onclick="carregarUsuariosCadastrados()">Tentar novamente</button>' : pronto && clientesEstado.lista.length ? '<button type="button" class="clientes-botao" data-onclick="limparFiltrosClientes()">Limpar filtros</button>' : '';
                 container.innerHTML = `<tr><td colspan="5"><div class="clientes-vazio"><p>${mensagem}</p>${acao}</div></td></tr>`;
                 return;
             }
@@ -7701,7 +7701,7 @@ body.dark-mode .spa-toast {
                 <td data-label="Relacionamento"><span class="cliente-vinculo ${cliente.concluidos >= 2 ? 'recorrente' : ''}">${vinculoCliente(cliente)}</span></td>
                 <td data-label="Agendamentos"><div class="cliente-reservas"><strong>${cliente.concluidos} ${cliente.concluidos === 1 ? 'visita concluída' : 'visitas concluídas'}</strong><span class="${cliente.pendentes ? 'cliente-pendente' : ''}">${cliente.pendentes} ${cliente.pendentes === 1 ? 'pendente' : 'pendentes'} · ${cliente.total} no total</span></div></td>
                 <td data-label="Valor em serviços"><span class="cliente-valor">${valorEmReais(cliente.gastos)}</span></td>
-                <td><button type="button" id="cliente-abrir-${cliente.indice}" class="clientes-botao cliente-abrir" aria-controls="clientes-detalhe" aria-expanded="${clientesEstado.selecionado === cliente.indice}" aria-label="Ver perfil de ${escaparHtml(cliente.nome)}" onclick="abrirDetalheCliente(${cliente.indice})">Ver perfil</button></td>
+                <td><button type="button" id="cliente-abrir-${cliente.indice}" class="clientes-botao cliente-abrir" aria-controls="clientes-detalhe" aria-expanded="${clientesEstado.selecionado === cliente.indice}" aria-label="Ver perfil de ${escaparHtml(cliente.nome)}" data-onclick="abrirDetalheCliente(${cliente.indice})">Ver perfil</button></td>
             </tr>`).join('');
         }
         function mudarPaginaClientes(direcao) { clientesEstado.pagina += direcao; renderizarClientes(); document.getElementById('clientes-lista-titulo').setAttribute('tabindex', '-1'); document.getElementById('clientes-lista-titulo').focus({preventScroll: true}); }
@@ -7739,7 +7739,7 @@ body.dark-mode .spa-toast {
                 renderizarHistoricoCliente();
             } catch (_) {
                 if (carga !== clientesEstado.carga || detalhe !== clientesEstado.detalhe || usuarioDaConsulta !== usuarioLogado) return;
-                document.getElementById('clientes-historico-conteudo').innerHTML = `<p>Não foi possível carregar as visitas. O resumo acima continua disponível.</p><button type="button" class="clientes-botao" onclick="abrirDetalheCliente(${indice})">Tentar novamente</button>`;
+                document.getElementById('clientes-historico-conteudo').innerHTML = `<p>Não foi possível carregar as visitas. O resumo acima continua disponível.</p><button type="button" class="clientes-botao" data-onclick="abrirDetalheCliente(${indice})">Tentar novamente</button>`;
             }
         }
         function visitasDoCliente(historico, email) {
@@ -7759,7 +7759,7 @@ body.dark-mode .spa-toast {
                 const status = ag.status === 'Concluido' ? 'Concluído' : ag.status === 'Cancelado' ? 'Cancelado' : ag.status === 'Pendente' ? 'Pendente' : 'Status não informado';
                 const avaliacao = ['Bom', 'Médio', 'Ruim'].includes(ag.avaliacao) ? ` · Avaliação: ${ag.avaliacao}` : '';
                 return `<li><time>${escaparHtml(formatarDataSpa(ag.data_atendimento))}</time><strong>${escaparHtml(ag.servico?.tipo || 'Serviço não informado')}</strong><small>${status}${avaliacao}</small></li>`;
-            }).join('') + '</ol>' + (visitas.length > clientesEstado.limiteHistorico ? '<button type="button" class="clientes-botao" onclick="verMaisHistoricoCliente()">Ver visitas anteriores</button>' : '');
+            }).join('') + '</ol>' + (visitas.length > clientesEstado.limiteHistorico ? '<button type="button" class="clientes-botao" data-onclick="verMaisHistoricoCliente()">Ver visitas anteriores</button>' : '');
         }
         function verMaisHistoricoCliente() { clientesEstado.limiteHistorico += 5; renderizarHistoricoCliente(); }
         function fecharDetalheCliente(restaurarFoco = true) {
@@ -7888,7 +7888,7 @@ body.dark-mode .spa-toast {
             if (!mensagem || chatEnviando) return;
             if (mensagem.length > 1000) { exibirNotificacaoSpa('Mensagem muito longa', 'Escreva uma mensagem com até 1.000 caracteres.', 'aviso'); return; }
             const container = document.getElementById('chatMensagens');
-            const botao = document.querySelector('#chatbotJanela button[onclick="enviarMensagemChat()"]');
+            const botao = document.querySelector('#chatbotJanela button[data-data-onclick="enviarMensagemChat()"]');
             const adicionar = (texto, classe = '') => {
                 const item = document.createElement('div');
                 item.className = 'chat-mensagem ' + classe;
@@ -7980,8 +7980,8 @@ body.dark-mode .spa-toast {
                     <td data-label="Saldo atual"><span class="estoque-saldo ${situacao === 'normal' ? '' : 'baixo'}">${quantidade} ${unidade}</span></td>
                     <td data-label="Estoque mínimo">${minima} ${unidade}</td>
                     <td data-label="Situação"><span class="estoque-status ${situacao}">${rotulos[situacao]}</span></td>
-                    <td data-label="Movimentar saldo"><div class="estoque-movimento"><input id="qtd-mudar-${id}" type="number" min="1" step="1" inputmode="numeric" value="1" aria-label="Quantidade para movimentar em ${nome}"><button type="button" onclick="alterarEstoqueQtd(${id}, 'remover', this)">Retirar</button><button type="button" onclick="alterarEstoqueQtd(${id}, 'adicionar', this)">Adicionar</button></div></td>
-                    <td data-label="Opções"><button type="button" class="estoque-excluir" onclick="solicitarExclusaoEstoque(${id})">Excluir produto</button></td>
+                    <td data-label="Movimentar saldo"><div class="estoque-movimento"><input id="qtd-mudar-${id}" type="number" min="1" step="1" inputmode="numeric" value="1" aria-label="Quantidade para movimentar em ${nome}"><button type="button" data-onclick="alterarEstoqueQtd(${id}, 'remover', this)">Retirar</button><button type="button" data-onclick="alterarEstoqueQtd(${id}, 'adicionar', this)">Adicionar</button></div></td>
+                    <td data-label="Opções"><button type="button" class="estoque-excluir" data-onclick="solicitarExclusaoEstoque(${id})">Excluir produto</button></td>
                 </tr>`;
             }).join('');
         }
@@ -8209,7 +8209,258 @@ body.dark-mode .spa-toast {
             }
         }
 
+
+        function voltarPaginaAnterior() {
+            if (history.length > 1) {
+                history.back();
+            } else {
+                location.assign('/');
+            }
+        }
+
+        function rolarParaSecao(idSecao) {
+            const alvo = document.getElementById(idSecao);
+            if (alvo) {
+                alvo.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        }
+
+        function baixarCalendarioReservaAtual() {
+            baixarCalendarioReserva(reservaAtual?.resultado?.id);
+        }
+
+        function recarregarHorariosBloqueadosAtual() {
+            carregarHorariosBloqueados(agendamentoIgnoradoNaConsulta);
+        }
+
+        function enviarMensagemChatSeEnter(event) {
+            if (event && event.key === 'Enter') {
+                enviarMensagemChat();
+            }
+        }
+
+        function processarAutenticacaoFormulario(event) {
+            if (event && typeof event.preventDefault === 'function') {
+                event.preventDefault();
+            }
+            processarAutenticacao();
+            return false;
+        }
+
+        const MAPA_ACOES_DECLARATIVAS_SPA = {
+            abrirDetalheCliente: (...args) => abrirDetalheCliente(...args),
+            abrirDetalhesServico: (...args) => abrirDetalhesServico(...args),
+            abrirHistoricoAgendamento: (...args) => abrirHistoricoAgendamento(...args),
+            abrirMinhaConta: (...args) => abrirMinhaConta(...args),
+            abrirModal: (...args) => abrirModal(...args),
+            abrirModalAgendamentoPorId: (...args) => abrirModalAgendamentoPorId(...args),
+            abrirModalEsqueciSenha: (...args) => abrirModalEsqueciSenha(...args),
+            abrirModalHeatmap: (...args) => abrirModalHeatmap(...args),
+            abrirModalRemarcar: (...args) => abrirModalRemarcar(...args),
+            abrirUsoVoucher: (...args) => abrirUsoVoucher(...args),
+            adicionarItemEstoque: (...args) => adicionarItemEstoque(...args),
+            agendarServicoDosDetalhes: (...args) => agendarServicoDosDetalhes(...args),
+            alterarEstoqueQtd: (...args) => alterarEstoqueQtd(...args),
+            alternarAbas: (...args) => alternarAbas(...args),
+            alternarConta: (...args) => alternarConta(...args),
+            alternarModoAuth: (...args) => alternarModoAuth(...args),
+            avaliarServico: (...args) => avaliarServico(...args),
+            avancarEtapaReserva: (...args) => avancarEtapaReserva(...args),
+            baixarCalendarioReserva: (...args) => baixarCalendarioReserva(...args),
+            baixarCalendarioReservaAtual: (...args) => baixarCalendarioReservaAtual(...args),
+            baixarDadosPessoais: (...args) => baixarDadosPessoais(...args),
+            calcularDRE: (...args) => calcularDRE(...args),
+            cancelarAvisoListaEspera: (...args) => cancelarAvisoListaEspera(...args),
+            carregarAgendamentosAdmin: (...args) => carregarAgendamentosAdmin(...args),
+            carregarBloqueiosAdmin: (...args) => carregarBloqueiosAdmin(...args),
+            carregarEstoque: (...args) => carregarEstoque(...args),
+            carregarFidelidade: (...args) => carregarFidelidade(...args),
+            carregarHorariosBloqueados: (...args) => carregarHorariosBloqueados(...args),
+            carregarMeusAgendamentos: (...args) => carregarMeusAgendamentos(...args),
+            carregarServicos: (...args) => carregarServicos(...args),
+            carregarUsuariosCadastrados: (...args) => carregarUsuariosCadastrados(...args),
+            concluirAgendamentoAdmin: (...args) => concluirAgendamentoAdmin(...args),
+            confirmarCodigoOTP: (...args) => confirmarCodigoOTP(...args),
+            confirmarConclusaoGerencial: (...args) => confirmarConclusaoGerencial(...args),
+            confirmarUsoVoucher: (...args) => confirmarUsoVoucher(...args),
+            criarBloqueioAdmin: (...args) => criarBloqueioAdmin(...args),
+            deslogar: (...args) => deslogar(...args),
+            ejecutarCancelamentoConfirmado: (...args) => ejecutarCancelamentoConfirmado(...args),
+            entrarListaEspera: (...args) => entrarListaEspera(...args),
+            enviarMensagemChat: (...args) => enviarMensagemChat(...args),
+            enviarMensagemChatSeEnter: (...args) => enviarMensagemChatSeEnter(...args),
+            executarExclusaoEstoqueConfirmada: (...args) => executarExclusaoEstoqueConfirmada(...args),
+            exportarCSV: (...args) => exportarCSV(...args),
+            exportarPDF: (...args) => exportarPDF(...args),
+            fecharDetalheCliente: (...args) => fecharDetalheCliente(...args),
+            fecharModal: (...args) => fecharModal(...args),
+            fecharModalNotificacao: (...args) => fecharModalNotificacao(...args),
+            filtrarClientes: (...args) => filtrarClientes(...args),
+            filtrarEstoque: (...args) => filtrarEstoque(...args),
+            filtrarGerencia: (...args) => filtrarGerencia(...args),
+            instalarAplicativo: (...args) => instalarAplicativo(...args),
+            limparFiltrosClientes: (...args) => limparFiltrosClientes(...args),
+            limparFiltrosGerencia: (...args) => limparFiltrosGerencia(...args),
+            marcarTodasNotificacoesComoLidas: (...args) => marcarTodasNotificacoesComoLidas(...args),
+            mostrarTodosOsMeses: (...args) => mostrarTodosOsMeses(...args),
+            mudarMesBI: (...args) => mudarMesBI(...args),
+            mudarPaginaClientes: (...args) => mudarPaginaClientes(...args),
+            paginaGerencia: (...args) => paginaGerencia(...args),
+            periodoGerencia: (...args) => periodoGerencia(...args),
+            processarAutenticacaoFormulario: (...args) => processarAutenticacaoFormulario(...args),
+            recarregarHorariosBloqueadosAtual: (...args) => recarregarHorariosBloqueadosAtual(...args),
+            reenviarCodigoOTP: (...args) => reenviarCodigoOTP(...args),
+            refazerReserva: (...args) => refazerReserva(...args),
+            removerBloqueioAdmin: (...args) => removerBloqueioAdmin(...args),
+            resgatarPontos: (...args) => resgatarPontos(...args),
+            revisarPendentesGerencia: (...args) => revisarPendentesGerencia(...args),
+            rolarParaSecao: (...args) => rolarParaSecao(...args),
+            salvarNovaSenha: (...args) => salvarNovaSenha(...args),
+            salvarRemarcacao: (...args) => salvarRemarcacao(...args),
+            selecionarHorario: (...args) => selecionarHorario(...args),
+            selecionarSugestaoRemarcacao: (...args) => selecionarSugestaoRemarcacao(...args),
+            solicitarCancelamento: (...args) => solicitarCancelamento(...args),
+            solicitarCodigoRecuperacao: (...args) => solicitarCodigoRecuperacao(...args),
+            solicitarExclusaoDaConta: (...args) => solicitarExclusaoDaConta(...args),
+            solicitarExclusaoEstoque: (...args) => solicitarExclusaoEstoque(...args),
+            toggleChat: (...args) => toggleChat(...args),
+            toggleTema: (...args) => toggleTema(...args),
+            toggleVisibilidadeSenha: (...args) => toggleVisibilidadeSenha(...args),
+            verMaisHistoricoCliente: (...args) => verMaisHistoricoCliente(...args),
+            voltarEtapaReserva: (...args) => voltarEtapaReserva(...args),
+            voltarPaginaAnterior: (...args) => voltarPaginaAnterior(...args),
+        };
+
+        function interpretarArgumentosDeclarativosSpa(argsTexto, elemento, event) {
+            const texto = String(argsTexto || '').trim();
+            if (!texto) return [];
+            const partes = [];
+            let atual = '';
+            let emString = false;
+            let caractereEscape = false;
+            for (let i = 0; i < texto.length; i += 1) {
+                const ch = texto[i];
+                if (caractereEscape) {
+                    atual += ch;
+                    caractereEscape = false;
+                    continue;
+                }
+                if (ch === '\\') {
+                    caractereEscape = true;
+                    continue;
+                }
+                if (ch === "'") {
+                    emString = !emString;
+                    atual += ch;
+                    continue;
+                }
+                if (ch === ',' && !emString) {
+                    partes.push(atual.trim());
+                    atual = '';
+                    continue;
+                }
+                atual += ch;
+            }
+            if (atual.trim()) {
+                partes.push(atual.trim());
+            }
+            return partes.map((token) => {
+                if (token === 'event') return event;
+                if (token === 'this') return elemento;
+                if (token === 'true') return true;
+                if (token === 'false') return false;
+                if (token === 'null') return null;
+                if (token.startsWith("'") && token.endsWith("'")) {
+                    return token.slice(1, -1);
+                }
+                if (/^-?\d+(?:\.\d+)?$/.test(token)) {
+                    return Number(token);
+                }
+                return token;
+            });
+        }
+
+        function executarExpressaoDeclarativaSpa(expressao, elemento, event) {
+            const texto = String(expressao || '').trim();
+            if (!texto) return undefined;
+            const correspondencia = /^([A-Za-z0-9_]+)\(([\s\S]*)\)$/.exec(texto);
+            if (!correspondencia) return undefined;
+            const nomeFuncao = correspondencia[1];
+            const argsTexto = correspondencia[2];
+            const acao = MAPA_ACOES_DECLARATIVAS_SPA[nomeFuncao];
+            if (typeof acao !== 'function') return undefined;
+            const argumentos = interpretarArgumentosDeclarativosSpa(argsTexto, elemento, event);
+            return acao(...argumentos);
+        }
+
+        const elementosDeclarativosVinculados = new WeakSet();
+
+        function vincularElementoDeclarativoSpa(elemento) {
+            if (!elemento || elemento.nodeType !== 1 || elementosDeclarativosVinculados.has(elemento)) {
+                return;
+            }
+            const tipos = [
+                ['data-onclick', 'click'],
+                ['data-onsubmit', 'submit'],
+                ['data-oninput', 'input'],
+                ['data-onchange', 'change'],
+                ['data-onkeypress', 'keypress'],
+            ];
+            let possuiAtributo = false;
+            tipos.forEach(([atributo, nomeEvento]) => {
+                if (!elemento.hasAttribute(atributo)) return;
+                possuiAtributo = true;
+                elemento.addEventListener(nomeEvento, (event) => {
+                    const expressao = elemento.getAttribute(atributo);
+                    const resultado = executarExpressaoDeclarativaSpa(expressao, elemento, event);
+                    if (resultado === false && event && typeof event.preventDefault === 'function') {
+                        event.preventDefault();
+                    }
+                });
+            });
+            if (possuiAtributo) {
+                elementosDeclarativosVinculados.add(elemento);
+            }
+        }
+
+        function vincularArvoreDeclarativaSpa(raiz = document) {
+            if (!raiz) return;
+            const seletor = '[data-onclick],[data-onsubmit],[data-oninput],[data-onchange],[data-onkeypress]';
+            if (raiz.nodeType === 1 && raiz.matches && raiz.matches(seletor)) {
+                vincularElementoDeclarativoSpa(raiz);
+            }
+            if (typeof raiz.querySelectorAll === 'function') {
+                raiz.querySelectorAll(seletor).forEach(vincularElementoDeclarativoSpa);
+            }
+        }
+
+        function inicializarEventosDeclarativosSpa() {
+            vincularArvoreDeclarativaSpa(document);
+            if (typeof MutationObserver !== 'undefined' && document.body) {
+                const observador = new MutationObserver((mutacoes) => {
+                    mutacoes.forEach((mutacao) => {
+                        if (mutacao.type === 'attributes' && mutacao.target) {
+                            vincularElementoDeclarativoSpa(mutacao.target);
+                            return;
+                        }
+                        mutacao.addedNodes.forEach((no) => {
+                            if (no.nodeType === 1) {
+                                vincularArvoreDeclarativaSpa(no);
+                            }
+                        });
+                    });
+                });
+                observador.observe(document.body, {
+                    childList: true,
+                    subtree: true,
+                    attributes: true,
+                    attributeFilter: ['data-onclick', 'data-onsubmit', 'data-oninput', 'data-onchange', 'data-onkeypress'],
+                });
+            }
+        }
+
         document.addEventListener('DOMContentLoaded', async () => {
+            inicializarEventosDeclarativosSpa();
             if (document.documentElement.classList.contains('pagina-404-documento')) {
                 restaurarTemaSalvo();
                 return;
@@ -8220,8 +8471,8 @@ body.dark-mode .spa-toast {
             atualizarNavegacaoAtiva('catalogo');
             atualizarBotaoSenha();
             document.querySelector('.chatbot-btn').innerHTML = iconeSvg('chat');
-            document.querySelector('#chatbotJanela button[onclick="toggleChat()"]').setAttribute('aria-label', 'Fechar assistente');
-            document.querySelector('#chatbotJanela button[onclick="enviarMensagemChat()"]').setAttribute('aria-label', 'Enviar mensagem');
+            document.querySelector('#chatbotJanela button[data-data-onclick="toggleChat()"]').setAttribute('aria-label', 'Fechar assistente');
+            document.querySelector('#chatbotJanela button[data-data-onclick="enviarMensagemChat()"]').setAttribute('aria-label', 'Enviar mensagem');
             atualizarPainelUsuario();
             inicializarSincronizacaoSessao();
             const restauracaoDaSessao = garantirSessaoCarregada();
@@ -8363,7 +8614,7 @@ body.dark-mode .spa-toast {
                     const textoExibicao = contagem > 0 ? contagem : ''; 
                     
                     // Adiciona o evento de clique se houver agendamento no slot
-                    const acaoClique = contagem > 0 ? `onclick="abrirModalHeatmap('${hora}', ${dia})"` : '';
+                    const acaoClique = contagem > 0 ? `data-onclick="abrirModalHeatmap('${hora}', ${dia})"` : '';
 
                     linhaHtml += `
                         <td>
@@ -8444,11 +8695,12 @@ body.dark-mode .spa-toast {
             container.innerHTML = agendamentosSlot.map(ag => {
                 const totalVindas = cacheAgendamentosAdmin.filter(a => a.email_cliente === ag.email_cliente).length;
                 const perfilCliente = totalVindas > 2 ? ' Frequente' : ' Novo';
-                const servicoNome = ag.servico?.tipo || 'Dados Ocultos';
+                const servicoNome = escaparHtml(ag.servico?.tipo || 'Dados Ocultos');
                 const valor = Number(ag.servico?.valor || 0).toFixed(2).replace('.', ',');
-                const statusStr = ag.status || 'Pendente';
-                const classeStatus = statusStr === 'Concluido' ? 'badge-concluido' : 'badge-pendente';
-                const dataFormatada = formatarDataSpa(ag.data_atendimento, true);
+                const statusBruto = ag.status || 'Pendente';
+                const statusStr = escaparHtml(statusBruto);
+                const classeStatus = statusBruto === 'Concluido' ? 'badge-concluido' : 'badge-pendente';
+                const dataFormatada = escaparHtml(formatarDataSpa(ag.data_atendimento, true));
 
                 return `
                     <div class="card-detalhe-cliente">

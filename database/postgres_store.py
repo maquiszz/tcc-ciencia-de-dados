@@ -202,6 +202,17 @@ class LocalPostgresClient:
                 "criado_em TIMESTAMPTZ NOT NULL DEFAULT NOW())"
             )
             cur.execute(
+                "SELECT to_regclass('public.usuarios') IS NOT NULL"
+            )
+            if cur.fetchone()[0]:
+                cur.execute(
+                    "ALTER TABLE public.usuarios "
+                    "ADD COLUMN IF NOT EXISTS token_recuperacao_expira_em TIMESTAMPTZ, "
+                    "ADD COLUMN IF NOT EXISTS token_recuperacao_tentativas INTEGER NOT NULL DEFAULT 0, "
+                    "ADD COLUMN IF NOT EXISTS codigo_otp_tentativas INTEGER NOT NULL DEFAULT 0, "
+                    "ADD COLUMN IF NOT EXISTS sessao_versao INTEGER NOT NULL DEFAULT 1"
+                )
+            cur.execute(
                 "SELECT to_regclass('public.estoque') IS NOT NULL"
             )
             if cur.fetchone()[0]:

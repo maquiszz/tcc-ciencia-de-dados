@@ -1,16 +1,19 @@
+import atexit
 import html
 import ipaddress
 import logging
 import os
 import re
 import secrets
+import time
 import uuid
 from collections import defaultdict
+from concurrent.futures import ThreadPoolExecutor
+from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
 from functools import wraps
 from pathlib import Path
-from threading import RLock, Thread
-from concurrent.futures import ThreadPoolExecutor
+from threading import Lock, RLock
 from urllib.parse import urlsplit
 from zoneinfo import ZoneInfo
 
@@ -25,7 +28,6 @@ from flask import (
     redirect,
     render_template,
     request,
-    send_from_directory,
     session,
 )
 from flask.sessions import SecureCookieSessionInterface
@@ -41,7 +43,12 @@ if __package__:
         StockQuantityConflictError,
         create_database_client,
     )
-    from .spa_security import AdaptiveIPBlocker, RateLimiter, SecurityTools
+    from .spa_security import (
+        AdaptiveIPBlocker,
+        RateLimiter,
+        SecurityTools,
+        SessionRevocationStore,
+    )
 else:
     from postgres_store import (
         InsufficientStockError,
@@ -52,7 +59,12 @@ else:
         StockQuantityConflictError,
         create_database_client,
     )
-    from spa_security import AdaptiveIPBlocker, RateLimiter, SecurityTools
+    from spa_security import (
+        AdaptiveIPBlocker,
+        RateLimiter,
+        SecurityTools,
+        SessionRevocationStore,
+    )
 
 try:
     from openai import OpenAI
@@ -60,19 +72,49 @@ except ImportError:
     OpenAI = None
 
 
+def _limpar_valor_env(valor):
+    """Normaliza valores vindos de --env-file do Docker (remove CRLF e aspas externas)."""
+    if not isinstance(valor, str):
+        return ""
+    limpo = valor.replace("\r", "").replace("\n", "").strip()
+    if len(limpo) >= 2 and limpo[0] == limpo[-1] and limpo[0] in {'"', "'"}:
+        limpo = limpo[1:-1].strip()
+    return limpo
+
+
+def _sanitizar_ambiente_processo():
+    """Remove retornos de carro (\\r) e aspas residuais em variáveis carregadas via Docker --env-file."""
+    for chave, valor in list(os.environ.items()):
+        if not isinstance(valor, str):
+            continue
+        if "\r" in valor or (
+            chave.startswith(("TELEGRAM_", "SPA_", "BREVO_", "DB_", "SUPABASE_", "APP_ENV", "FLASK_", "LOG_LEVEL"))
+            and len(valor.strip()) >= 2
+            and valor.strip()[0] == valor.strip()[-1]
+            and valor.strip()[0] in {'"', "'"}
+        ):
+            os.environ[chave] = _limpar_valor_env(valor)
+
+
 BASE_DIR = Path(__file__).resolve().parent
-ENV_PATH = BASE_DIR.parent / "database.env"
+ENV_PATH = Path(os.getenv("ENV_FILE") or (BASE_DIR.parent / "database.env"))
 if ENV_PATH.exists():
     load_dotenv(ENV_PATH)
 else:
     load_dotenv()
+_sanitizar_ambiente_processo()
 
-logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"))
+_log_level_name = _limpar_valor_env(os.getenv("LOG_LEVEL", "INFO")).upper() or "INFO"
+_log_level = getattr(logging, _log_level_name, logging.INFO)
+logging.basicConfig(level=_log_level)
 logger = logging.getLogger(__name__)
+logger.setLevel(_log_level)
+telegram_logger = logging.getLogger("spa.telegram")
+telegram_logger.setLevel(_log_level)
 logging.getLogger("httpx").setLevel(logging.WARNING)
 logging.getLogger("httpcore").setLevel(logging.WARNING)
 
-APP_ENVIRONMENT = os.getenv("APP_ENV", os.getenv("FLASK_ENV", "")).strip().lower()
+APP_ENVIRONMENT = _limpar_valor_env(os.getenv("APP_ENV", os.getenv("FLASK_ENV", ""))).lower()
 IS_RENDER = os.getenv("RENDER", "").strip().lower() == "true"
 # Render always supplies RENDER=true. Treat it as production even if a custom
 # start command bypasses the Procfile's APP_ENV=production prefix.
@@ -281,12 +323,59 @@ openai_client = OpenAI(api_key=OPENAI_API_KEY) if OPENAI_API_KEY and OpenAI else
 
 security = SecurityTools(secret_key)
 DUMMY_PASSWORD_HASH = generate_password_hash(secrets.token_urlsafe(32), method="pbkdf2:sha256")
-rate_limiter = RateLimiter()
+account_rate_limiter = RateLimiter(max_keys=10_000)
+challenge_attempt_limiter = RateLimiter(max_keys=10_000)
+session_revocations = SessionRevocationStore(max_entries=20_000)
+
+
+class _CompositeRateLimiter(RateLimiter):
+    """Limitador principal por IP; ao limpar em testes, limpa também o de contas."""
+
+    def clear(self) -> None:
+        super().clear()
+        account_rate_limiter.clear()
+        challenge_attempt_limiter.clear()
+
+
+rate_limiter = _CompositeRateLimiter(max_keys=10_000)
 spam_blocker = AdaptiveIPBlocker(limit=30, window_seconds=1, base_block_seconds=30)
 vpn_spam_blocker = AdaptiveIPBlocker(limit=15, window_seconds=1, base_block_seconds=60)
-# Recuperação de senha serializada entre threads de UM processo, sem migrações.
+
+# Locks separados por contexto para evitar contenção global entre domínios
+# independentes e impedir que chamadas HTTP externas bloqueiem mutações.
 mutation_lock = RLock()
+schedule_lock = RLock()
+loyalty_lock = RLock()
+stock_lock = RLock()
+_AUTH_LOCK_SHARDS = tuple(RLock() for _ in range(64))
+
+OTP_MAX_ATTEMPTS = 5
+RECOVERY_MAX_ATTEMPTS = 5
+ALLOWED_FRONTEND_FILES = frozenset({
+    "servicos.html",
+    "servicos.min.html",
+    "spa-panaceia-profissional.html",
+    "spa-panaceia-profissional.min.html",
+})
 PUBLIC_AUTH_PATHS = {"/cadastrar", "/api/login", "/api/validar-codigo", "/api/reenviar-codigo", "/api/esqueci-senha", "/api/redefinir-senha"}
+
+
+@contextmanager
+def lock_conta(email):
+    """Serializa mutações de uma mesma conta sem bloquear outros usuários ou a agenda."""
+    chave = (email or "").strip().casefold()
+    indice = int.from_bytes(security.fingerprint(chave)[:4].encode("ascii"), "big") % len(_AUTH_LOCK_SHARDS)
+    with _AUTH_LOCK_SHARDS[indice]:
+        yield
+
+
+def obter_csp_nonce():
+    """Retorna o nonce criptográfico único da requisição atual."""
+    nonce = getattr(g, "csp_nonce", None)
+    if not nonce:
+        nonce = secrets.token_urlsafe(24)
+        g.csp_nonce = nonce
+    return nonce
 
 
 def carregar_redes_ip(nome_variavel):
@@ -512,11 +601,11 @@ def proteger_requisicao():
             )
             return jsonify({"error": "Muitas tentativas. Aguarde antes de tentar novamente."}), 429, {"Retry-After": str(retry)}
 
-        # 2. Só consome slot de e-mail se o IP ainda estiver dentro do limite
+        # 2. Só consome slot de e-mail em limitador separado se o IP estiver dentro do limite
         email = normalizar_email(json_body().get("email"))
         if account_limit and email:
             acc_key = f"{request.path}:account:{security.fingerprint(email)}"
-            allowed, retry = rate_limiter.allow(acc_key, account_limit, window)
+            allowed, retry = account_rate_limiter.allow(acc_key, account_limit, window)
             if not allowed:
                 alertar_servidor_telegram(
                     "SEGURANÇA",
@@ -530,6 +619,7 @@ def proteger_requisicao():
 
 @app.after_request
 def proteger_resposta(response):
+    nonce = obter_csp_nonce()
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
     response.headers["X-Frame-Options"] = "DENY"
@@ -541,7 +631,8 @@ def proteger_resposta(response):
     response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=(), payment=()"
     response.headers["Content-Security-Policy"] = (
         "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; "
-        "form-action 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+        f"form-action 'self'; script-src 'self' 'nonce-{nonce}' https://cdn.jsdelivr.net; "
+        "script-src-attr 'none'; "
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; "
         "font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; "
         "connect-src 'self'"
@@ -565,6 +656,30 @@ def serializar_mutacao(funcao):
     @wraps(funcao)
     def protegida(*args, **kwargs):
         with mutation_lock:
+            return funcao(*args, **kwargs)
+    return protegida
+
+
+def serializar_agenda(funcao):
+    @wraps(funcao)
+    def protegida(*args, **kwargs):
+        with schedule_lock:
+            return funcao(*args, **kwargs)
+    return protegida
+
+
+def serializar_fidelidade(funcao):
+    @wraps(funcao)
+    def protegida(*args, **kwargs):
+        with loyalty_lock:
+            return funcao(*args, **kwargs)
+    return protegida
+
+
+def serializar_estoque(funcao):
+    @wraps(funcao)
+    def protegida(*args, **kwargs):
+        with stock_lock:
             return funcao(*args, **kwargs)
     return protegida
 
@@ -605,6 +720,32 @@ def buscar_usuario(email, campos="*"):
     return resposta.data[0] if resposta.data else None
 
 
+def atualizar_usuario_compativel(filtros, payload_completo, payload_minimo=None):
+    """Atualiza colunas em `usuarios` com fallback transparente caso colunas opcionais ainda não existam."""
+    try:
+        consulta = db.table("usuarios").update(payload_completo)
+        for coluna, valor in filtros.items():
+            consulta = consulta.eq(coluna, valor)
+        return consulta.execute()
+    except Exception as exc:
+        if payload_minimo is None:
+            raise
+        texto = str(exc).lower()
+        if any(col in texto for col in (
+            "token_recuperacao_expira_em",
+            "token_recuperacao_tentativas",
+            "codigo_otp_tentativas",
+            "sessao_versao",
+            "column",
+            "schema cache",
+        )):
+            consulta = db.table("usuarios").update(payload_minimo)
+            for coluna, valor in filtros.items():
+                consulta = consulta.eq(coluna, valor)
+            return consulta.execute()
+        raise
+
+
 def usuario_publico(usuario):
     return {
         "id": usuario.get("id"),
@@ -615,17 +756,52 @@ def usuario_publico(usuario):
     }
 
 
+def _session_ttl_seconds():
+    lifetime = app.config.get("PERMANENT_SESSION_LIFETIME")
+    if isinstance(lifetime, timedelta):
+        return max(60.0, float(lifetime.total_seconds()))
+    return 43_200.0
+
+
+def revogar_sessoes_usuario(email, incrementar_banco=True):
+    """Revoga todas as sessões ativas de um usuário em memória e, quando suportado, no banco."""
+    email_norm = normalizar_email(email)
+    if not email_norm:
+        return
+    session_revocations.revoke_user(email_norm, ttl_seconds=_session_ttl_seconds())
+    if incrementar_banco:
+        try:
+            usuario = buscar_usuario(email_norm, "*")
+            if usuario and "sessao_versao" in usuario:
+                nova_versao = int(usuario.get("sessao_versao") or 1) + 1
+                db.table("usuarios").update({"sessao_versao": nova_versao}).eq("email", email_norm).execute()
+        except Exception:
+            logger.debug("Coluna sessao_versao indisponível ao revogar sessões de %s", email_norm)
+
+
 def usuario_da_sessao():
     email = normalizar_email(session.get("usuario_email"))
     if not email:
         return None
 
-    usuario = buscar_usuario(email, "id, nome, email, email_verificado, is_admin, pontos, senha")
+    sid = session.get("sid")
+    iat = session.get("iat")
+    if not isinstance(sid, str) or not sid or session_revocations.is_revoked(sid, user_key=email, issued_at=iat):
+        session.clear()
+        return None
+
+    usuario = buscar_usuario(email, "*")
     if (not usuario or not usuario.get("email_verificado")
             or str(usuario.get("id")) != str(session.get("usuario_id"))
             or not secrets.compare_digest(session.get("password_version", ""), security.fingerprint(usuario.get("senha") or ""))):
         session.clear()
         return None
+
+    if usuario.get("sessao_versao") is not None:
+        versao_sessao = int(session.get("sessao_versao") or 1)
+        if versao_sessao != int(usuario.get("sessao_versao") or 1):
+            session.clear()
+            return None
     return usuario
 
 
@@ -800,56 +976,226 @@ def enviar_email_transacional(destinatario, assunto, conteudo_html):
         return False
 
 
-def iniciar_email_em_segundo_plano(destinatario, assunto, conteudo_html):
-    """Entrega alertas operacionais sem atrasar a confirmação da agenda."""
-    if not destinatario:
-        return False
-    Thread(
-        target=enviar_email_transacional,
-        args=(destinatario, assunto, conteudo_html),
-        name="spa-email-agenda",
-        daemon=True,
-    ).start()
-    return True
+class BoundedTaskExecutor:
+    """Executor de threads controlado com fila máxima limitada, isolamento de falhas e suporte pós-fork."""
+
+    def __init__(self, max_workers=3, max_pending=50, thread_name_prefix="spa-worker"):
+        if max_workers <= 0 or max_pending <= 0:
+            raise ValueError("max_workers e max_pending devem ser inteiros positivos.")
+        self.max_workers = int(max_workers)
+        self.max_pending = int(max_pending)
+        self._thread_name_prefix = str(thread_name_prefix or "spa-worker")
+        self._capacity = self.max_workers + self.max_pending
+        self._lock = Lock()
+        self._in_flight = 0
+        self._closed = False
+        self._pid = os.getpid()
+        self._executor = ThreadPoolExecutor(
+            max_workers=self.max_workers,
+            thread_name_prefix=self._thread_name_prefix,
+        )
+
+    def _ensure_fork_safe_locked(self):
+        pid_atual = os.getpid()
+        if pid_atual != self._pid:
+            # Em workers criados via fork (ex.: Gunicorn no Linux/ZimaOS), threads
+            # do processo pai não existem no processo filho; recria o pool de forma limpa.
+            self._pid = pid_atual
+            self._in_flight = 0
+            self._closed = False
+            self._executor = ThreadPoolExecutor(
+                max_workers=self.max_workers,
+                thread_name_prefix=self._thread_name_prefix,
+            )
+
+    @property
+    def in_flight(self):
+        with self._lock:
+            self._ensure_fork_safe_locked()
+            return self._in_flight
+
+    def submit(self, fn, *args, **kwargs):
+        with self._lock:
+            self._ensure_fork_safe_locked()
+            if self._closed or self._in_flight >= self._capacity:
+                logger.warning(
+                    "Fila de tarefas em segundo plano cheia (%d/%d); tarefa recusada: %s",
+                    self._in_flight,
+                    self._capacity,
+                    getattr(fn, "__name__", str(fn)),
+                )
+                return False
+            self._in_flight += 1
+            executor_atual = self._executor
+
+        def _wrapped():
+            try:
+                fn(*args, **kwargs)
+            except Exception:
+                logger.exception(
+                    "Exceção tratada em tarefa de segundo plano (%s)",
+                    getattr(fn, "__name__", str(fn)),
+                )
+            finally:
+                with self._lock:
+                    self._in_flight = max(0, self._in_flight - 1)
+
+        try:
+            executor_atual.submit(_wrapped)
+            return True
+        except RuntimeError:
+            with self._lock:
+                self._in_flight = max(0, self._in_flight - 1)
+            logger.warning("Executor encerrado ao tentar submeter tarefa em segundo plano.")
+            return False
+
+    def shutdown(self, wait=False):
+        with self._lock:
+            self._closed = True
+            executor_atual = self._executor
+        executor_atual.shutdown(wait=wait, cancel_futures=not wait)
 
 
+# Executores controlados para e-mails e notificações (evita criação indiscriminada de threads)
+email_executor = BoundedTaskExecutor(max_workers=3, max_pending=50, thread_name_prefix="spa-email")
+notificacao_executor = BoundedTaskExecutor(max_workers=2, max_pending=30, thread_name_prefix="spa-notify")
+atexit.register(email_executor.shutdown, False)
+atexit.register(notificacao_executor.shutdown, True)
 
-
-# Pool controlado para não esgotar conexões em picos de alerta
-notificacao_executor = ThreadPoolExecutor(max_workers=2, thread_name_prefix="spa-notify")
 # Anti-flood para o Telegram (evita que ataques de rajada travem o bot)
 telegram_limiter = RateLimiter(max_keys=2_000)
+_telegram_missing_config_logged = False
+_TELEGRAM_TOKEN_PATTERN = re.compile(r"bot[0-9]{6,15}:[A-Za-z0-9_-]+", re.IGNORECASE)
+
+
+def iniciar_email_em_segundo_plano(destinatario, assunto, conteudo_html):
+    """Entrega alertas operacionais em executor controlado sem atrasar a confirmação da agenda."""
+    if not destinatario:
+        return False
+    return email_executor.submit(enviar_email_transacional, destinatario, assunto, conteudo_html)
+
+
+def obter_config_telegram():
+    """Retorna (token, chat_id) sanitizados para suportar tanto python-dotenv quanto Docker --env-file."""
+    token = _limpar_valor_env(os.getenv("TELEGRAM_BOT_TOKEN") or os.getenv("TELEGRAM_TOKEN") or "")
+    chat_id = _limpar_valor_env(os.getenv("TELEGRAM_CHAT_ID") or os.getenv("TELEGRAM_CHAT") or "")
+    if token.lower().startswith("bot") and ":" in token[3:]:
+        token = token[3:].strip()
+    return token, chat_id
+
+
+def _mascarar_segredos_telegram(texto, token=None):
+    """Remove tokens do Telegram de mensagens de erro/URLs antes de gravar nos logs."""
+    msg = str(texto or "")
+    if token:
+        msg = msg.replace(token, "<REDACTED_TOKEN>")
+    msg = _TELEGRAM_TOKEN_PATTERN.sub("bot<REDACTED_TOKEN>", msg)
+    return msg
+
+
+def _mascarar_chat_id(chat_id):
+    texto = str(chat_id or "").strip()
+    if len(texto) <= 4:
+        return "***"
+    return f"***{texto[-4:]}"
 
 
 def enviar_alerta_telegram(mensagem_html):
-    """Envia alerta para o Telegram via HTTP com timeout seguro."""
-    token = (os.getenv("TELEGRAM_BOT_TOKEN") or "").strip()
-    chat_id = (os.getenv("TELEGRAM_CHAT_ID") or "").strip()
+    """Envia alerta para o Telegram via HTTP com timeout, retry de falhas transitórias e logs seguros."""
+    global _telegram_missing_config_logged
+    token, chat_id = obter_config_telegram()
     if not token or not chat_id:
+        if not _telegram_missing_config_logged:
+            _telegram_missing_config_logged = True
+            telegram_logger.warning(
+                "Notificações do Telegram desativadas: TELEGRAM_BOT_TOKEN ou TELEGRAM_CHAT_ID ausente no ambiente."
+            )
         return False
 
-    try:
-        resposta = requests.post(
-            f"https://api.telegram.org/bot{token}/sendMessage",
-            json={
-                "chat_id": chat_id,
-                "text": mensagem_html[:4000],  # Limite oficial de caracteres do Telegram
-                "parse_mode": "HTML",
-                "disable_web_page_preview": True,
-            },
-            timeout=8,
-        )
-        resposta.raise_for_status()
-        return True
-    except Exception:
-        # Usa warning interno do werkzeug para evitar loop infinito no handler de erro
-        logging.getLogger("werkzeug").warning("Falha ao entregar alerta ao Telegram.")
+    if ":" not in token:
+        telegram_logger.warning("Formato inválido em TELEGRAM_BOT_TOKEN (esperado '<bot_id>:<segredo>').")
         return False
 
+    url = f"https://api.telegram.org/bot{token}/sendMessage"
+    payload = {
+        "chat_id": chat_id,
+        "text": str(mensagem_html or "")[:4000],  # Limite oficial de caracteres do Telegram
+        "parse_mode": "HTML",
+        "disable_web_page_preview": True,
+    }
 
-def alertar_servidor_telegram(categoria, titulo, detalhes=None, chave_cooldown=None, janela_segundos=60):
+    max_tentativas = 2
+    for tentativa in range(1, max_tentativas + 1):
+        try:
+            resposta = requests.post(url, json=payload, timeout=(5, 10))
+            dados_json = {}
+            try:
+                dados_json = resposta.json() if resposta.content else {}
+            except ValueError:
+                dados_json = {}
+
+            if resposta.ok and dados_json.get("ok") is True:
+                msg_id = (dados_json.get("result") or {}).get("message_id")
+                telegram_logger.info(
+                    "Alerta entregue ao Telegram com sucesso (chat=%s, message_id=%s).",
+                    _mascarar_chat_id(chat_id),
+                    msg_id,
+                )
+                return True
+
+            status_http = resposta.status_code
+            descricao = _mascarar_segredos_telegram(
+                dados_json.get("description") or resposta.text[:200] or "sem descrição",
+                token,
+            )
+
+            # Retry apenas em erro 5xx ou 429 com retry_after curto
+            if tentativa < max_tentativas and (status_http >= 500 or status_http == 429):
+                espera = min(int((dados_json.get("parameters") or {}).get("retry_after") or 1), 3)
+                time.sleep(espera)
+                continue
+
+            telegram_logger.warning(
+                "Falha ao entregar alerta ao Telegram (HTTP %s, chat=%s): %s",
+                status_http,
+                _mascarar_chat_id(chat_id),
+                descricao,
+            )
+            return False
+        except requests.RequestException as exc:
+            erro_seguro = _mascarar_segredos_telegram(exc, token)
+            if tentativa < max_tentativas:
+                time.sleep(0.5)
+                continue
+            telegram_logger.warning(
+                "Erro de conexão ao enviar alerta ao Telegram (%s, chat=%s): %s",
+                type(exc).__name__,
+                _mascarar_chat_id(chat_id),
+                erro_seguro,
+            )
+            return False
+        except Exception as exc:
+            erro_seguro = _mascarar_segredos_telegram(exc, token)
+            telegram_logger.warning(
+                "Erro inesperado ao enviar alerta ao Telegram (%s): %s",
+                type(exc).__name__,
+                erro_seguro,
+            )
+            return False
+    return False
+
+
+def alertar_servidor_telegram(categoria, titulo, detalhes=None, chave_cooldown=None, janela_segundos=60, sincrono=False):
     """Central de telemetria: envia alertas de qualquer parte do servidor com filtro anti-spam."""
-    if not (os.getenv("TELEGRAM_BOT_TOKEN") and os.getenv("TELEGRAM_CHAT_ID")):
+    global _telegram_missing_config_logged
+    token, chat_id = obter_config_telegram()
+    if not (token and chat_id):
+        if not _telegram_missing_config_logged and APP_ENVIRONMENT != "test":
+            _telegram_missing_config_logged = True
+            telegram_logger.warning(
+                "Alerta '%s' ignorado: defina TELEGRAM_BOT_TOKEN e TELEGRAM_CHAT_ID no ambiente/--env-file.",
+                titulo,
+            )
         return False
 
     if chave_cooldown:
@@ -865,7 +1211,7 @@ def alertar_servidor_telegram(categoria, titulo, detalhes=None, chave_cooldown=N
         "SISTEMA": "⚙️",
         "CONTA": "👤",
     }
-    icone = icones.get(categoria.upper(), "🔔")
+    icone = icones.get(str(categoria).upper(), "🔔")
     agora_str = datetime.now(SPA_TIMEZONE).strftime("%d/%m/%Y %H:%M:%S")
 
     linhas = [
@@ -877,8 +1223,10 @@ def alertar_servidor_telegram(categoria, titulo, detalhes=None, chave_cooldown=N
         if valor is not None and str(valor).strip() != "":
             linhas.append(f"• <b>{html.escape(str(rotulo))}:</b> {html.escape(str(valor)[:500])}")
 
-    notificacao_executor.submit(enviar_alerta_telegram, "\n".join(linhas))
-    return True
+    mensagem_final = "\n".join(linhas)
+    if sincrono:
+        return enviar_alerta_telegram(mensagem_final)
+    return notificacao_executor.submit(enviar_alerta_telegram, mensagem_final)
 
 
 class TelegramErrorLogHandler(logging.Handler):
@@ -886,6 +1234,8 @@ class TelegramErrorLogHandler(logging.Handler):
 
     def emit(self, record):
         if record.levelno < logging.ERROR:
+            return
+        if record.name == "spa.telegram" or record.funcName == "enviar_alerta_telegram":
             return
         try:
             caminho_rota = request.path if request else "background/sistema"
@@ -963,7 +1313,7 @@ def registrar_auditoria_agenda(
 
 
 def notificar_lista_espera_horario(data_atendimento):
-    """Reivindica cada aviso com compare-and-set e notifica quem pediu o horário."""
+    """Reivindica cada aviso com compare-and-set e notifica quem pediu o horário usando pool controlado."""
     try:
         chave_data = str(data_atendimento).replace(" ", "T")[:16]
         bloqueios = (
@@ -980,6 +1330,26 @@ def notificar_lista_espera_horario(data_atendimento):
             .limit(100)
             .execute().data or []
         )
+        if not entradas:
+            return 0
+
+        # Pré-carrega os nomes dos serviços uma única vez por lote para não abrir
+        # conexões redundantes ao banco dentro de cada worker de envio.
+        nomes_servicos = {}
+        ids_servicos = {
+            entrada.get("servico_id")
+            for entrada in entradas
+            if entrada.get("servico_id") is not None
+        }
+        for sid in ids_servicos:
+            try:
+                linhas_srv = db.table("servico").select("tipo").eq("id", sid).limit(1).execute().data or []
+                if linhas_srv and linhas_srv[0].get("tipo"):
+                    nomes_servicos[sid] = linhas_srv[0]["tipo"]
+            except Exception:
+                logger.warning("Não foi possível consultar o nome do serviço %s para lista de espera", sid)
+
+        agendados = 0
         for entrada in entradas:
             reivindicada = (
                 db.table("agenda_lista_espera")
@@ -991,12 +1361,10 @@ def notificar_lista_espera_horario(data_atendimento):
             if not reivindicada:
                 continue
 
-            def entregar_aviso(item=entrada, data=chave_data):
-                nome_servico = "um tratamento"
+            nome_servico_item = nomes_servicos.get(entrada.get("servico_id"), "um tratamento")
+
+            def entregar_aviso(item=entrada, data=chave_data, nome_servico=nome_servico_item):
                 try:
-                    servicos = db.table("servico").select("tipo").eq("id", item["servico_id"]).limit(1).execute().data or []
-                    if servicos:
-                        nome_servico = servicos[0].get("tipo") or nome_servico
                     data_legivel = datetime.fromisoformat(data).strftime("%d/%m/%Y às %H:%M")
                     sucesso = enviar_email_transacional(
                         item["email_cliente"],
@@ -1019,8 +1387,14 @@ def notificar_lista_espera_horario(data_atendimento):
                     except Exception:
                         logger.exception("Não foi possível liberar novamente o aviso de lista de espera")
 
-            Thread(target=entregar_aviso, name="spa-lista-espera", daemon=True).start()
-        return len(entradas)
+            if email_executor.submit(entregar_aviso):
+                agendados += 1
+            else:
+                try:
+                    db.table("agenda_lista_espera").update({"status": "Aguardando"}).eq("id", entrada["id"]).eq("status", "Notificando").execute()
+                except Exception:
+                    logger.exception("Não foi possível reverter item da lista de espera quando a fila estava cheia")
+        return agendados
     except Exception:
         logger.exception("Não foi possível processar a lista de espera do horário liberado")
         return 0
@@ -1083,19 +1457,52 @@ def template_publico(nome):
     fonte = raiz_templates / nome
     minificado = fonte.with_name(f"{fonte.stem}.min{fonte.suffix}")
     escolhido = minificado.name if minificado.is_file() else fonte.name
-    return render_template(escolhido, site_url=obter_url_publica_canonica())
+    return render_template(escolhido, site_url=obter_url_publica_canonica(), csp_nonce=obter_csp_nonce())
+
+
+def resolver_arquivo_frontend(configurado):
+    """Valida e resolve um arquivo de frontend autorizado dentro de BASE_DIR."""
+    if not isinstance(configurado, str):
+        return None
+    limpo = configurado.strip()
+    if not limpo:
+        return None
+    if (
+        "/" in limpo
+        or "\\" in limpo
+        or ".." in limpo
+        or Path(limpo).name != limpo
+        or not limpo.endswith(".html")
+        or limpo not in ALLOWED_FRONTEND_FILES
+    ):
+        return None
+    try:
+        base_resolvida = BASE_DIR.resolve()
+        candidato = (BASE_DIR / limpo).resolve()
+    except OSError:
+        return None
+    if candidato.parent != base_resolvida or not candidato.is_file():
+        return None
+    return candidato
 
 
 @app.route("/")
 def pagina_principal():
     configurado = os.getenv("SPA_FRONTEND_FILE")
-    if configurado:
-        return send_from_directory(BASE_DIR, configurado)
+    if configurado is not None and configurado.strip() != "":
+        escolhido = resolver_arquivo_frontend(configurado)
+        if escolhido is None:
+            logger.warning("SPA_FRONTEND_FILE rejeitado por política de segurança: %r", configurado[:120])
+            return jsonify({
+                "error": "Arquivo de frontend não autorizado.",
+                "code": "invalid_frontend_file",
+            }), 403
+    else:
+        nome = "spa-panaceia-profissional.html" if (BASE_DIR / "spa-panaceia-profissional.html").is_file() else "servicos.html"
+        fonte = BASE_DIR / nome
+        minificado = fonte.with_name(f"{fonte.stem}.min{fonte.suffix}")
+        escolhido = minificado if minificado.is_file() else fonte
 
-    nome = "spa-panaceia-profissional.html" if (BASE_DIR / "spa-panaceia-profissional.html").is_file() else "servicos.html"
-    fonte = BASE_DIR / nome
-    minificado = fonte.with_name(f"{fonte.stem}.min{fonte.suffix}")
-    escolhido = minificado if minificado.is_file() else fonte
     conteudo = escolhido.read_text(encoding="utf-8")
     site_url = obter_url_publica_canonica()
     metadados = ""
@@ -1109,6 +1516,7 @@ def pagina_principal():
             f'<meta name="twitter:image" content="{url_escape}/static/img/logo_panaceia.png">'
         )
     conteudo = conteudo.replace("__SPA_CANONICAL_METADATA__", metadados)
+    conteudo = conteudo.replace("__CSP_NONCE__", obter_csp_nonce())
     resposta = make_response(conteudo)
     resposta.headers["Cache-Control"] = "no-cache, must-revalidate"
     return resposta
@@ -1165,6 +1573,8 @@ def favicon():
 @app.route("/api/health", methods=["GET"])
 def verificar_saude():
     """Confirma aplicação e informa qual banco está atendendo as requisições."""
+    tg_token, tg_chat = obter_config_telegram()
+    telegram_configurado = bool(tg_token and ":" in tg_token and tg_chat)
     try:
         database = db.healthcheck()
         restricao_agenda = database.get("booking_constraint")
@@ -1178,6 +1588,7 @@ def verificar_saude():
             # null significa "não verificável por este endpoint", não "ausente".
             "restricao_agenda": restricao_agenda,
             "restricao_agenda_verificavel": restricao_agenda is not None,
+            "telegram_configurado": telegram_configurado,
         }), 200
     except Exception:
         logger.exception("Falha no healthcheck dos bancos configurados")
@@ -1185,6 +1596,7 @@ def verificar_saude():
             "status": "degraded",
             "versao": VERSAO_BACKEND,
             "database": "indisponivel",
+            "telegram_configurado": telegram_configurado,
         }), 503
 
 
@@ -1269,28 +1681,77 @@ def cadastrar():
     if not senha_valida(senha):
         return jsonify({"error": "A senha deve ter 8 caracteres, com maiúscula, minúscula e caractere especial."}), 400
 
+    resposta_sucesso = {
+        "message": "Cadastro realizado! Digite o código de 6 dígitos enviado ao seu e-mail para ativar a conta.",
+        "email": email,
+    }
+
     try:
-        if buscar_usuario(email, "id"):
-            return jsonify({"error": "Este e-mail já está cadastrado no sistema."}), 409
-
         codigo = gerar_otp()
+        codigo_hash = security.hash_otp(email, codigo)
         expiracao = (datetime.now(timezone.utc) + timedelta(minutes=OTP_TTL_MINUTES)).isoformat()
-        db.table("usuarios").insert(
-            {
-                "nome": nome,
-                "email": email,
-                "senha": generate_password_hash(senha, method="pbkdf2:sha256"),
-                "email_verificado": False,
-                "codigo_otp": codigo,
-                "codigo_expira_em": expiracao,
-                "is_admin": False,
-            }
-        ).execute()
+        senha_hash = generate_password_hash(senha, method="pbkdf2:sha256")
+        deve_enviar_email = False
 
-        if not enviar_email_transacional(email, "Seu código de ativação — Spa Panaceia", email_de_ativacao(nome, codigo)):
-            logger.warning("Conta criada, mas e-mail de ativação não foi entregue para %s", email)
+        with lock_conta(email):
+            existente = buscar_usuario(email, "id, nome, email, email_verificado")
+            if existente is None:
+                try:
+                    db.table("usuarios").insert(
+                        {
+                            "nome": nome,
+                            "email": email,
+                            "senha": senha_hash,
+                            "email_verificado": False,
+                            "codigo_otp": codigo_hash,
+                            "codigo_expira_em": expiracao,
+                            "is_admin": False,
+                        }
+                    ).execute()
+                    challenge_attempt_limiter.reset_key(f"otp_try:{security.fingerprint(email)}")
+                    deve_enviar_email = True
+                except Exception as insert_err:
+                    texto_err = str(insert_err).lower()
+                    if "23505" not in texto_err and "duplicate key" not in texto_err and "unique" not in texto_err:
+                        raise
+                    existente = buscar_usuario(email, "id, nome, email, email_verificado")
 
-        return jsonify({"message": "Cadastro realizado! Digite o código de 6 dígitos enviado ao seu e-mail para ativar a conta.", "email": email}), 201
+            if existente is not None and not deve_enviar_email:
+                if existente.get("email_verificado"):
+                    # Conta já verificada: nunca sobrescreve nem revela a existência por 409.
+                    deve_enviar_email = False
+                else:
+                    # Recuperação segura de pré-cadastro não verificado: substitui dados
+                    # temporários, gera novo OTP e invalida códigos anteriores atomicamente.
+                    atualizados = (
+                        atualizar_usuario_compativel(
+                            {"email": email, "email_verificado": False},
+                            {
+                                "nome": nome,
+                                "senha": senha_hash,
+                                "codigo_otp": codigo_hash,
+                                "codigo_expira_em": expiracao,
+                                "codigo_otp_tentativas": 0,
+                            },
+                            {
+                                "nome": nome,
+                                "senha": senha_hash,
+                                "codigo_otp": codigo_hash,
+                                "codigo_expira_em": expiracao,
+                            },
+                        ).data
+                        or []
+                    )
+                    if atualizados:
+                        challenge_attempt_limiter.reset_key(f"otp_try:{security.fingerprint(email)}")
+                        deve_enviar_email = True
+
+        # Chamada HTTP externa sempre fora do lock
+        if deve_enviar_email:
+            if not enviar_email_transacional(email, "Seu código de ativação — Spa Panaceia", email_de_ativacao(nome, codigo)):
+                logger.warning("Conta criada/atualizada, mas e-mail de ativação não foi entregue para %s", email)
+
+        return jsonify(resposta_sucesso), 201
     except Exception:
         logger.exception("Erro ao criar conta")
         return jsonify({"error": "Erro ao criar conta. Tente novamente mais tarde."}), 500
@@ -1304,23 +1765,72 @@ def validar_codigo():
     if not email or len(codigo) != OTP_LENGTH or not codigo.isdigit():
         return jsonify({"error": "E-mail e código de 6 dígitos são obrigatórios."}), 400
 
+    erro_uniforme = {"error": "Código de verificação inválido ou expirado. Solicite um novo código."}
+    chave_tentativas = f"otp_try:{security.fingerprint(email)}"
+
     try:
-        usuario = buscar_usuario(email)
-        if not usuario:
-            return jsonify({"error": "Usuário não encontrado."}), 404
-        if usuario.get("email_verificado"):
-            return jsonify({"message": "Conta já verificada! Faça login para continuar."}), 200
+        with lock_conta(email):
+            usuario = buscar_usuario(email)
+            if not usuario or usuario.get("email_verificado"):
+                # Igualamos trabalho criptográfico e retornamos 400 uniforme para
+                # não revelar se o e-mail existe ou se já foi verificado.
+                security.verify_otp("v2:" + "0" * 64, email, codigo)
+                return jsonify(erro_uniforme), 400
 
-        codigo_salvo = str(usuario.get("codigo_otp") or "")
-        if not codigo_salvo or not secrets.compare_digest(codigo_salvo, codigo):
-            return jsonify({"error": "Código de verificação incorreto."}), 400
+            codigo_salvo = str(usuario.get("codigo_otp") or "")
+            expiracao = usuario.get("codigo_expira_em")
+            if not codigo_salvo or not expiracao:
+                return jsonify(erro_uniforme), 400
 
-        expiracao = usuario.get("codigo_expira_em")
-        if not expiracao or datetime.now(timezone.utc) > datetime.fromisoformat(expiracao.replace("Z", "+00:00")):
-            return jsonify({"error": "Código expirado. Solicite um novo código."}), 400
+            expirado = datetime.now(timezone.utc) > datetime.fromisoformat(str(expiracao).replace("Z", "+00:00"))
+            if expirado:
+                atualizar_usuario_compativel(
+                    {"email": email, "email_verificado": False},
+                    {"codigo_otp": None, "codigo_expira_em": None, "codigo_otp_tentativas": 0},
+                    {"codigo_otp": None, "codigo_expira_em": None},
+                )
+                challenge_attempt_limiter.reset_key(chave_tentativas)
+                return jsonify({"error": "Código expirado. Solicite um novo código."}), 400
 
-        db.table("usuarios").update({"email_verificado": True, "codigo_otp": None, "codigo_expira_em": None}).eq("email", email).execute()
-        return jsonify({"message": "E-mail verificado com sucesso!"}), 200
+            tentativas_banco = int(usuario.get("codigo_otp_tentativas") or 0)
+            permitido_mem, _ = challenge_attempt_limiter.allow(chave_tentativas, OTP_MAX_ATTEMPTS, OTP_TTL_MINUTES * 60)
+            if not permitido_mem or tentativas_banco >= OTP_MAX_ATTEMPTS:
+                atualizar_usuario_compativel(
+                    {"email": email, "email_verificado": False},
+                    {"codigo_otp": None, "codigo_expira_em": None, "codigo_otp_tentativas": 0},
+                    {"codigo_otp": None, "codigo_expira_em": None},
+                )
+                return jsonify({"error": "Limite de tentativas excedido. Solicite um novo código."}), 400
+
+            if not security.verify_otp(codigo_salvo, email, codigo):
+                novas_tentativas = tentativas_banco + 1
+                if novas_tentativas >= OTP_MAX_ATTEMPTS:
+                    atualizar_usuario_compativel(
+                        {"email": email, "email_verificado": False},
+                        {"codigo_otp": None, "codigo_expira_em": None, "codigo_otp_tentativas": 0},
+                        {"codigo_otp": None, "codigo_expira_em": None},
+                    )
+                    return jsonify({"error": "Limite de tentativas excedido. Solicite um novo código."}), 400
+                if "codigo_otp_tentativas" in usuario:
+                    atualizar_usuario_compativel(
+                        {"email": email, "email_verificado": False},
+                        {"codigo_otp_tentativas": novas_tentativas},
+                        {},
+                    )
+                return jsonify({"error": "Código de verificação incorreto."}), 400
+
+            atualizados = (
+                atualizar_usuario_compativel(
+                    {"email": email, "email_verificado": False, "codigo_otp": codigo_salvo},
+                    {"email_verificado": True, "codigo_otp": None, "codigo_expira_em": None, "codigo_otp_tentativas": 0},
+                    {"email_verificado": True, "codigo_otp": None, "codigo_expira_em": None},
+                ).data
+                or []
+            )
+            if not atualizados:
+                return jsonify(erro_uniforme), 400
+            challenge_attempt_limiter.reset_key(chave_tentativas)
+            return jsonify({"message": "E-mail verificado com sucesso!"}), 200
     except (TypeError, ValueError):
         logger.exception("Data de expiração de OTP inválida")
         return jsonify({"error": "Não foi possível validar o código."}), 500
@@ -1330,7 +1840,6 @@ def validar_codigo():
 
 
 @app.route("/api/reenviar-codigo", methods=["POST"])
-@serializar_mutacao
 def reenviar_codigo():
     """Gera um novo código para contas ainda não ativadas, sem revelar cadastros."""
     email = normalizar_email(json_body().get("email"))
@@ -1339,15 +1848,28 @@ def reenviar_codigo():
 
     resposta_padrao = {"message": "Se a conta estiver aguardando ativação, um novo código será enviado."}
     try:
-        usuario = buscar_usuario(email, "id, nome, email_verificado")
-        if not usuario or usuario.get("email_verificado"):
-            return jsonify(resposta_padrao), 200
-
         codigo = gerar_otp()
+        codigo_hash = security.hash_otp(email, codigo)
         expiracao = (datetime.now(timezone.utc) + timedelta(minutes=OTP_TTL_MINUTES)).isoformat()
-        db.table("usuarios").update({"codigo_otp": codigo, "codigo_expira_em": expiracao}).eq("id", usuario["id"]).execute()
-        if not enviar_email_transacional(email, "Novo código de ativação — Spa Panaceia", email_de_ativacao(usuario.get("nome") or "Cliente", codigo)):
-            return jsonify({"error": "Não foi possível enviar o código agora. Tente novamente em alguns minutos."}), 503
+        nome_cliente = "Cliente"
+        deve_enviar = False
+
+        with lock_conta(email):
+            usuario = buscar_usuario(email, "id, nome, email_verificado")
+            if usuario and not usuario.get("email_verificado"):
+                nome_cliente = usuario.get("nome") or "Cliente"
+                atualizar_usuario_compativel(
+                    {"id": usuario["id"], "email_verificado": False},
+                    {"codigo_otp": codigo_hash, "codigo_expira_em": expiracao, "codigo_otp_tentativas": 0},
+                    {"codigo_otp": codigo_hash, "codigo_expira_em": expiracao},
+                )
+                challenge_attempt_limiter.reset_key(f"otp_try:{security.fingerprint(email)}")
+                deve_enviar = True
+
+        # Chamada HTTP externa realizada fora do lock
+        if deve_enviar:
+            if not enviar_email_transacional(email, "Novo código de ativação — Spa Panaceia", email_de_ativacao(nome_cliente, codigo)):
+                return jsonify({"error": "Não foi possível enviar o código agora. Tente novamente em alguns minutos."}), 503
         return jsonify(resposta_padrao), 200
     except Exception:
         logger.exception("Erro ao reenviar código de ativação")
@@ -1374,6 +1896,10 @@ def login():
         session["usuario_id"] = usuario.get("id")
         session["usuario_email"] = usuario.get("email")
         session["password_version"] = security.fingerprint(usuario.get("senha") or "")
+        session["sid"] = secrets.token_urlsafe(24)
+        session["iat"] = time.time()
+        if usuario.get("sessao_versao") is not None:
+            session["sessao_versao"] = int(usuario.get("sessao_versao") or 1)
 
         return jsonify({"message": "Login realizado com sucesso!", "usuario": usuario_publico(usuario), "csrf_token": csrf_token()}), 200
     except Exception:
@@ -1389,12 +1915,21 @@ def usuario_atual():
 
 @app.route("/api/logout", methods=["POST"])
 def logout():
+    sid = session.get("sid")
+    email = normalizar_email(session.get("usuario_email"))
+    dados = json_body()
+    revogar_todas = bool(dados.get("revogar_todas") or dados.get("all_sessions"))
+
+    if isinstance(sid, str) and sid:
+        session_revocations.revoke_sid(sid, ttl_seconds=_session_ttl_seconds())
+    if revogar_todas and email:
+        revogar_sessoes_usuario(email, incrementar_banco=True)
+
     session.clear()
     return jsonify({"message": "Sessão encerrada com sucesso."}), 200
 
 
 @app.route("/api/esqueci-senha", methods=["POST"])
-@serializar_mutacao
 def esqueci_senha():
     dados = json_body()
     email = normalizar_email(dados.get("email"))
@@ -1402,16 +1937,32 @@ def esqueci_senha():
         return jsonify({"error": "Informe um e-mail válido."}), 400
 
     codigo = gerar_otp()
+    expira_dt = datetime.now(timezone.utc) + timedelta(minutes=OTP_TTL_MINUTES)
+    expira_ts = int(expira_dt.timestamp())
+    registro_token, nonce_id = security.encode_recovery_record(email, codigo, expira_ts)
     resposta_padrao = {
         "message": "Se o e-mail estiver cadastrado, você receberá o código de recuperação.",
-        "recuperacao_token": security.issue_recovery(email, codigo),
+        "recuperacao_token": security.issue_recovery(email, codigo, nonce_id=nonce_id),
     }
     try:
-        if not buscar_usuario(email, "id"):
-            return jsonify(resposta_padrao), 200
+        deve_enviar = False
+        with lock_conta(email):
+            if buscar_usuario(email, "id"):
+                atualizar_usuario_compativel(
+                    {"email": email},
+                    {
+                        "token_recuperacao": registro_token,
+                        "token_recuperacao_expira_em": expira_dt.isoformat(),
+                        "token_recuperacao_tentativas": 0,
+                    },
+                    {"token_recuperacao": registro_token},
+                )
+                challenge_attempt_limiter.reset_key(f"rec_try:{security.fingerprint(email)}")
+                deve_enviar = True
 
-        db.table("usuarios").update({"token_recuperacao": codigo}).eq("email", email).execute()
-        enviar_email_transacional(email, "Código de Recuperação de Senha", email_de_recuperacao(codigo))
+        # Chamada HTTP externa executada fora do lock
+        if deve_enviar:
+            enviar_email_transacional(email, "Código de Recuperação de Senha", email_de_recuperacao(codigo))
         return jsonify(resposta_padrao), 200
     except Exception:
         logger.exception("Erro ao solicitar redefinição de senha")
@@ -1419,33 +1970,115 @@ def esqueci_senha():
 
 
 @app.route("/api/redefinir-senha", methods=["POST"])
-@serializar_mutacao
 def redefinir_senha():
     dados = json_body()
     email = normalizar_email(dados.get("email"))
     codigo = str(dados.get("codigo") or "").strip()
     nova_senha = dados.get("nova_senha")
+    token_assinado = dados.get("recuperacao_token")
     if not email or len(codigo) != OTP_LENGTH or not codigo.isdigit() or not isinstance(nova_senha, str):
         return jsonify({"error": "Preencha todos os campos corretamente."}), 400
     if not senha_valida(nova_senha):
         return jsonify({"error": "A senha deve ter 8 caracteres, com maiúscula, minúscula e caractere especial."}), 400
-    if not security.verify_recovery(dados.get("recuperacao_token"), email, codigo, max_age=OTP_TTL_MINUTES * 60):
-        return jsonify({"error": "Código inválido ou expirado. Solicite uma nova recuperação nesta página."}), 400
+
+    chave_tentativas = f"rec_try:{security.fingerprint(email)}"
 
     try:
-        usuario = buscar_usuario(email, "token_recuperacao")
-        if not usuario:
-            return jsonify({"error": "Código inválido ou expirado."}), 400
-        token_salvo = str(usuario.get("token_recuperacao") or "")
-        if not token_salvo or not secrets.compare_digest(token_salvo, codigo):
-            return jsonify({"error": "Código de verificação incorreto."}), 400
+        with lock_conta(email):
+            usuario = buscar_usuario(email)
+            if not usuario:
+                security.verify_recovery(token_assinado, email, codigo, max_age=OTP_TTL_MINUTES * 60)
+                return jsonify({"error": "Código inválido ou expirado. Solicite uma nova recuperação nesta página."}), 400
 
-        resultado = db.table("usuarios").update({"senha": generate_password_hash(nova_senha, method="pbkdf2:sha256"), "token_recuperacao": None}).eq("email", email).eq("token_recuperacao", codigo).execute()
-        if not resultado.data:
-            return jsonify({"error": "Código já utilizado. Solicite uma nova recuperação."}), 409
-        if normalizar_email(session.get("usuario_email")) == email:
-            session.clear()
-        return jsonify({"message": "Senha redefinida com sucesso! Faça login para continuar."}), 200
+            token_salvo = str(usuario.get("token_recuperacao") or "")
+            if not token_salvo:
+                return jsonify({"error": "Código inválido ou expirado. Solicite uma nova recuperação nesta página."}), 400
+
+            # Verifica expiração persistida na coluna dedicada (quando presente)
+            expira_coluna = usuario.get("token_recuperacao_expira_em")
+            expirado_coluna = False
+            if expira_coluna:
+                try:
+                    dt_exp = (
+                        expira_coluna
+                        if isinstance(expira_coluna, datetime)
+                        else datetime.fromisoformat(str(expira_coluna).replace("Z", "+00:00"))
+                    )
+                    if dt_exp.tzinfo is None:
+                        dt_exp = dt_exp.replace(tzinfo=timezone.utc)
+                    expirado_coluna = datetime.now(timezone.utc) > dt_exp
+                except ValueError:
+                    expirado_coluna = True
+
+            registro_valido, expirado_registro, nonce_id_salvo = security.verify_recovery_record(
+                token_salvo, email, codigo
+            )
+            if expirado_coluna or expirado_registro:
+                atualizar_usuario_compativel(
+                    {"email": email},
+                    {"token_recuperacao": None, "token_recuperacao_expira_em": None, "token_recuperacao_tentativas": 0},
+                    {"token_recuperacao": None},
+                )
+                challenge_attempt_limiter.reset_key(chave_tentativas)
+                return jsonify({"error": "Código inválido ou expirado. Solicite uma nova recuperação nesta página."}), 400
+
+            tentativas_banco = int(usuario.get("token_recuperacao_tentativas") or 0)
+            permitido_mem, _ = challenge_attempt_limiter.allow(chave_tentativas, RECOVERY_MAX_ATTEMPTS, OTP_TTL_MINUTES * 60)
+            if not permitido_mem or tentativas_banco >= RECOVERY_MAX_ATTEMPTS:
+                atualizar_usuario_compativel(
+                    {"email": email},
+                    {"token_recuperacao": None, "token_recuperacao_expira_em": None, "token_recuperacao_tentativas": 0},
+                    {"token_recuperacao": None},
+                )
+                return jsonify({"error": "Limite de tentativas excedido. Solicite uma nova recuperação."}), 400
+
+            token_assinado_valido = security.verify_recovery(
+                token_assinado,
+                email,
+                codigo,
+                max_age=OTP_TTL_MINUTES * 60,
+                expected_nonce_id=nonce_id_salvo,
+            )
+
+            if not registro_valido or not token_assinado_valido:
+                novas_tentativas = tentativas_banco + 1
+                if novas_tentativas >= RECOVERY_MAX_ATTEMPTS:
+                    atualizar_usuario_compativel(
+                        {"email": email},
+                        {"token_recuperacao": None, "token_recuperacao_expira_em": None, "token_recuperacao_tentativas": 0},
+                        {"token_recuperacao": None},
+                    )
+                    return jsonify({"error": "Limite de tentativas excedido. Solicite uma nova recuperação."}), 400
+                if "token_recuperacao_tentativas" in usuario:
+                    atualizar_usuario_compativel(
+                        {"email": email},
+                        {"token_recuperacao_tentativas": novas_tentativas},
+                        {},
+                    )
+                return jsonify({"error": "Código inválido ou expirado. Solicite uma nova recuperação nesta página."}), 400
+
+            nova_senha_hash = generate_password_hash(nova_senha, method="pbkdf2:sha256")
+            resultado = atualizar_usuario_compativel(
+                {"email": email, "token_recuperacao": token_salvo},
+                {
+                    "senha": nova_senha_hash,
+                    "token_recuperacao": None,
+                    "token_recuperacao_expira_em": None,
+                    "token_recuperacao_tentativas": 0,
+                },
+                {
+                    "senha": nova_senha_hash,
+                    "token_recuperacao": None,
+                },
+            )
+            if not resultado.data:
+                return jsonify({"error": "Código já utilizado. Solicite uma nova recuperação."}), 409
+
+            challenge_attempt_limiter.reset_key(chave_tentativas)
+            revogar_sessoes_usuario(email, incrementar_banco=True)
+            if normalizar_email(session.get("usuario_email")) == email:
+                session.clear()
+            return jsonify({"message": "Senha redefinida com sucesso! Faça login para continuar."}), 200
     except Exception:
         logger.exception("Erro ao redefinir senha")
         return jsonify({"error": "Erro ao redefinir a senha."}), 500
@@ -1470,7 +2103,6 @@ def relogio_spa():
 
 @app.route("/api/agendar", methods=["POST"])
 @login_obrigatorio
-@serializar_mutacao
 def criar_agendamento():
     dados = json_body()
     email = g.usuario["email"]
@@ -1483,14 +2115,15 @@ def criar_agendamento():
 
     try:
         data_atendimento = validar_data_agendamento(dados.get("data"))
-        criado = db.create_appointment(email, servico_id, data_atendimento)
-        linhas = getattr(criado, "data", None) or []
-        agendamento = linhas[0] if linhas else {}
-        if agendamento.get("id"):
-            registrar_auditoria_agenda(
-                agendamento["id"], "criado", g.usuario,
-                status_novo="Pendente",
-            )
+        with schedule_lock:
+            criado = db.create_appointment(email, servico_id, data_atendimento)
+            linhas = getattr(criado, "data", None) or []
+            agendamento = linhas[0] if linhas else {}
+            if agendamento.get("id"):
+                registrar_auditoria_agenda(
+                    agendamento["id"], "criado", g.usuario,
+                    status_novo="Pendente",
+                )
         try:
             nome_servico = "Tratamento"
             servicos = db.table("servico").select("tipo").eq("id", servico_id).limit(1).execute().data or []
@@ -1547,7 +2180,7 @@ def minha_lista_espera():
 
 @app.route("/api/lista-espera/<int:entrada_id>", methods=["DELETE"])
 @login_obrigatorio
-@serializar_mutacao
+@serializar_agenda
 def sair_lista_espera(entrada_id):
     try:
         resposta = (
@@ -1568,7 +2201,7 @@ def sair_lista_espera(entrada_id):
 
 @app.route("/api/lista-espera", methods=["POST"])
 @login_obrigatorio
-@serializar_mutacao
+@serializar_agenda
 def entrar_lista_espera():
     dados = json_body()
     try:
@@ -1683,21 +2316,21 @@ def horarios_ocupados():
 
 @app.route("/api/agendamentos/<int:agendamento_id>", methods=["PUT"])
 @login_obrigatorio
-@serializar_mutacao
 def alterar_horario(agendamento_id):
     try:
-        agendamento = buscar_agendamento(agendamento_id, "id, email_cliente, status, data_atendimento, servico_id")
-        if not agendamento:
-            return jsonify({"error": "Agendamento não encontrado."}), 404
-        if not usuario_pode_alterar_agendamento(g.usuario, agendamento):
-            return jsonify({"error": "Você não pode alterar este agendamento."}), 403
-        if agendamento.get("status") != "Pendente":
-            return jsonify({"error": "Somente atendimentos pendentes podem ser remarcados."}), 409
-
         nova_data = validar_data_agendamento(json_body().get("data"))
-        anterior = normalizar_data_hora(agendamento.get("data_atendimento"))
-        db.reschedule_appointment(agendamento_id, nova_data)
-        registrar_auditoria_agenda(agendamento_id, "reagendado", g.usuario, anterior, nova_data)
+        with schedule_lock:
+            agendamento = buscar_agendamento(agendamento_id, "id, email_cliente, status, data_atendimento, servico_id")
+            if not agendamento:
+                return jsonify({"error": "Agendamento não encontrado."}), 404
+            if not usuario_pode_alterar_agendamento(g.usuario, agendamento):
+                return jsonify({"error": "Você não pode alterar este agendamento."}), 403
+            if agendamento.get("status") != "Pendente":
+                return jsonify({"error": "Somente atendimentos pendentes podem ser remarcados."}), 409
+
+            anterior = normalizar_data_hora(agendamento.get("data_atendimento"))
+            db.reschedule_appointment(agendamento_id, nova_data)
+            registrar_auditoria_agenda(agendamento_id, "reagendado", g.usuario, anterior, nova_data)
         notificar_lista_espera_horario(anterior)
         email_equipe_agenda("Horário liberado", "Um horário ficou disponível", {
             "Reserva": agendamento_id,
@@ -1717,25 +2350,25 @@ def alterar_horario(agendamento_id):
 
 @app.route("/api/agendamentos/<int:agendamento_id>", methods=["DELETE"])
 @login_obrigatorio
-@serializar_mutacao
 def cancelar_agendamento(agendamento_id):
     try:
-        agendamento = buscar_agendamento(agendamento_id, "id, email_cliente, status, data_atendimento, servico_id")
-        if not agendamento:
-            return jsonify({"error": "Agendamento não encontrado."}), 404
-        if not usuario_pode_alterar_agendamento(g.usuario, agendamento):
-            return jsonify({"error": "Você não pode cancelar este agendamento."}), 403
+        with schedule_lock:
+            agendamento = buscar_agendamento(agendamento_id, "id, email_cliente, status, data_atendimento, servico_id")
+            if not agendamento:
+                return jsonify({"error": "Agendamento não encontrado."}), 404
+            if not usuario_pode_alterar_agendamento(g.usuario, agendamento):
+                return jsonify({"error": "Você não pode cancelar este agendamento."}), 403
 
-        # A condição também é verificada no UPDATE: não pode desfazer uma
-        # conclusão concorrente e permitir crédito de pontos pela segunda vez.
-        alterados = db.table("agendamentos").update({"status": "Cancelado"}).eq("id", agendamento_id).eq("status", "Pendente").execute().data
-        if not alterados:
-            return jsonify({"error": "Somente atendimentos pendentes podem ser cancelados. Atualize a lista."}), 409
-        data_liberada = normalizar_data_hora(agendamento.get("data_atendimento"))
-        registrar_auditoria_agenda(
-            agendamento_id, "cancelado", g.usuario,
-            status_anterior="Pendente", status_novo="Cancelado",
-        )
+            # A condição também é verificada no UPDATE: não pode desfazer uma
+            # conclusão concorrente e permitir crédito de pontos pela segunda vez.
+            alterados = db.table("agendamentos").update({"status": "Cancelado"}).eq("id", agendamento_id).eq("status", "Pendente").execute().data
+            if not alterados:
+                return jsonify({"error": "Somente atendimentos pendentes podem ser cancelados. Atualize a lista."}), 409
+            data_liberada = normalizar_data_hora(agendamento.get("data_atendimento"))
+            registrar_auditoria_agenda(
+                agendamento_id, "cancelado", g.usuario,
+                status_anterior="Pendente", status_novo="Cancelado",
+            )
         avisos = notificar_lista_espera_horario(data_liberada)
         email_equipe_agenda("Reserva cancelada", "Uma reserva foi cancelada", {
             "Reserva": agendamento_id,
@@ -1801,7 +2434,7 @@ def listar_bloqueios_agenda():
 
 @app.route("/api/admin/bloqueios", methods=["POST"])
 @admin_obrigatorio
-@serializar_mutacao
+@serializar_agenda
 def criar_bloqueio_agenda():
     dados = json_body()
     motivo = str(dados.get("motivo") or "").strip()
@@ -1825,12 +2458,12 @@ def criar_bloqueio_agenda():
 
 @app.route("/api/admin/bloqueios/<int:bloqueio_id>", methods=["DELETE"])
 @admin_obrigatorio
-@serializar_mutacao
 def remover_bloqueio_agenda(bloqueio_id):
     try:
-        removidos = db.table("agenda_bloqueios").delete().eq("id", bloqueio_id).execute().data or []
-        if not removidos:
-            return jsonify({"error": "Bloqueio não encontrado."}), 404
+        with schedule_lock:
+            removidos = db.table("agenda_bloqueios").delete().eq("id", bloqueio_id).execute().data or []
+            if not removidos:
+                return jsonify({"error": "Bloqueio não encontrado."}), 404
         email_equipe_agenda("Horário liberado", "Um bloqueio da agenda foi removido", {
             "Data e hora": normalizar_data_hora(removidos[0].get("data_atendimento")),
             "Motivo anterior": removidos[0].get("motivo") or "não informado",
@@ -1864,7 +2497,7 @@ def historico_agendamento_admin(agendamento_id):
 
 @app.route("/api/admin/agendamentos/<int:agendamento_id>/concluir", methods=["POST"])
 @admin_obrigatorio
-@serializar_mutacao
+@serializar_agenda
 def concluir_agendamento(agendamento_id):
     try:
         resposta = db.complete_appointment(agendamento_id)
@@ -1892,7 +2525,7 @@ def concluir_agendamento(agendamento_id):
 
 @app.route("/api/admin/vouchers/utilizar", methods=["POST"])
 @admin_obrigatorio
-@serializar_mutacao
+@serializar_fidelidade
 def utilizar_voucher_admin():
     """Valida e consome um voucher no atendimento selecionado pelo administrador."""
     dados = json_body()
@@ -1991,7 +2624,7 @@ def consultar_fidelidade():
 
 @app.route("/api/fidelidade/resgatar", methods=["POST"])
 @login_obrigatorio
-@serializar_mutacao
+@serializar_fidelidade
 def resgatar_pontos():
     dados = json_body()
     recompensa = str(dados.get("recompensa") or "").strip().lower()
@@ -2124,7 +2757,7 @@ def listar_estoque():
 
 @app.route("/api/estoque", methods=["POST"])
 @admin_obrigatorio
-@serializar_mutacao
+@serializar_estoque
 def adicionar_estoque():
     dados = json_body()
     nome = str(dados.get("nome") or "").strip()
@@ -2153,7 +2786,7 @@ def adicionar_estoque():
 
 @app.route("/api/estoque/<int:item_id>/movimentar", methods=["PUT"])
 @admin_obrigatorio
-@serializar_mutacao
+@serializar_estoque
 def atualizar_estoque(item_id):
     dados = json_body()
     try:
@@ -2197,7 +2830,7 @@ def atualizar_estoque(item_id):
 
 @app.route("/api/estoque/<int:item_id>", methods=["DELETE"])
 @admin_obrigatorio
-@serializar_mutacao
+@serializar_estoque
 def deletar_estoque(item_id):
     try:
         removidos = db.table("estoque").delete().eq("id", item_id).execute().data or []
@@ -2243,12 +2876,32 @@ def chat():
         return jsonify({"error": "O concierge está indisponível neste momento. Tente novamente em instantes."}), 503
 
 
-if __name__ == "__main__":
-    alertar_servidor_telegram(
+def diagnosticar_e_notificar_boot_telegram():
+    """Valida a configuração do Telegram no boot e envia o alerta inicial fora do modo de teste."""
+    if APP_ENVIRONMENT == "test" or app.config.get("TESTING"):
+        return False
+    token, chat_id = obter_config_telegram()
+    if not token or not chat_id:
+        telegram_logger.warning(
+            "Notificações do Telegram desativadas no boot: configure TELEGRAM_BOT_TOKEN e TELEGRAM_CHAT_ID no ambiente/--env-file."
+        )
+        return False
+    telegram_logger.info(
+        "Notificações do Telegram configuradas (chat=%s, ambiente=%s).",
+        _mascarar_chat_id(chat_id),
+        "producao" if IS_PRODUCTION else "desenvolvimento",
+    )
+    return alertar_servidor_telegram(
         "SISTEMA",
         "Servidor Spa Panaceia iniciado",
         {"Ambiente": "Produção" if IS_PRODUCTION else "Desenvolvimento", "Versão": VERSAO_BACKEND},
         chave_cooldown="server_boot",
         janela_segundos=10,
     )
+
+
+# Dispara tanto no Gunicorn (Docker/ZimaOS) quanto no Python direto
+diagnosticar_e_notificar_boot_telegram()
+
+if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.getenv("PORT", "5000")))

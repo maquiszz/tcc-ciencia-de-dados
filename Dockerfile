@@ -3,6 +3,7 @@ FROM python:3.12-slim
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
+    APP_ENV=production \
     PORT=5000
 
 WORKDIR /app
@@ -17,6 +18,7 @@ RUN groupadd --system spa \
 # incorporados à imagem; as credenciais entram exclusivamente por --env-file.
 COPY --chown=spa:spa app.py ./
 COPY --chown=spa:spa database ./database
+COPY --chown=spa:spa migrations ./migrations
 COPY --chown=spa:spa templates ./templates
 COPY --chown=spa:spa static ./static
 

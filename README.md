@@ -121,13 +121,17 @@ BREVO_SENDER_NAME=Spa Panaceia
 BREVO_SENDER_EMAIL=<remetente-verificado>
 SPA_ALERT_EMAIL=<caixa-da-equipe-que-recebe-alertas>
 
+# Alertas operacionais e de segurança no Telegram
+TELEGRAM_BOT_TOKEN=<token-do-bot-telegram>
+TELEGRAM_CHAT_ID=<id-do-chat-telegram>
+
 OPENAI_API_KEY=<chave-openai>
 OPENAI_MODEL=gpt-4.1-mini
 LOG_LEVEL=INFO
 ```
 
 Nunca coloque valores de `SUPABASE_SERVICE_ROLE_KEY`, `FLASK_SECRET_KEY`,
-`DB_PASSWORD`, `BREVO_API_KEY`, `OPENAI_API_KEY` ou qualquer outro segredo no
+`DB_PASSWORD`, `BREVO_API_KEY`, `TELEGRAM_BOT_TOKEN`, `OPENAI_API_KEY` ou qualquer outro segredo no
 README, em arquivos versionados, no HTML/JavaScript ou no Git. Configure-os
 somente no ambiente do provedor ou no arquivo local ignorado pelo Git. O backend
 aceita temporariamente o nome legado `service_role`; o nome recomendado é
@@ -356,6 +360,46 @@ bloqueadas, para não oferecer lista de espera nelas.
 Mesmo com failover habilitado, as duas bases precisam ter o mesmo esquema,
 funções RPC e dados coerentes. Faça backup e reconciliação antes de mudar o banco
 primário ou reativar uma base que ficou offline.
+
+## Atualização e validação em produção no ZimaOS
+
+Como `database.env` fica fora do Git e da imagem Docker (por segurança), sempre
+confirme que `TELEGRAM_BOT_TOKEN` e `TELEGRAM_CHAT_ID` estão presentes no
+`database.env` do servidor ZimaOS e sem quebras de linha Windows (`\r\n`):
+
+```bash
+git pull --ff-only
+sed -i 's/\r$//' database.env
+
+TAG="$(date +%Y%m%d-%H%M%S)"
+docker build --pull \
+  -t "spa-panaceia:$TAG" \
+  -t spa-panaceia:latest \
+  .
+
+docker stop spa-panaceia 2>/dev/null || true
+docker rm spa-panaceia 2>/dev/null || true
+
+docker run -d \
+  --name spa-panaceia \
+  --restart unless-stopped \
+  --network postgres1_database \
+  --env-file database.env \
+  -p 5000:5000 \
+  spa-panaceia:latest
+```
+
+Para confirmar que o container subiu com as variáveis do Telegram ativas e que o
+alerta de inicialização foi entregue:
+
+```bash
+curl -fsS http://127.0.0.1:5000/api/health
+docker logs --tail 50 spa-panaceia
+```
+
+O endpoint `/api/health` retornará `"telegram_configurado": true`, e os logs do
+container exibirão `INFO:spa.telegram:Notificações do Telegram configuradas` e
+`INFO:spa.telegram:Alerta entregue ao Telegram com sucesso`.
 
 ## Estado operacional
 
@@ -810,6 +854,20 @@ python app.py
 Pelo menos um banco precisa estar configurado: PostgreSQL pelas variáveis
 `DB_*`, ou Supabase por `SUPABASE_URL` e uma chave de servidor. Em HTTP local,
 defina `SESSION_COOKIE_SECURE=false`; em produção ela deve permanecer `true`.
+
+## Migração de endurecimento de segurança (`migrations/001_security_hardening.sql`)
+
+O script idempotente `migrations/001_security_hardening.sql` adiciona colunas não
+destrutivas à tabela `public.usuarios` para expiração persistente e contagem de
+tentativas de recuperação de senha, contagem de tentativas de OTP e versão de
+sessão por usuário (`token_recuperacao_expira_em`, `token_recuperacao_tentativas`,
+`codigo_otp_tentativas`, `sessao_versao`):
+
+- **PostgreSQL local**: aplicado automaticamente no boot por `ensure_schema()`, ou
+  manualmente via `psql -h <host> -U <user> -d <db> -f migrations/001_security_hardening.sql`.
+- **Supabase**: cole e execute o conteúdo de `migrations/001_security_hardening.sql`
+  no **SQL Editor** do painel do Supabase. O backend possui fallback compatível
+  (`atualizar_usuario_compativel`) caso a migração ainda não tenha sido executada.
 
 ## Checklist de segurança
 
