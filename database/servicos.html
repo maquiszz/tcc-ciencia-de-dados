@@ -3857,6 +3857,74 @@ body.dark-mode .spa-toast {
             .recompensa-card:hover, .notificacao-item:hover, .privacidade-card:hover { transform: none !important; }
         }
 
+        /* Polimento visual sutil e responsividade aprimorada para tablets e celulares */
+        html, body {
+            overflow-x: clip;
+        }
+
+        h1, h2, .hero h1 {
+            text-wrap: balance;
+        }
+
+        .card, .item-agendamento, .admin-card, .caixa-login, .modal-box, .reserva-box {
+            transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
+        }
+
+        .card:hover {
+            box-shadow: 0 18px 40px rgba(45, 27, 78, 0.12);
+        }
+
+        .btn-contratar, .btn-detalhes-servico, .clientes-botao, .nav-btn {
+            transition: transform 0.16s ease, box-shadow 0.18s ease, background-color 0.18s ease, border-color 0.18s ease;
+        }
+
+        .btn-contratar:focus-visible,
+        .btn-detalhes-servico:focus-visible,
+        .clientes-botao:focus-visible,
+        .nav-btn:focus-visible,
+        input:focus-visible,
+        select:focus-visible,
+        textarea:focus-visible {
+            outline: 2px solid var(--brand-strong, #6a11cb);
+            outline-offset: 2px;
+        }
+
+        .card p, .item-agendamento p, .modal-box p {
+            overflow-wrap: anywhere;
+        }
+
+        @media (max-width: 960px) {
+            .grid-servicos, #container-servicos {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 18px;
+            }
+            .tabela-container, .table-responsive {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .grid-servicos, #container-servicos {
+                grid-template-columns: minmax(0, 1fr);
+                gap: 16px;
+            }
+            .hero {
+                padding-top: clamp(28px, 6vw, 44px);
+                padding-bottom: clamp(28px, 6vw, 44px);
+            }
+            .modal-box, .reserva-box, .detalhes-servico-box {
+                width: min(100% - 20px, 560px);
+                max-height: 90dvh;
+                overflow-y: auto;
+            }
+            .btn-contratar, .btn-detalhes-servico, .clientes-botao,
+            input:not([type="checkbox"]):not([type="radio"]), select, textarea {
+                min-height: 44px;
+                font-size: 16px;
+            }
+        }
+
     </style>
     <script nonce="__CSP_NONCE__">
         if (typeof location !== 'undefined' && /^https?:$/.test(location.protocol) && !new Set(['/', '/cadastro']).has(location.pathname)) {
