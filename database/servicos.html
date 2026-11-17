@@ -3925,6 +3925,71 @@ body.dark-mode .spa-toast {
             }
         }
 
+        /* Animações sutis e microinterações */
+        @keyframes spaFadeUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes spaModalPop {
+            from { opacity: 0; transform: translateY(12px) scale(0.98); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        @keyframes spaPulseSuave {
+            0%, 100% { box-shadow: 0 8px 22px rgba(106, 17, 203, 0.28); }
+            50% { box-shadow: 0 12px 30px rgba(106, 17, 203, 0.44); }
+        }
+
+        .secao.ativa, .hero {
+            animation: spaFadeUp 0.36s cubic-bezier(0.22, 1, 0.36, 1) both;
+        }
+
+        .card {
+            animation: spaFadeUp 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
+        }
+        .card:nth-child(2) { animation-delay: 0.04s; }
+        .card:nth-child(3) { animation-delay: 0.08s; }
+        .card:nth-child(4) { animation-delay: 0.12s; }
+        .card:nth-child(n+5) { animation-delay: 0.15s; }
+
+        .card img {
+            transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+        .card:hover img {
+            transform: scale(1.03);
+        }
+
+        .modal-overlay.ativa .modal-box,
+        .modal-overlay.ativa .reserva-box,
+        .modal-overlay.ativa .detalhes-servico-box,
+        .modal[style*="flex"] .modal-box {
+            animation: spaModalPop 0.26s cubic-bezier(0.22, 1, 0.36, 1) both;
+        }
+
+        .btn-contratar:hover, .nav-btn:hover {
+            transform: translateY(-1px);
+        }
+        .btn-contratar:active, .btn-detalhes-servico:active, .clientes-botao:active, .nav-btn:active {
+            transform: scale(0.98);
+        }
+
+        .chatbot-btn {
+            animation: spaPulseSuave 3.2s ease-in-out infinite;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .secao.ativa, .hero, .card, .chatbot-btn,
+            .modal-overlay.ativa .modal-box,
+            .modal-overlay.ativa .reserva-box,
+            .modal-overlay.ativa .detalhes-servico-box {
+                animation: none !important;
+            }
+            .card:hover img, .btn-contratar:hover, .nav-btn:hover {
+                transform: none !important;
+            }
+        }
+
     </style>
     <script nonce="__CSP_NONCE__">
         if (typeof location !== 'undefined' && /^https?:$/.test(location.protocol) && !new Set(['/', '/cadastro']).has(location.pathname)) {
