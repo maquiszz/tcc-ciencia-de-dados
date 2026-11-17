@@ -352,6 +352,70 @@ rate_limiter = _CompositeRateLimiter(max_keys=10_000)
 spam_blocker = AdaptiveIPBlocker(limit=30, window_seconds=1, base_block_seconds=30)
 vpn_spam_blocker = AdaptiveIPBlocker(limit=15, window_seconds=1, base_block_seconds=60)
 
+_SCANNER_LOCK = RLock()
+_SCANNER_BLOCKED_UNTIL: dict[str, tuple[float, int]] = {}
+_SCANNER_PROBE_RE = re.compile(
+    r"(?:^|/)(?:\.env(?:\.|$)|\.git(?:/|$)|\.svn(?:/|$)|\.hg(?:/|$)|"
+    r"gcp-credentials\.json|wp-login\.php|wp-admin(?:/|$)|wp-content(?:/|$)|"
+    r"xmlrpc\.php|phpmyadmin(?:/|$)|pma(?:/|$)|cgi-bin(?:/|$)|"
+    r"actuator(?:/|$)|rsc(?:/|$)|vendor/phpunit|server-status|boaform|"
+    r"autodiscover\.xml|telescope(?:/|$))|"
+    r"(?:\.\./|\.\.\\|%2e%2e)",
+    re.IGNORECASE,
+)
+_SCANNER_UA_TOKENS = (
+    "sqlmap",
+    "nikto",
+    "nuclei",
+    "zgrab",
+    "masscan",
+    "gobuster",
+    "dirbuster",
+    "wpscan",
+    "acunetix",
+    "nessus",
+)
+
+
+def _detectar_scanner_ou_ataque(caminho: str, user_agent: str) -> str | None:
+    """Identifica rotas de varredura/ataque ou User-Agents ofensivos conhecidos."""
+    if caminho and _SCANNER_PROBE_RE.search(caminho):
+        return "Rota de varredura/ataque"
+    ua_lower = (user_agent or "").lower()
+    if any(token in ua_lower for token in _SCANNER_UA_TOKENS):
+        return "Ferramenta de varredura (User-Agent)"
+    return None
+
+
+def _registrar_e_verificar_scanner(ip: str, caminho: str, user_agent: str) -> tuple[bool, int, int, str | None]:
+    """Verifica se o IP está em quarentena de scanner ou se disparou nova detecção."""
+    agora = time.monotonic()
+    motivo = _detectar_scanner_ou_ataque(caminho, user_agent)
+    with _SCANNER_LOCK:
+        # Limpeza leve para evitar crescimento ilimitado em memória
+        if len(_SCANNER_BLOCKED_UNTIL) > 5000:
+            expirados = [k for k, (ate, _) in _SCANNER_BLOCKED_UNTIL.items() if ate <= agora]
+            for k in expirados:
+                _SCANNER_BLOCKED_UNTIL.pop(k, None)
+            while len(_SCANNER_BLOCKED_UNTIL) > 5000:
+                _SCANNER_BLOCKED_UNTIL.pop(next(iter(_SCANNER_BLOCKED_UNTIL)))
+
+        registro = _SCANNER_BLOCKED_UNTIL.get(ip)
+        if registro and registro[0] > agora and motivo is None:
+            restante = max(1, int(registro[0] - agora))
+            return False, restante, registro[1], "IP em quarentena de scanner"
+
+        if motivo is not None:
+            strikes = (registro[1] + 1) if registro else 1
+            duracao = min(86400, 600 * (2 ** min(strikes - 1, 7)))
+            _SCANNER_BLOCKED_UNTIL[ip] = (agora + duracao, strikes)
+            return False, duracao, strikes, motivo
+
+        if registro and registro[0] <= agora:
+            _SCANNER_BLOCKED_UNTIL.pop(ip, None)
+
+    return True, 0, 0, None
+
 # Locks separados por contexto para evitar contenção global entre domínios
 # independentes e impedir que chamadas HTTP externas bloqueiem mutações.
 mutation_lock = RLock()
@@ -593,6 +657,39 @@ def proteger_requisicao():
             "error": "Acesso temporariamente indisponível para este endereço.",
             "code": "ip_blocked",
         }), 403
+
+    scanner_ok, scanner_espera, scanner_strikes, scanner_motivo = _registrar_e_verificar_scanner(
+        ip_cliente,
+        request.path,
+        request.headers.get("User-Agent", ""),
+    )
+    if not scanner_ok:
+        logger.warning(
+            "Scanner/ataque bloqueado: ip=%s motivo=%s rota=%s strike=%s bloqueio=%ss",
+            ip_cliente,
+            scanner_motivo,
+            request.path,
+            scanner_strikes,
+            scanner_espera,
+        )
+        alertar_servidor_telegram(
+            "SEGURANÇA",
+            "Varredura/ataque bloqueado automaticamente",
+            {
+                "IP": ip_cliente,
+                "Motivo": scanner_motivo,
+                "Rota": f"{request.method} {request.path}",
+                "Reincidência": f"Strike #{scanner_strikes}",
+                "Bloqueio": f"{scanner_espera}s",
+            },
+            chave_cooldown=f"scanner:{ip_cliente}",
+            janela_segundos=300,
+        )
+        return jsonify({
+            "error": "Acesso negado.",
+            "code": "scanner_blocked",
+            "retry_after": scanner_espera,
+        }), 403, {"Retry-After": str(scanner_espera)}
 
     veio_de_proxy = requisicao_veio_de_proxy_confiavel()
     if ALLOWED_COUNTRIES:

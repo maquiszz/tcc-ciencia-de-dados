@@ -1009,5 +1009,45 @@ class SecurityAuditTestSuite(unittest.TestCase):
             self.assertEqual(ci.notificacao_executor._pid, os.getpid())
 
 
+    def test_v9_scanner_probe_and_offensive_user_agent_auto_quarantine(self):
+        with ci._SCANNER_LOCK:
+            ci._SCANNER_BLOCKED_UNTIL.clear()
+
+        client = ci.app.test_client()
+
+        # 1. Acesso a rota de reconhecimento (/gcp-credentials.json) bloqueia na 1a tentativa
+        resp_probe = client.get(
+            "/gcp-credentials.json",
+            environ_base={"REMOTE_ADDR": "203.0.113.55"},
+        )
+        self.assertEqual(resp_probe.status_code, 403)
+        self.assertEqual(resp_probe.get_json()["code"], "scanner_blocked")
+
+        # 2. O mesmo IP fica em quarentena mesmo tentando rota normal em seguida
+        resp_followup = client.get(
+            "/",
+            environ_base={"REMOTE_ADDR": "203.0.113.55"},
+        )
+        self.assertEqual(resp_followup.status_code, 403)
+        self.assertEqual(resp_followup.get_json()["code"], "scanner_blocked")
+
+        # 3. Ferramenta ofensiva no User-Agent tambem e bloqueada imediatamente
+        resp_ua = client.get(
+            "/",
+            headers={"User-Agent": "sqlmap/1.7.11"},
+            environ_base={"REMOTE_ADDR": "203.0.113.56"},
+        )
+        self.assertEqual(resp_ua.status_code, 403)
+        self.assertEqual(resp_ua.get_json()["code"], "scanner_blocked")
+
+        # 4. Usuario legitimo em outro IP continua acessando normalmente
+        resp_ok = client.get(
+            "/",
+            headers={"User-Agent": "Mozilla/5.0"},
+            environ_base={"REMOTE_ADDR": "203.0.113.57"},
+        )
+        self.assertEqual(resp_ok.status_code, 200)
+
+
 if __name__ == "__main__":
     unittest.main()
