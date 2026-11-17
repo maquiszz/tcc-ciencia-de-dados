@@ -49,6 +49,10 @@ if __package__:
         SecurityTools,
         SessionRevocationStore,
     )
+    from .analytics_service import (
+        calcular_dashboard_analitico,
+        resolver_intervalo_analytics,
+    )
 else:
     from postgres_store import (
         InsufficientStockError,
@@ -64,6 +68,10 @@ else:
         RateLimiter,
         SecurityTools,
         SessionRevocationStore,
+    )
+    from analytics_service import (
+        calcular_dashboard_analitico,
+        resolver_intervalo_analytics,
     )
 
 try:
@@ -2741,6 +2749,101 @@ def admin_agendamentos():
     except Exception:
         logger.exception("Erro ao listar agendamentos administrativos")
         return jsonify({"error": "Erro ao buscar dados globais."}), 500
+
+
+@app.route("/api/admin/analytics", methods=["GET"])
+@admin_obrigatorio
+def admin_analytics():
+    periodo = request.args.get("periodo", "30d")
+    inicio_str = request.args.get("inicio")
+    fim_str = request.args.get("fim")
+    hoje_local = datetime.now(SPA_TIMEZONE).date()
+    try:
+        data_inicio, data_fim, periodo_chave = resolver_intervalo_analytics(
+            periodo, inicio_str, fim_str, hoje_local
+        )
+    except ValueError as erro:
+        return jsonify({"error": str(erro)}), 400
+
+    try:
+        limite_inferior = (data_inicio - timedelta(days=1)).strftime("%Y-%m-%dT23:59:59")
+        resp_agendamentos = (
+            db.table("agendamentos")
+            .select("id, servico_id, data_atendimento, status, servico(tipo, valor)")
+            .gt("data_atendimento", limite_inferior)
+            .order("data_atendimento")
+            .execute()
+        )
+        resp_servicos = db.table("servico").select("id, tipo, valor").execute()
+        servicos_por_id = {
+            row["id"]: row for row in (resp_servicos.data or []) if row.get("id") is not None
+        }
+        payload = calcular_dashboard_analitico(
+            resp_agendamentos.data or [],
+            servicos_por_id,
+            data_inicio,
+            data_fim,
+        )
+        payload["periodo"]["filtro"] = periodo_chave
+        return jsonify(payload), 200
+    except Exception:
+        logger.exception("Erro ao calcular dashboard analítico administrativo")
+        return jsonify({"error": "Erro ao processar indicadores analíticos."}), 500
+
+
+@app.route("/api/favoritos", methods=["GET"])
+@login_obrigatorio
+def listar_favoritos():
+    try:
+        resp = (
+            db.table("servicos_favoritos")
+            .select("servico_id, criado_em")
+            .eq("email_cliente", g.usuario["email"])
+            .order("criado_em", desc=True)
+            .execute()
+        )
+        ids = [row["servico_id"] for row in (resp.data or []) if row.get("servico_id") is not None]
+        return jsonify({"favoritos": ids}), 200
+    except Exception:
+        logger.exception("Erro ao listar serviços favoritos")
+        return jsonify({"error": "Não foi possível carregar seus favoritos."}), 500
+
+
+@app.route("/api/favoritos/<int:servico_id>", methods=["POST"])
+@login_obrigatorio
+def adicionar_favorito(servico_id):
+    try:
+        svc = db.table("servico").select("id").eq("id", servico_id).limit(1).execute()
+        if not (svc.data or []):
+            return jsonify({"error": "Serviço não encontrado."}), 404
+        existente = (
+            db.table("servicos_favoritos")
+            .select("id")
+            .eq("email_cliente", g.usuario["email"])
+            .eq("servico_id", servico_id)
+            .limit(1)
+            .execute()
+        )
+        if not (existente.data or []):
+            db.table("servicos_favoritos").insert({
+                "email_cliente": g.usuario["email"],
+                "servico_id": servico_id,
+            }).execute()
+        return jsonify({"message": "Serviço adicionado aos favoritos.", "servico_id": servico_id, "favorito": True}), 200
+    except Exception:
+        logger.exception("Erro ao favoritar serviço")
+        return jsonify({"error": "Não foi possível favoritar o serviço."}), 500
+
+
+@app.route("/api/favoritos/<int:servico_id>", methods=["DELETE"])
+@login_obrigatorio
+def remover_favorito(servico_id):
+    try:
+        db.table("servicos_favoritos").delete().eq("email_cliente", g.usuario["email"]).eq("servico_id", servico_id).execute()
+        return jsonify({"message": "Serviço removido dos favoritos.", "servico_id": servico_id, "favorito": False}), 200
+    except Exception:
+        logger.exception("Erro ao remover favorito")
+        return jsonify({"error": "Não foi possível remover o serviço dos favoritos."}), 500
 
 
 @app.route("/api/admin/bloqueios", methods=["GET"])

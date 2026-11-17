@@ -202,6 +202,14 @@ class LocalPostgresClient:
                 "criado_em TIMESTAMPTZ NOT NULL DEFAULT NOW())"
             )
             cur.execute(
+                "CREATE TABLE IF NOT EXISTS public.servicos_favoritos ("
+                "id BIGSERIAL PRIMARY KEY, "
+                "email_cliente TEXT NOT NULL, "
+                "servico_id BIGINT NOT NULL, "
+                "criado_em TIMESTAMPTZ NOT NULL DEFAULT NOW(), "
+                "CONSTRAINT uq_servicos_favoritos_cliente_servico UNIQUE (email_cliente, servico_id))"
+            )
+            cur.execute(
                 "SELECT to_regclass('public.usuarios') IS NOT NULL"
             )
             if cur.fetchone()[0]:
@@ -471,7 +479,7 @@ class Query:
     allowed_tables = {
         "usuarios", "agendamentos", "agendamentos_cancelados",
         "estoque", "resgates_pontos", "servico", "agenda_lista_espera",
-        "agenda_auditoria", "agenda_bloqueios",
+        "agenda_auditoria", "agenda_bloqueios", "servicos_favoritos",
     }
 
     def __init__(self, table):

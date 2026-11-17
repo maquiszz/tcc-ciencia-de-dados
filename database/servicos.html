@@ -17,7 +17,9 @@
     <title>Spa Panaceia | Bem-Estar e Relaxamento</title>
     <link rel="icon" type="image/svg+xml" href="/app-icon.svg">
     <link rel="stylesheet" href="/static/css/privacy-notice.min.css">
+    <link rel="stylesheet" href="/static/css/spa-enhancements.css">
     <script defer src="/static/js/privacy-notice.min.js"></script>
+    <script defer src="/static/js/spa-enhancements.js" nonce="__CSP_NONCE__"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
@@ -3969,6 +3971,27 @@ body.dark-mode .spa-toast {
             <h2>Como podemos cuidar de você?</h2>
             <p>Veja os tratamentos disponíveis e escolha o que faz sentido para você.</p>
         </header>
+        <div class="catalogo-controles" role="region" aria-label="Filtrar tratamentos">
+            <div class="catalogo-filtros" role="group" aria-label="Categorias de tratamentos">
+                <button type="button" class="catalogo-chip" data-categoria="todos" aria-pressed="true">Todos</button>
+                <button type="button" class="catalogo-chip" data-categoria="favoritos" aria-pressed="false">Favoritos ♥</button>
+                <button type="button" class="catalogo-chip" data-categoria="Massagens &amp; Relaxamento" aria-pressed="false">Massagens &amp; Relaxamento</button>
+                <button type="button" class="catalogo-chip" data-categoria="Terapias Orientais" aria-pressed="false">Terapias Orientais</button>
+                <button type="button" class="catalogo-chip" data-categoria="Banhos &amp; Termais" aria-pressed="false">Banhos &amp; Termais</button>
+                <button type="button" class="catalogo-chip" data-categoria="Corporal &amp; Alinhamento" aria-pressed="false">Corporal &amp; Alinhamento</button>
+            </div>
+            <div class="catalogo-busca-wrap">
+                <label class="sr-only" for="catalogo-busca">Buscar tratamento</label>
+                <input id="catalogo-busca" class="catalogo-busca" type="search" placeholder="Buscar tratamento ou benefício..." autocomplete="off">
+            </div>
+        </div>
+        <div id="comparacao-barra" class="comparacao-barra" role="status" aria-live="polite" hidden>
+            <span id="comparacao-info">0 tratamento(s) selecionado(s).</span>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                <button type="button" class="clientes-botao gerencia-primario" id="btn-abrir-comparacao">Comparar agora</button>
+                <button type="button" class="clientes-botao" id="btn-limpar-comparacao">Limpar</button>
+            </div>
+        </div>
         <main class="grid-servicos" id="container-servicos">
             <p style="text-align: center; grid-column: 1/-1;"> Carregando tratamentos...</p>
         </main>
@@ -4001,6 +4024,18 @@ body.dark-mode .spa-toast {
                 <button type="button" data-onclick="alternarAbas('fidelidade')" style="margin-top: 10px; padding: 7px 10px; border: 1px solid rgba(255,255,255,.25); border-radius: 9px; color: #fff; background: transparent; font: 700 12px 'Inter', sans-serif; cursor: pointer;">Usar pontos</button>
             </div>
         </div>
+
+        <div id="perfil-repetir-rapido" class="perfil-repetir-rapido" hidden>
+            <p id="perfil-repetir-texto" style="margin:0;font-weight:600;font-size:0.92rem;"></p>
+            <button type="button" class="btn-contratar" id="btn-repetir-ultimo">Agendar novamente</button>
+        </div>
+
+        <section id="perfil-favoritos-secao" class="perfil-favoritos-secao" aria-labelledby="perfil-favoritos-titulo" hidden>
+            <div class="perfil-favoritos-topo">
+                <h2 id="perfil-favoritos-titulo">Seus tratamentos favoritos</h2>
+            </div>
+            <div id="perfil-favoritos-grade" class="perfil-favoritos-grade"></div>
+        </section>
 
         <div class="lista-agendamentos" id="container-meus-agendamentos">
             <p style="text-align: center; color: #64748b;">Por favor, faça login para ver seus agendamentos.</p>
@@ -4150,6 +4185,60 @@ body.dark-mode .spa-toast {
 
     <!-- DASHBOARD FINANCEIRO COM INTELIGÊNCIA ANALÍTICA -->
     <div id="secao-financeiro" class="secao-conteudo">
+        <section id="painel-analytics-admin" class="analytics-painel" aria-labelledby="analytics-titulo">
+            <div class="analytics-topo">
+                <div>
+                    <span class="clientes-eyebrow">CIÊNCIA DE DADOS · VISÃO ANALÍTICA</span>
+                    <h2 id="analytics-titulo" style="margin:4px 0 4px;">Indicadores de Desempenho</h2>
+                    <p id="analytics-status" role="status" aria-live="polite" style="margin:0;color:var(--ink-soft);font-size:0.88rem;">Carregando dados do período…</p>
+                </div>
+                <div class="analytics-filtros" role="group" aria-label="Filtrar período analítico">
+                    <button type="button" class="analytics-periodo-btn" data-periodo="7d">7 dias</button>
+                    <button type="button" class="analytics-periodo-btn ativo" data-periodo="30d">30 dias</button>
+                    <button type="button" class="analytics-periodo-btn" data-periodo="90d">90 dias</button>
+                    <button type="button" class="analytics-periodo-btn" data-periodo="custom">Personalizado</button>
+                    <div id="analytics-custom-datas" class="analytics-custom-datas" hidden>
+                        <label class="sr-only" for="analytics-inicio">Data inicial</label>
+                        <input id="analytics-inicio" type="date">
+                        <label class="sr-only" for="analytics-fim">Data final</label>
+                        <input id="analytics-fim" type="date">
+                        <button type="button" class="clientes-botao gerencia-primario" id="btn-analytics-aplicar-custom">Aplicar</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="analytics-kpis" aria-label="Indicadores principais">
+                <article class="analytics-kpi"><span>Total de agendamentos</span><strong id="kpi-ana-total">—</strong><small>No período filtrado</small></article>
+                <article class="analytics-kpi"><span>Concluídos</span><strong id="kpi-ana-concluidos">—</strong><small>Atendimentos realizados</small></article>
+                <article class="analytics-kpi"><span>Pendentes</span><strong id="kpi-ana-pendentes">—</strong><small>Em aberto na agenda</small></article>
+                <article class="analytics-kpi"><span>Cancelados</span><strong id="kpi-ana-cancelados">—</strong><small>Reservas canceladas</small></article>
+                <article class="analytics-kpi"><span>Comparecimento</span><strong id="kpi-ana-comparecimento">—</strong><small>Concluídos / encerrados</small></article>
+                <article class="analytics-kpi"><span>Cancelamento</span><strong id="kpi-ana-cancelamento">—</strong><small>Cancelados / total</small></article>
+                <article class="analytics-kpi"><span>Faturamento estimado</span><strong id="kpi-ana-faturamento">—</strong><small>Catálogo dos concluídos</small></article>
+            </div>
+
+            <div class="analytics-charts-grid">
+                <article class="analytics-chart-card">
+                    <h3>Evolução dos agendamentos</h3>
+                    <div class="analytics-chart-wrap"><canvas id="chart-ana-evolucao" aria-label="Gráfico de linha de evolução dos agendamentos"></canvas></div>
+                </article>
+                <article class="analytics-chart-card">
+                    <h3>Serviços mais procurados</h3>
+                    <div class="analytics-chart-wrap"><canvas id="chart-ana-servicos" aria-label="Gráfico de barras de serviços mais procurados"></canvas></div>
+                </article>
+                <article class="analytics-chart-card">
+                    <h3>Distribuição por dia da semana</h3>
+                    <div class="analytics-chart-wrap"><canvas id="chart-ana-semana" aria-label="Gráfico de barras por dia da semana"></canvas></div>
+                </article>
+                <article class="analytics-chart-card">
+                    <h3>Horários com maior movimento</h3>
+                    <div class="analytics-chart-wrap"><canvas id="chart-ana-horarios" aria-label="Gráfico de barras por horário"></canvas></div>
+                </article>
+            </div>
+
+            <div id="analytics-limitacoes" class="analytics-limitacoes" hidden></div>
+        </section>
+
         <header class="cabecalho-financeiro" style="margin-bottom: 40px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
             <div>
                 <h1 style="font-family: 'Poppins', sans-serif;"> Visão financeira</h1>
@@ -5789,7 +5878,10 @@ body.dark-mode .spa-toast {
                 carregarBloqueiosAdmin();
             } else if(aba === 'financeiro') {
                 document.getElementById('secao-financeiro').classList.add('ativa');
-                document.title = "Spa Panaceia | Visão financeira"; //  Título Aba
+                document.title = "Spa Panaceia | Visão Analítica e Financeira"; //  Título Aba
+                if (window.SpaEnhancements) {
+                    window.SpaEnhancements.carregarDashboardAnalytics();
+                }
                 carregarAgendamentosAdmin();
                 carregarChartJs().then((chart) => {
                     if (!chart || !usuarioEhAdmin(usuarioLogado) || !document.getElementById('secao-financeiro').classList.contains('ativa')) return;
@@ -6191,6 +6283,10 @@ body.dark-mode .spa-toast {
                 atualizarLembreteProximo(dados);
                 notificacoesAtuais = montarNotificacoes(dados, usuarioLogado.pontos);
                 atualizarContadorNotificacoes();
+                if (window.SpaEnhancements) {
+                    window.SpaEnhancements.carregarFavoritosServidor();
+                    window.SpaEnhancements.atualizarAtalhoRepetirUltimo(dados);
+                }
  
                 if(!dados || dados.length === 0) {
                     container.innerHTML = '<div class="catalogo-vazio"><p>Você ainda não tem agendamentos.</p><button type="button" class="btn-reserva-voltar" data-onclick="alternarAbas(\'catalogo\')">Conhecer os tratamentos</button></div>';
@@ -6656,19 +6752,29 @@ body.dark-mode .spa-toast {
                 }
  
                 servicosDados.forEach((servico, idx) => {
+                    const meta = window.SpaEnhancements
+                        ? window.SpaEnhancements.obterMetaServico(servico)
+                        : { categoria: 'Bem-estar', duracao: '60 min' };
+                    const buscaTexto = `${servico.tipo || ''} ${meta.categoria} ${servico.descricao || ''}`;
                     const cardHtml = `
-                        <div class="card" style="animation-delay: ${Math.min(idx * 0.05, 0.3)}s">
+                        <div class="card" data-servico-id="${Number(servico.id)}" data-categoria="${escaparHtml(meta.categoria)}" data-busca="${escaparHtml(buscaTexto)}" style="animation-delay: ${Math.min(idx * 0.05, 0.3)}s">
                             <div class="card-img-wrapper">
                                 ${(() => { const imagem = imagemDoServico(servico, 760); return `<img src="${escaparHtml(imagem.src)}" width="760" height="500" style="object-position: ${escaparHtml(imagem.posicao)}" alt="Foto ilustrativa do atendimento de ${escaparHtml(servico.tipo)}" loading="lazy" decoding="async">`; })()}
+                                <span class="card-badge-categoria">${escaparHtml(meta.categoria)}</span>
+                                <button type="button" class="btn-favorito-card" data-servico-id="${Number(servico.id)}" aria-pressed="false" aria-label="Adicionar aos favoritos" title="Favoritar tratamento">♡</button>
                             </div>
                             <div class="card-conteudo">
                                 <div>
                                     <h2 class="card-titulo">${escaparHtml(servico.tipo)}</h2>
-                                    <p class="card-preco">R$ ${parseFloat(servico.valor).toFixed(2).replace('.', ',')}</p>
-                                    <span class="card-contratos">60 minutos de cuidado</span>
+                                    <div class="card-meta-linha">
+                                        <p class="card-preco">R$ ${parseFloat(servico.valor).toFixed(2).replace('.', ',')}</p>
+                                        <span class="card-contratos">${escaparHtml(meta.duracao)}</span>
+                                    </div>
+                                    <p class="card-descricao-curta">${escaparHtml(servico.descricao || 'Atendimento acolhedor e personalizado no Spa Panaceia.')}</p>
                                 </div>
                                 <div class="card-acoes">
-                                    <button type="button" class="btn-detalhes-servico" data-onclick="abrirDetalhesServico(${Number(servico.id)})">Ver detalhes</button>
+                                    <button type="button" class="btn-detalhes-servico" data-onclick="abrirDetalhesServico(${Number(servico.id)})">Detalhes</button>
+                                    <button type="button" class="btn-detalhes-servico btn-comparar-servico" data-servico-id="${Number(servico.id)}" aria-pressed="false">Comparar</button>
                                     <button type="button" class="btn-contratar" data-onclick="abrirModalAgendamentoPorId(${Number(servico.id)})">Agendar</button>
                                 </div>
                             </div>
@@ -6677,6 +6783,11 @@ body.dark-mode .spa-toast {
                     cardsHtml.push(cardHtml);
                 });
                 container.innerHTML = cardsHtml.join('');
+                if (window.SpaEnhancements) {
+                    window.SpaEnhancements.carregarFavoritosServidor();
+                    window.SpaEnhancements.atualizarEstadoFavoritosUI();
+                    window.SpaEnhancements.aplicarFiltrosCatalogo();
+                }
                 if ('IntersectionObserver' in window && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
                     const observador = new IntersectionObserver(entradas => entradas.forEach(entrada => {
                         if (entrada.isIntersecting) { entrada.target.classList.remove('aguarda-entrada'); entrada.target.classList.add('entrou'); observador.unobserve(entrada.target); }
@@ -8772,6 +8883,14 @@ body.dark-mode .spa-toast {
 
 
     </script>
+    <div class="modal-overlay" id="modal-comparacao-servicos">
+        <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="comparacao-titulo" style="max-width:780px;width:94%;">
+            <button class="btn-fechar" type="button" aria-label="Fechar comparação" data-onclick="fecharModal('modal-comparacao-servicos')">&times;</button>
+            <h3 id="comparacao-titulo">Comparar tratamentos</h3>
+            <p style="margin:4px 0 0;color:var(--ink-soft);font-size:0.9rem;">Veja duração, foco e valor lado a lado para escolher com calma.</p>
+            <div id="comparacao-grid" class="comparacao-grid"></div>
+        </div>
+    </div>
     <footer class="rodape-publico"><a href="/privacidade">Aviso de privacidade e cookies</a></footer>
     <aside id="aviso-cookies" class="aviso-cookies" role="region" aria-labelledby="aviso-cookies-titulo">
         <div class="aviso-cookies__texto">
