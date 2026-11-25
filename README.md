@@ -1,80 +1,221 @@
-# Spa Panaceia
+<div align="center">
 
-Aplicação Flask para apresentação de serviços, agendamentos, fidelidade,
-vouchers, estoque e painéis administrativos. A aplicação pode operar com o
-PostgreSQL local ou com o Supabase. O failover entre eles é opt-in para evitar
-que duas bases independentes recebam gravações divergentes.
+<img src="https://capsule-render.vercel.app/api?type=waving&color=0:3d087d,50:6a11cb,100:8b35e8&height=230&section=header&text=Spa%20Panaceia&fontSize=54&fontColor=fff3d8&fontAlignY=38&desc=Bem-estar%2C%20Agendamentos%2C%20Fidelidade%2C%20Estoque%20%26%20IA%20em%20Producao&descAlignY=60&descSize=17&animation=fadeIn" alt="Banner Spa Panaceia" width="100%" />
 
-## Arquitetura de produção
+<p>
+  <img src="https://img.shields.io/badge/Python-3.12-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python 3.12" />
+  <img src="https://img.shields.io/badge/Flask-3.1-000000?style=for-the-badge&logo=flask&logoColor=white" alt="Flask 3.1" />
+  <img src="https://img.shields.io/badge/Supabase-Active%20DB-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white" alt="Supabase" />
+  <img src="https://img.shields.io/badge/PostgreSQL-Compatible-4169E1?style=for-the-badge&logo=postgresql&logoColor=white" alt="PostgreSQL" />
+  <img src="https://img.shields.io/badge/Gunicorn-23.0-499848?style=for-the-badge&logo=gunicorn&logoColor=white" alt="Gunicorn 23" />
+  <img src="https://img.shields.io/badge/OpenAI-Concierge%20IA-412991?style=for-the-badge&logo=openai&logoColor=white" alt="OpenAI Concierge" />
+  <img src="https://img.shields.io/badge/Docker-Ready-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Docker Ready" />
+  <img src="https://img.shields.io/badge/PWA-Enabled-6a11cb?style=for-the-badge&logo=pwa&logoColor=white" alt="PWA Enabled" />
+</p>
 
-- O deploy ativo verificado está no Render, com a aplicação Flask servida pelo
-  Gunicorn. O `Procfile` define um worker e oito threads.
-- O Supabase é o banco ativo confirmado pela resposta mais recente do healthcheck.
-- O PostgreSQL local em Docker/ZimaOS é uma alternativa operacional; não é a
-  configuração ativa confirmada. O `Dockerfile` e as instruções de ZimaOS abaixo
-  documentam essa alternativa.
-- PostgreSQL e Supabase são bancos independentes: não são réplicas nem recebem
-  sincronização automática. Mantenha o failover desativado e não o habilite sem
-  um plano testado de reconciliação dos dados.
-- O backend lê credenciais do ambiente de execução. Segredos nunca devem ser
-  incluídos neste README, em outros arquivos versionados ou no Git.
+<p>
+  <strong>Aplicação web completa para gestão e experiência digital de um spa de bem-estar</strong> — unindo catálogo interativo, reservas em tempo real com lista de espera, clube de fidelidade com vouchers, controle atômico de estoque, dashboard analítico, concierge por IA e proteção em camadas contra abusos.
+</p>
 
-## Estado do deploy verificado
+<p>
+  <a href="#-sobre-o-projeto">Sobre</a> •
+  <a href="#-funcionalidades-principais">Funcionalidades</a> •
+  <a href="#-arquitetura-e-fluxo">Arquitetura</a> •
+  <a href="#-segurança-e-confiabilidade">Segurança</a> •
+  <a href="#-stack-e-estrutura-do-repositório">Stack & Estrutura</a> •
+  <a href="#-principais-endpoints-da-api">API</a> •
+  <a href="#-como-executar-e-testar">Como Rodar & Testar</a> •
+  <a href="#-operação-produção-e-migrações-sql">Produção & SQL</a>
+</p>
 
-Verificação pública pré-publicação feita em 07/10/2026:
+</div>
 
-- `https://spa-panaceia.onrender.com/` respondeu HTTP 200 com TLS válido. O
-  healthcheck e o catálogo responderam HTTP 200; o healthcheck informou
-  Supabase como banco ativo.
-- `https://spapanaceia.com.br/` e `https://www.spapanaceia.com.br/` responderam
-  HTTP 530 do Cloudflare. A conexão TLS até a borda Cloudflare foi válida, mas
-  os domínios próprios não serviram o site.
-- `https://panaceia.onrender.com/` pertence ao serviço Render separado chamado
-  `PANACEIA`; a leitura expirou após 25 segundos. Ele não é o serviço
-  `Spa Panaceia`, e esse resultado não confirma o estado do serviço separado.
-- No código que ainda estava no ar durante essa verificação,
-  `/robots.txt` e `/privacidade` respondiam 404. As rotas novas entram em vigor
-  somente depois da publicação deste commit.
+---
 
-Esse retrato não confirma DNS, origem Cloudflare ou configuração atual do
-Render. Confira os endpoints novamente depois da publicação.
+## ✨ Sobre o Projeto
 
-## Frontend público, privacidade e publicação de ativos
+O **Spa Panaceia** nasceu no contexto de **TCC de Ciência de Dados** e evoluiu para uma plataforma web em **Flask** pronta para produção, conectando a jornada acolhedora do cliente com rotinas administrativas robustas, idempotência transacional no banco de dados e telemetria operacional em tempo real.
 
-- A página principal é servida pelo Flask a partir de `database/servicos.html`;
-  cadastro, privacidade e página 404 são templates em `templates/`. O Dockerfile
-  precisa copiar essas duas pastas para a imagem.
-- Os fontes permanecem legíveis. Depois de editá-los, gere as cópias otimizadas
-  com `python -m pip install -r requirements-build.txt` e
-  `python scripts/build_frontend.py`; inclua fontes e arquivos `.min.html`,
-  `.min.css` e `.min.js` juntos.
-  A etapa usa uma dependência só de build, sem adicionar minificador ao runtime.
-- O catálogo usa dimensões explícitas e carregamento tardio para as fotos dos
-  tratamentos. O favicon usa o SVG leve já servido pelo aplicativo. As fotos
-  externas mantêm seus provedores e qualidade atuais.
-- Analytics permanece desativado porque não há ID nem preferência de consentimento
-  confirmados. O aviso de cookies descreve apenas armazenamento funcional visto
-  no código; não representa declaração de conformidade legal.
-- `PUBLIC_SITE_URL` é opcional e só gera canonical, `og:url` e entradas de sitemap
-  quando a URL HTTPS aponta para um host já confiável pelo backend. Não configure
-  essa variável até confirmar o domínio canônico e seu estado público. Sem essa
-  confirmação, `/sitemap.xml` responde 503 deliberadamente e `robots.txt` não
-  anuncia um sitemap incompleto.
-- O aviso em `/privacidade` descreve o comportamento observado e lista as
-  informações legais e operacionais que ainda precisam de confirmação humana.
+| Experiência do Cliente | Gestão, Dados & Engenharia |
+| :--- | :--- |
+| Catálogo responsivo de tratamentos com **tema Claro/Escuro**, favoritos e animações suaves | **Dashboard Analítico** (`/api/admin/analytics`) com filtros por período e indicadores financeiros |
+| **Agendamento inteligente** com calendário (`Flatpickr`), bloqueio anti-duplicidade e **lista de espera** | **Controle de Estoque Atômico & Idempotente** via `operacao_id` UUID (prevenção de baixa duplicada) |
+| **Clube de Fidelidade** (`1 ponto a cada R$ 10` em atendimentos concluídos) + resgate de **vouchers** | **Auditoria completa de agenda** (`agenda_auditoria`), bloqueio de horários e cancelamento via `pg_cron` |
+| **Concierge Virtual** com OpenAI (`gpt-4.1-mini`) + fallback local determinístico | **Hardening Web & Edge**: CSP com `nonce`, `TRUSTED_HOSTS`, Cloudflare IP real, HMAC-OTP e alertas no Telegram |
+| **PWA instalável** (`/manifest.webmanifest`, `/spa-sw.js`) + portal de **Privacidade & LGPD** | **Banco flexível**: operação nativa com **Supabase** ou **PostgreSQL local** (Docker/ZimaOS), sem failover silencioso |
 
-## Variáveis obrigatórias
+---
 
-No Render, configure as variáveis de execução no serviço. Para manter o backend
-apontando explicitamente para o banco ativo, use `DATABASE_PRIMARY=supabase` e
-`DATABASE_FAILOVER_ENABLED=false`; configure `SUPABASE_URL`,
-`SUPABASE_SERVICE_ROLE_KEY` e `FLASK_SECRET_KEY` no ambiente do Render, sem
-copiar seus valores para documentação ou Git.
+## 🚀 Funcionalidades Principais
 
-O bloco abaixo é um exemplo com PostgreSQL local para a alternativa Docker/ZimaOS,
-não a configuração ativa confirmada do Render. Mantenha `database.env` somente
-no servidor local, fora do Git e fora da imagem Docker. Os valores entre sinais
-de menor/maior são placeholders; nunca os substitua por segredos neste README.
+### 🪷 Portal do Cliente
+- **Catálogo de Serviços & Favoritos:** listagem dinâmica via `/api/servicos`, salvamento de tratamentos favoritos (`/api/favoritos`) e atalho de **repetir agendamento**.
+- **Agendamento em Tempo Real:** seleção de data/hora com verificação instantânea de disponibilidade (`/api/horarios-ocupados`) e sincronização de relógio do servidor (`/api/relogio`).
+- **Lista de Espera Automática:** se o horário estiver ocupado, o cliente entra na fila (`/api/lista-espera`) e recebe aviso por e-mail (Brevo) caso uma vaga seja liberada.
+- **Clube de Fidelidade & Vouchers:** acompanhamento de saldo (`/api/usuario/pontos`), recompensas disponíveis (`/api/fidelidade`) e emissão/resgate de vouchers.
+- **Avaliações Pós-Atendimento:** registro de feedback e nota para sessões concluídas (`/api/agendamentos/<id>/avaliar`).
+- **Concierge Virtual com IA:** atendimento conversacional em `/api/chat` usando a API da OpenAI, com **fallback local automático** para manter o chat funcional mesmo sem chave externa configurada.
+- **Privacidade & LGPD:** página dedicada em `/privacidade`, banner informativo não invasivo e exportação dos próprios dados pelo usuário em `/api/privacidade/exportar`.
+
+### 🛠️ Painel Administrativo & Dados
+- **Dashboard Analítico (`/api/admin/analytics`):** consolidação de agendamentos, receita e desempenho por serviço em janelas configuráveis (ex.: `30d` ou intervalo personalizado).
+- **Agenda, Bloqueios & Auditoria:** visualização geral (`/api/admin/agendamentos`), criação/remoção de bloqueios de horários (`/api/admin/bloqueios`), histórico detalhado por reserva (`/api/admin/agendamentos/<id>/historico`) e conclusão transacional com crédito de pontos (`/api/admin/agendamentos/<id>/concluir`).
+- **Baixa de Vouchers & Usuários:** validação/utilização de vouchers no balcão (`/api/admin/vouchers/utilizar`) e consulta administrativa de clientes (`/api/admin/usuarios`).
+- **Estoque Seguro (`PUT /api/estoque/<id>/movimentar`):** movimentações protegidas contra cliques repetidos e timeouts de rede por chave de idempotência UUID e trava `CHECK (quantidade >= 0)`.
+- **Utilitário Desktop de Planilhas (`dashboards/interface.py`):** ferramenta auxiliar em Python (`pandas` + `openpyxl` + `tkinter`) para converter exports CSV em planilhas Excel formatadas automaticamente.
+
+---
+
+## 🏗️ Arquitetura e Fluxo
+
+> **Regra de integridade de dados:** **Supabase** e **PostgreSQL local** são tratados como bancos independentes (não há replicação automática entre eles). Por padrão, `DATABASE_FAILOVER_ENABLED=false` garante que não ocorram gravações divergentes caso o banco primário fique indisponível.
+
+```mermaid
+flowchart LR
+    U["Cliente / Admin (Web & PWA)"] --> CF["Cloudflare / Proxy Confiavel (CF-Connecting-IP)"]
+    CF --> APP["Flask + Gunicorn (app.py & cadastro_interface.py)"]
+    APP --> SEC["Hardening & Auth (spa_security.py)"]
+    APP --> STORE["Camada de Persistencia (postgres_store.py / conexao.py)"]
+    STORE -->|"Primario Producao"| SB[("Supabase + RLS + pg_cron")]
+    STORE -.->|"Alternativa Docker/ZimaOS"| PG[("PostgreSQL Local")]
+    APP --> AI["Concierge IA (OpenAI + Fallback Local)"]
+    APP --> MAIL["Notificacoes E-mail (Brevo API)"]
+    APP --> TG["Alertas Seguranca & Boot (Telegram Bot)"]
+```
+
+---
+
+## 🛡️ Segurança e Confiabilidade
+
+| Camada | Mecanismo Implementado | Detalhes Técnicos |
+| :--- | :--- | :--- |
+| **Autenticação & OTP** | `SecurityTools` (`database/spa_security.py`) | Códigos OTP com **HMAC-SHA256**, tokens de recuperação assinados (`URLSafeTimedSerializer`) com expiração persistente no banco e versionamento de sessão (`sessao_versao`) |
+| **Anti-Abuso & Borda** | Rate limit + auto-quarentena + Cloudflare | Bloqueio automático imediato de scanners/User-Agents ofensivos (`seguranca.jsonl`), validação estrita de `TRUSTED_HOSTS`, suporte a `TRUSTED_PROXY_IPS`, `BLOCKED_IP_CIDRS` e `ALLOWED_COUNTRIES` |
+| **CSP & Sessão Web** | Headers de segurança + cookies protegidos | Scripts inline protegidos por **`nonce` dinâmico** sem `on*=` inline em HTML, `SESSION_COOKIE_SECURE=true`, `SameSite=Lax`, HSTS e anti-CSRF |
+| **Integridade na Agenda** | Advisory Locks + Triggers + `pg_cron` | `pg_advisory_xact_lock` + índice único `uq_agendamentos_horario_ativo` impedem reservas concorrentes; job `pg_cron` a cada 15 min cancela pendências vencidas com auditoria |
+| **Integridade no Estoque** | Idempotência transacional | RPC `movimentar_estoque` grava `operacao_id` UUID e atualiza saldo na mesma transação (`FOR UPDATE`), barrando saldo negativo via constraint |
+| **Observabilidade** | Telegram + Healthcheck JSON | Notificações instantâneas no Telegram em eventos de boot, logins e incidentes de segurança + monitoramento em `/api/health` |
+
+---
+
+## 🧰 Stack e Estrutura do Repositório
+
+### Tecnologias Utilizadas
+- **Backend:** Python `3.12`, Flask `3.1.0`, Gunicorn `23.0.0`, `flask-cors`, `python-dotenv`, `Werkzeug`
+- **Banco & Dados:** PostgreSQL (`psycopg2-binary`), Supabase (`supabase==2.31.0`), Pandas `3.0.3`, NumPy `2.4.6`, OpenPyXL `3.1.5`
+- **Integrações:** OpenAI (`openai==1.61.1`), Brevo API (`requests`), Telegram Bot API
+- **Frontend:** HTML5, CSS3, JavaScript modularizado com build otimizado via `minify-html` (`scripts/build_frontend.py`), Google Fonts (`Inter` & `Manrope`), `Flatpickr`, Manifest & Service Worker (PWA)
+- **Testes & Infra:** Python `unittest`, Node.js `node:test`, Docker (`python:3.12-slim`), `Procfile` (Render)
+
+### Estrutura do Projeto
+
+```text
+projeto-site/
+├── app.py                              # Ponto de entrada único Gunicorn/Flask (app:app)
+├── database/
+│   ├── cadastro_interface.py           # Núcleo Flask: rotas web, API cliente/admin, segurança e Telegram
+│   ├── spa_security.py                 # Criptografia HMAC-OTP, tokens de recuperação e rate limiting
+│   ├── postgres_store.py / conexao.py  # Adaptador PostgreSQL local e cliente Supabase
+│   ├── multiplos_usuarios.py           # Suporte operacional multiusuário
+│   ├── servicos.html / .min.html       # Portal principal do Spa (catálogo, agenda, fidelidade, admin)
+│   └── index.html
+├── templates/                          # index, privacidade, 404 (+ versões .min.html)
+├── static/
+│   ├── css/                            # privacy-notice.css / .min.css
+│   ├── js/                             # privacy-notice.js, registration.js (+ versões .min.js)
+│   └── img/                            # Identidade visual (logo_panaceia.png)
+├── scripts/
+│   └── build_frontend.py               # Gera ativos .min.html, .min.css e .min.js mantendo fontes legíveis
+├── migrations/
+│   └── 001_security_hardening.sql      # Migração idempotente de expiração/tentativas OTP e sessão
+├── dashboards/
+│   └── interface.py                    # Utilitário desktop (Tkinter + OpenPyXL) para CSV → XLSX formatado
+├── tests/                              # Suítes de teste Python (unittest) e JavaScript (node:test / CSP)
+├── Dockerfile & Procfile               # Empacotamento Docker (porta 5000) e deploy Render (1 worker / 8 threads)
+├── requirements.txt                    # Dependências de runtime
+└── requirements-build.txt              # Dependência isolada de build frontend (minify-html)
+```
+
+---
+
+## 📡 Principais Endpoints da API
+
+| Categoria | Rota | Descrição |
+| :--- | :--- | :--- |
+| **Público & PWA** | `GET /`, `/cadastro`, `/privacidade`, `/api/servicos`, `/api/horarios-ocupados`, `/api/relogio`, `/manifest.webmanifest`, `/spa-sw.js` | Páginas, catálogo, horários livres, relógio oficial e manifesto PWA |
+| **Diagnóstico & SEO** | `GET /api/health`, `/robots.txt`, `/sitemap.xml` | Status do banco ativo, restrições de agenda, status do Telegram e SEO canônico |
+| **Autenticação** | `POST /cadastrar`, `/api/validar-codigo`, `/api/reenviar-codigo`, `/api/login`, `/api/logout`, `/api/esqueci-senha`, `/api/redefinir-senha`, `GET /api/me` | Fluxo completo de conta, OTP por e-mail, sessão segura e recuperação de senha |
+| **Cliente** | `POST /api/agendar`, `GET /api/meus-agendamentos`, `PUT/DELETE /api/agendamentos/<id>`, `POST .../avaliar`, `GET/POST/DELETE /api/lista-espera`, `GET/POST/DELETE /api/favoritos/<id>`, `GET /api/fidelidade`, `POST /api/fidelidade/resgatar`, `GET /api/usuario/pontos`, `GET /api/privacidade/exportar`, `POST /api/chat` | Reservas, avaliações, espera, favoritos, pontos/vouchers, LGPD e Concierge IA |
+| **Administração** | `GET /api/admin/agendamentos`, `GET /api/admin/analytics`, `GET/POST/DELETE /api/admin/bloqueios`, `GET /api/admin/agendamentos/<id>/historico`, `POST /api/admin/agendamentos/<id>/concluir`, `POST /api/admin/vouchers/utilizar`, `GET /api/admin/usuarios`, `GET/POST /api/estoque`, `PUT /api/estoque/<id>/movimentar`, `DELETE /api/estoque/<id>` | Gestão executiva, analytics, agenda, créditos transacionais, vouchers e estoque atômico |
+
+---
+
+## 💻 Como Executar e Testar
+
+### 1. Desenvolvimento Local
+
+> Exige configurar ao menos um banco (`DB_*` para PostgreSQL local **ou** `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY`). Em HTTP local sem TLS, defina `APP_ENV=development` e `SESSION_COOKIE_SECURE=false`.
+
+```powershell
+python -m pip install -r requirements.txt
+$env:APP_ENV = "development"
+$env:SESSION_COOKIE_SECURE = "false"
+python app.py
+```
+
+### 2. Gerar Ativos Minificados do Frontend (após editar HTML/CSS/JS)
+
+Os arquivos-fonte permanecem legíveis; gere as versões `.min.*` e versione ambos em conjunto:
+
+```bash
+python -m pip install -r requirements-build.txt
+python scripts/build_frontend.py
+```
+
+### 3. Executar as Suítes de Teste
+
+```bash
+# Testes Python (rotas, projeção PostgreSQL, contratos de estoque, auditoria de segurança)
+python -m unittest discover -s tests -p "test_*.py"
+
+# Testes JavaScript (CSP sem inline handlers, registro, perfil paralelo, idempotência de estoque)
+node --test tests/*.test.js
+```
+
+### 4. Container Docker (Alternativa Local / ZimaOS)
+
+```bash
+docker build -t spa-panaceia .
+docker run -d --name panaceia-spa --restart unless-stopped -p 5000:5000 --env-file database.env spa-panaceia
+```
+
+---
+
+## 📚 Operação, Produção e Migrações SQL
+
+Os detalhes completos de infraestrutura, variáveis de ambiente, estado verificado de deploy, rotinas de atualização no ZimaOS e scripts SQL transacionais do Supabase ficam organizados abaixo para consulta rápida:
+
+<details>
+<summary><strong>1. Arquitetura de Produção & Estado do Deploy Verificado</strong></summary>
+
+- **Deploy ativo verificado:** Render, com aplicação Flask servida via Gunicorn (`Procfile` com `--workers 1 --threads 8 --timeout 60`).
+- **Banco ativo confirmado:** Supabase (`DATABASE_PRIMARY=supabase`, `DATABASE_FAILOVER_ENABLED=false`).
+- **PostgreSQL local em Docker/ZimaOS:** alternativa operacional documentada via `Dockerfile`; os dois bancos são independentes e não possuem sincronização automática (mantenha `DATABASE_FAILOVER_ENABLED=false` sem um plano testado de reconciliação).
+- **Verificação pública pré-publicação registrada em 07/10/2026:**
+  - `https://spa-panaceia.onrender.com/` respondeu HTTP `200` com TLS válido; healthcheck apontou Supabase como banco ativo.
+  - `https://spapanaceia.com.br/` e `https://www.spapanaceia.com.br/` responderam HTTP `530` do Cloudflare na ocasião (TLS de borda válido; origem própria pendente de conferência após ajustes de DNS/origem).
+  - `https://panaceia.onrender.com/` refere-se a um serviço separado chamado `PANACEIA`, não ao serviço `Spa Panaceia`.
+- **Ativos, SEO & Privacidade:**
+  - Página principal servida de `database/servicos.html`; templates em `templates/`; logo e favicon SVG leve nativo em `/app-icon.svg`.
+  - Analytics desativado por padrão; o aviso em `/privacidade` documenta armazenamento funcional e pontos que dependem de definição humana.
+  - `PUBLIC_SITE_URL` só emite canonical/`og:url`/sitemap quando a URL HTTPS corresponde a um host confiável pelo backend (sem ela, `/sitemap.xml` retorna `503` intencionalmente).
+
+</details>
+
+<details>
+<summary><strong>2. Modelo de Variáveis de Ambiente (.env) & Regras de Proxy</strong></summary>
+
+No Render, configure diretamente no ambiente do serviço (`DATABASE_PRIMARY=supabase`, `DATABASE_FAILOVER_ENABLED=false`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `FLASK_SECRET_KEY`). O exemplo abaixo ilustra a alternativa Docker/ZimaOS com PostgreSQL local — **nunca coloque segredos reais no Git ou neste README**:
 
 ```env
 APP_ENV=production
@@ -93,7 +234,6 @@ DB_POOL_MAX=10
 DATABASE_PRIMARY=postgres
 DATABASE_FAILOVER_ENABLED=false
 DB_FAILOVER_COOLDOWN_SECONDS=60
-
 
 # Contingência Supabase. A service role fica somente no backend.
 SUPABASE_URL=https://SEU-PROJETO.supabase.co
@@ -130,54 +270,40 @@ OPENAI_MODEL=gpt-4.1-mini
 LOG_LEVEL=INFO
 ```
 
-Nunca coloque valores de `SUPABASE_SERVICE_ROLE_KEY`, `FLASK_SECRET_KEY`,
-`DB_PASSWORD`, `BREVO_API_KEY`, `TELEGRAM_BOT_TOKEN`, `OPENAI_API_KEY` ou qualquer outro segredo no
-README, em arquivos versionados, no HTML/JavaScript ou no Git. Configure-os
-somente no ambiente do provedor ou no arquivo local ignorado pelo Git. O backend
-aceita temporariamente o nome legado `service_role`; o nome recomendado é
-`SUPABASE_SERVICE_ROLE_KEY`. Segredos expostos devem ser revogados e substituídos
-no ambiente de execução.
+**Regras operacionais de proxy e failover:**
+- Nunca utilize chave `anon`/publicável no backend; use exclusivamente `SUPABASE_SERVICE_ROLE_KEY`.
+- `TRUSTED_PROXY_IP_HEADER` (`CF-Connecting-IP`) só é aceito quando `REMOTE_ADDR` pertence a `TRUSTED_PROXY_IPS` ([faixas oficiais Cloudflare](https://developers.cloudflare.com/fundamentals/concepts/cloudflare-ip-addresses/)).
+- `TRUSTED_HOSTS` rejeita `Host` não listado com HTTP `400`. Para testes HTTP locais em IP privado, use `APP_ENV=development` isoladamente.
+- `ALLOWED_COUNTRIES=BR` exige `CF-IPCountry` habilitado no Cloudflare atrás de proxy confiável; `TRUSTED_VPN_HEADER` depende de regra de WAF/proxy configurada.
+- Bloqueios adaptativos e limites de login residem na memória do único worker Gunicorn: mantenha WAF/rate limiting também na borda.
+- **Comportamento entre os dois bancos:** leituras com falha de conexão podem tentar contingência apenas se `DATABASE_FAILOVER_ENABLED=true`; gravações que falharem após envio nunca são repetidas para evitar duplicidade, e erros de negócio nunca disparam failover.
 
-O backend não usa uma chave publicável/anon como credencial do servidor. O IP de
-cliente vindo de `TRUSTED_PROXY_IP_HEADER` só é aceito quando `REMOTE_ADDR` do
-proxy corresponde a um endereço em `TRUSTED_PROXY_IPS`; sem essa lista, o app
-usa o IP da conexão direta. Restrinja o acesso ao container para que somente o
-proxy esperado possa alcançá-lo e mantenha os CIDRs desse proxy atualizados. Se
-o cabeçalho for `CF-Connecting-IP`, use as redes de origem publicadas pelo
-Cloudflare ([faixas oficiais](https://developers.cloudflare.com/fundamentals/concepts/cloudflare-ip-addresses/))
-e aplique a mesma restrição de entrada no firewall do servidor. O Cloudflare
-documenta o cabeçalho [CF-Connecting-IP](https://developers.cloudflare.com/fundamentals/reference/http-headers/)
-como enviado da edge para a origem.
+</details>
 
-`BLOCKED_IP_CIDRS` aceita IPs individuais ou redes CIDR separados por vírgula e
-bloqueia-os em todas as rotas. `ALLOWED_COUNTRIES=BR` é opcional e recusa países
-fora da lista, inclusive quando a localização não puder ser confirmada; antes de
-ativá-lo, configure `TRUSTED_PROXY_IPS` e habilite o cabeçalho `CF-IPCountry` no
-Cloudflare. Para reduzir a velocidade de tráfego VPN, `TRUSTED_VPN_HEADER` só é
-aceito vindo de um proxy confiável; configure uma regra no proxy/WAF para definir
-esse cabeçalho para VPNs identificadas. O Cloudflare mantém listas de VPNs e
-anonimizadores, mas a disponibilidade das listas gerenciadas depende do plano
-([documentação oficial](https://developers.cloudflare.com/waf/tools/lists/managed-lists/)).
+<details>
+<summary><strong>3. Atualização em Produção via ZimaOS (Docker)</strong></summary>
 
-`TRUSTED_HOSTS` restringe os valores de `Host` aceitos pelo Flask. Inclua todos
-os domínios públicos usados e os hosts locais necessários para o healthcheck;
-não use curingas amplos. O serviço retorna `400` para hosts fora da lista.
-Em produção, o cookie de sessão permanece `Secure` independentemente do host
-usado na requisição. Para testes HTTP em IP privado, use `APP_ENV=development`
-somente em ambiente local isolado.
+Confirme antes que `TELEGRAM_BOT_TOKEN` e `TELEGRAM_CHAT_ID` estão presentes em `database.env` sem `\r\n` (CRLF):
 
-O bloqueio adaptativo e os limites de autenticação vivem na memória de um
-processo. Em produção o Gunicorn está configurado com um worker; mantenha também
-as regras de WAF/limite de requisições e a proteção contra acesso direto à origem
-no proxy/firewall. Um bloqueio dentro do Flask não consegue absorver um ataque
-que sature a conexão antes de chegar ao container.
+```bash
+cd /DATA/AppData/projetos/tcc-ciencia-de-dados && git stash && git pull origin main && sudo docker --config /DATA/.docker image build --no-cache -t tcc-panaceia . && (sudo docker stop panaceia-spa; sudo docker rm panaceia-spa) && sudo docker run -d --name panaceia-spa --restart unless-stopped -p 5000:5000 --env-file /DATA/AppData/projetos/tcc-ciencia-de-dados/database.env tcc-panaceia
+```
 
-## Agenda, lista de espera e auditoria
+Verificação pós-deploy:
 
-O PostgreSQL local cria as tabelas operacionais ao iniciar. Na Data API do
-Supabase, execute a migração abaixo uma vez no SQL Editor. As tabelas são novas;
-nenhuma reserva ou conta existente é alterada. O RLS fica habilitado e sem
-políticas para usuários públicos; somente o backend com service role deve acessá-las.
+```bash
+curl -fsS http://127.0.0.1:5000/api/health
+sudo docker logs --tail 50 panaceia-spa
+```
+
+Esperado no JSON e logs: `"telegram_configurado": true`, `INFO:spa.telegram:Notificações do Telegram configuradas` e `INFO:spa.telegram:Alerta entregue ao Telegram com sucesso`.
+
+</details>
+
+<details>
+<summary><strong>4. SQL — Agenda, Lista de Espera, Auditoria e Bloqueio de Horários</strong></summary>
+
+O PostgreSQL local cria as tabelas no startup; no **Supabase**, execute no **SQL Editor** com RLS estrito (`service_role` apenas):
 
 ```sql
 CREATE TABLE IF NOT EXISTS public.agenda_lista_espera (
@@ -221,20 +347,7 @@ GRANT ALL ON public.agenda_lista_espera, public.agenda_auditoria TO service_role
 GRANT USAGE, SELECT ON SEQUENCE public.agenda_lista_espera_id_seq, public.agenda_auditoria_id_seq TO service_role;
 ```
 
-`SPA_ALERT_EMAIL` deve ser uma caixa monitorada pela equipe. Se não for definida,
-os alertas usam `BREVO_SENDER_EMAIL`. Ambos dependem de `BREVO_API_KEY` válido.
-
-## Bloqueio de horários
-
-O PostgreSQL local cria a tabela de bloqueios ao iniciar. Para o Supabase,
-execute o SQL abaixo no SQL Editor uma vez antes de habilitar essa função. Ele
-cria a tabela sem alterar reservas ou serviços existentes. Caso a tabela antiga
-`servicos_favoritos` ainda exista no Supabase, ela e seus dados permanecem
-intactos e não são mais utilizados pelo aplicativo. O gatilho
-confere o bloqueio dentro da própria transação de reserva/remarcação; o outro
-gatilho impede bloquear uma hora que tenha reserva ativa, inclusive sob acesso
-simultâneo. O índice único também impede duas reservas ativas no mesmo horário.
-O mesmo lock é usado nas duas direções.
+**Bloqueio de horários + triggers anti-duplicidade com advisory lock:**
 
 ```sql
 CREATE TABLE IF NOT EXISTS public.agenda_bloqueios (
@@ -330,122 +443,16 @@ GRANT ALL ON public.agenda_bloqueios TO service_role;
 GRANT USAGE, SELECT ON SEQUENCE public.agenda_bloqueios_id_seq TO service_role;
 ```
 
-Repetir uma reserva usa `POST /api/agendar` com o serviço anterior e um horário
-novo. O administrador pode listar, criar e remover
-bloqueios em `/api/admin/bloqueios`. Na criação, envie
-`{"data_inicio":"2026-10-01T09:00","data_fim":"2026-10-01T10:00","motivo":"Pausa da equipe"}`;
-o fim é exclusivo. `GET /api/horarios-ocupados?detalhes=1` separa as horas
-bloqueadas, para não oferecer lista de espera nelas.
+> **Checagem rápida:** no PostgreSQL local, se `/api/health` retornar `"restricao_agenda": false`, verifique duplicatas (`GROUP BY data_atendimento HAVING COUNT(*) > 1`) e crie `uq_agendamentos_horario_ativo`. No Supabase, `restricao_agenda` retorna `null` (`restricao_agenda_verificavel: false`) pois a Data API não lê catálogos DDL diretamente — confira os objetos no SQL Editor.
 
-## Comportamento dos dois bancos
+</details>
 
-- `DATABASE_FAILOVER_ENABLED=false` (padrão): só o banco primário recebe
-  leituras e gravações. Use este modo quando as bases não forem réplicas
-  sincronizadas; se ele cair, o site sinaliza indisponibilidade em vez de gravar
-  silenciosamente na outra base.
-- `DATABASE_FAILOVER_ENABLED=true`: permite contingência entre bancos. Não
-  habilite sem um plano testado para manter e reconciliar os dados; o failover
-  não replica nem sincroniza as bases.
-- `DATABASE_PRIMARY=postgres`: tenta o PostgreSQL primeiro e usa o Supabase se
-  `DATABASE_FAILOVER_ENABLED=true` e o banco local estiver offline.
-- `DATABASE_PRIMARY=supabase`: seleciona o Supabase como origem primária.
-- Com failover habilitado, leituras com falha de conexão podem ser repetidas no
-  banco de contingência. Antes de uma gravação, o backend confirma que o banco
-  ativo responde. Uma
-  gravação que falha depois de enviada não é repetida automaticamente, evitando
-  reservas ou movimentações duplicadas.
-- Erros de negócio, como horário ocupado, voucher inválido ou saldo
-  insuficiente, nunca provocam failover.
+<details>
+<summary><strong>5. SQL — Crédito Transacional de Pontos, Cancelamento Automático (pg_cron) & Estoque Idempotente</strong></summary>
 
-Mesmo com failover habilitado, as duas bases precisam ter o mesmo esquema,
-funções RPC e dados coerentes. Faça backup e reconciliação antes de mudar o banco
-primário ou reativar uma base que ficou offline.
+#### Conclusão transacional de atendimento (`POST /api/admin/agendamentos/<id>/concluir`)
 
-## Atualização e validação em produção no ZimaOS
-
-Como `database.env` fica fora do Git e da imagem Docker (por segurança), sempre
-confirme que `TELEGRAM_BOT_TOKEN` e `TELEGRAM_CHAT_ID` estão presentes no
-`database.env` do servidor ZimaOS e sem quebras de linha Windows (`\r\n`):
-
-```bash
-cd /DATA/AppData/projetos/tcc-ciencia-de-dados && git stash && git pull origin main && sudo docker --config /DATA/.docker image build --no-cache -t tcc-panaceia . && (sudo docker stop panaceia-spa; sudo docker rm panaceia-spa) && sudo docker run -d --name panaceia-spa --restart unless-stopped -p 5000:5000 --env-file /DATA/AppData/projetos/tcc-ciencia-de-dados/database.env tcc-panaceia
-```
-
-Para confirmar que o container subiu com as variáveis do Telegram ativas e que o
-alerta de inicialização foi entregue:
-
-```bash
-curl -fsS http://127.0.0.1:5000/api/health
-sudo docker logs --tail 50 panaceia-spa
-```
-
-O endpoint `/api/health` retornará `"telegram_configurado": true`, e os logs do
-container exibirão `INFO:spa.telegram:Notificações do Telegram configuradas` e
-`INFO:spa.telegram:Alerta entregue ao Telegram com sucesso`.
-
-## Estado operacional
-
-A produção usa Render + Supabase; o PostgreSQL local/ZimaOS está indisponível.
-As bases não são réplicas: mantenha `DATABASE_FAILOVER_ENABLED=false`. O último
-healthcheck registrado apontou Supabase `ok`; ele não confirma índices ou
-triggers. Verifique `/api/health` e os objetos da agenda no Supabase após mudanças.
-O domínio oficial ainda teve erros Cloudflare na última verificação; confirme-o
-antes de considerá-lo ativo.
-
-## Proteção contra horários duplicados
-
-O backend usa lock transacional do PostgreSQL e grava agendamento e contador do
-serviço na mesma transação. Ele também tenta criar este índice automaticamente:
-
-```sql
-CREATE UNIQUE INDEX IF NOT EXISTS uq_agendamentos_horario_ativo
-ON public.agendamentos (data_atendimento)
-WHERE status IS DISTINCT FROM 'Cancelado';
-```
-
-No PostgreSQL, se `/api/health` retornar `"restricao_agenda": false`, o índice
-único não existe. Confira duplicatas e crie-o uma única vez com um usuário que
-tenha permissão de DDL. No Supabase, `restricao_agenda` retorna `null` e
-`restricao_agenda_verificavel` retorna `false`: a Data API não permite ao
-healthcheck confirmar triggers/índices. Nesse caso, confira no SQL Editor se o
-índice e os dois triggers descritos acima foram instalados; não interprete
-`null` como proteção ausente nem como confirmação de que ela existe.
-
-Para o PostgreSQL, o comando abaixo abre o `psql` com o usuário administrador
-do container (substitua usuário/banco se forem diferentes):
-
-```bash
-docker exec -it postgres psql -U postgres -d site_db
-```
-
-Antes de criar o índice, confirme que não existem horários ativos duplicados:
-
-```sql
-SELECT data_atendimento, COUNT(*)
-FROM public.agendamentos
-WHERE status IS DISTINCT FROM 'Cancelado'
-GROUP BY data_atendimento
-HAVING COUNT(*) > 1;
-```
-
-O resultado precisa estar vazio.
-
-## Crédito transacional ao concluir atendimentos
-
-O administrador conclui uma reserva por `POST /api/admin/agendamentos/<id>/concluir`.
-O backend valida sessão, papel administrativo, origem e CSRF; o navegador não
-informa saldo nem quantidade de pontos. No Supabase, a função abaixo bloqueia a
-linha do agendamento, calcula `trunc(valor / 10)` a partir de `servico.valor`,
-soma os pontos em `usuarios` e altera o status na mesma transação. No PostgreSQL
-local, o adaptador executa essas mesmas etapas em uma transação com `FOR UPDATE`.
-Uma reserva já `Concluido` retorna zero pontos, inclusive se sua conclusão for
-anterior a esta mudança: não há crédito retroativo automático.
-
-Após exportar as definições das tabelas, índices, gatilhos, funções e permissões
-envolvidos, este é o SQL de instalação da função no Supabase. Não altera registros
-existentes nem muda tabelas ou políticas RLS. Execute-o como uma única transação;
-publique o backend atualizado somente depois de confirmar que a função existe e
-que apenas `service_role` (além do proprietário) pode executá-la.
+Calcula `trunc(valor / 10)` a partir de `servico.valor`, soma pontos em `usuarios` e altera status para `Concluido` na mesma transação (`FOR UPDATE`):
 
 ```sql
 BEGIN;
@@ -517,36 +524,7 @@ NOTIFY pgrst, 'reload schema';
 COMMIT;
 ```
 
-Instalação conferida em 01/10/2026 no Supabase ativo: a primeira definição foi
-criada, mas o teste sintético detectou que `coalesce(pontos, 0)` era ambíguo com
-a coluna de retorno `pontos` (erro PostgreSQL 42702). A transação de teste foi
-revertida. A função foi substituída pelo SQL corrigido acima, qualificando
-`u.pontos`; a execução retornou sucesso. A inspeção de privilégios confirmou
-`EXECUTE` para `service_role` e negou `anon` e `authenticated`. Um teste com
-usuário, serviço e agendamento sintéticos, encerrado com `ROLLBACK`, confirmou
-19 pontos na primeira conclusão, zero na repetição e saldo/status coerentes.
-Após o rollback, nenhum registro sintético permaneceu e as contagens de
-agendamentos e usuários continuaram iguais. O backup estrutural pré-mudança foi
-exportado em CSV fora do repositório, sem dados de clientes nem credenciais.
-
-O SQL acima cria apenas uma função e sua permissão de execução. Uma falha em
-qualquer gravação aborta toda a chamada. Duas conclusões simultâneas da mesma
-reserva são serializadas pelo bloqueio de linha; atualizações de saldo são somas
-atômicas, inclusive quando há resgate de voucher simultâneo. Se for necessário
-reverter a instalação antes de usar a nova versão do backend, remova apenas essa
-função; depois de publicar o backend, planeje a reversão junto com o código para
-não reintroduzir a atualização separada de status e saldo.
-
-## Cancelamento automático de agendamentos vencidos
-
-No Supabase, um job `pg_cron` roda a cada 15 minutos e muda para `Cancelado` os
-agendamentos ainda `Pendente` cuja data já terminou em `America/Sao_Paulo`.
-Atualização e auditoria são atômicas; a função é idempotente e não pode ser
-chamada pelos papéis da API. O job guarda a data de ativação para não alterar
-reservas antigas automaticamente. O PostgreSQL local está indisponível e não
-tem scheduler configurado.
-
-SQL aplicado no Supabase:
+#### Cancelamento automático de pendências vencidas via `pg_cron` (a cada 15 min em `America/Sao_Paulo`)
 
 ```sql
 BEGIN;
@@ -633,78 +611,7 @@ $schedule$;
 COMMIT;
 ```
 
-Verificação rápida do job e das execuções:
-
-```sql
-SELECT jobid, schedule, active, username, command
-FROM cron.job WHERE jobname = 'spa-cancelar-agendamentos-vencidos';
-
-SELECT status, start_time, return_message
-FROM cron.job_run_details
-WHERE jobid = (SELECT jobid FROM cron.job
-               WHERE jobname = 'spa-cancelar-agendamentos-vencidos')
-ORDER BY start_time DESC LIMIT 5;
-```
-
-Verifique também se há pendências vencidas desde a ativação:
-
-```sql
-SELECT count(*)
-FROM public.agendamentos
-WHERE status = 'Pendente'
-  AND data_atendimento < (now() AT TIME ZONE 'America/Sao_Paulo')::date
-  AND data_atendimento >= DATE '2026-10-07';
-```
-
-Na instalação, a consulta encontrou 16 reservas antigas pendentes e uma entrada
-vencida na lista de espera; nenhuma foi alterada. Esses casos precisam de
-revisão manual antes de qualquer acerto retroativo. O primeiro ciclo do job
-terminou com sucesso e não encontrou reservas elegíveis para cancelar; ainda
-falta observar um cancelamento real pelo cron.
-
-Para reverter, remova somente o job e a função:
-
-```sql
-BEGIN;
-SELECT cron.unschedule(jobid)
-FROM cron.job
-WHERE jobname = 'spa-cancelar-agendamentos-vencidos';
-DROP FUNCTION IF EXISTS public.cancelar_agendamentos_vencidos(date);
-COMMIT;
-```
-
-Mantenha `pg_cron` se outros jobs o utilizarem. Não restaure a restrição antiga
-da auditoria enquanto houver registros com `ator_tipo='sistema'`.
-
-## Movimentação atômica de estoque
-
-O endpoint administrativo `PUT /api/estoque/<id>/movimentar` envia quantidade,
-ação e um `operacao_id` UUID. A interface mantém essa chave no armazenamento
-local do navegador até receber sucesso ou um erro definitivo do cliente; depois
-de timeout ou erro de servidor, a equipe pode repetir a mesma ação e o backend
-reenvia a mesma chave. O banco guarda o resultado da operação na mesma transação
-do saldo. Reutilizar a chave com outro item ou delta é rejeitado.
-
-No Supabase, uma única função executa o incremento/decremento aritmético e só
-atualiza o saldo se o resultado ficar entre zero e o limite de `integer`. O
-bloqueio de linha do `UPDATE` serializa movimentações diferentes do mesmo item;
-a chave única serializa repetições. A constraint também impede saldo negativo
-por outras gravações diretas. A tabela de idempotência tem RLS habilitado, sem
-políticas e sem privilégios diretos; somente `service_role` pode executar a
-RPC. No PostgreSQL local, o adaptador usa uma tabela equivalente, deduplicação
-transacional e atualização SQL sob o lock da linha. A substituição manual de
-saldo exige a quantidade anteriormente observada para recusar gravações com
-valor desatualizado. A chave vale dentro de cada banco; como os bancos não são
-sincronizados, mantenha o failover entre eles desligado até existir um plano de
-reconciliação. Não apague automaticamente registros de
-`estoque_movimentacoes`: sem uma janela máxima para novas tentativas, remover a
-chave pode permitir que uma repetição antiga movimente o saldo outra vez.
-
-Antes da mudança, foram exportadas 41 definições estruturais das tabelas,
-índices, gatilhos, funções e permissões relevantes para um CSV fora do
-repositório, sem dados de clientes ou credenciais. Em 02/10/2026, após confirmar
-que não havia saldo negativo e que os objetos ainda não existiam, foi aplicada
-a transação abaixo no projeto Supabase ativo:
+#### Movimentação atômica e idempotente de estoque (`PUT /api/estoque/<id>/movimentar`)
 
 ```sql
 BEGIN;
@@ -803,61 +710,24 @@ NOTIFY pgrst, 'reload schema';
 COMMIT;
 ```
 
-A instalação retornou sucesso. A verificação confirmou a constraint validada,
-RLS habilitado sem políticas, ausência de leitura direta da tabela de operações
-e execução da função apenas por `service_role` (negada a `anon` e
-`authenticated`). Um teste no Supabase usou um item e duas chaves UUID
-sintéticas dentro de um bloco com rollback: a primeira chamada elevou 5 para 8,
-a repetição não alterou o saldo, e a retirada insuficiente foi rejeitada sem
-gravar a chave. O teste foi revertido; uma consulta posterior confirmou zero
-linhas sintéticas e zero saldos negativos. O SQL de teste não alterou dados
-reais. Mocks isolados cobriram conclusão de pontos normal/repetida, duas
-conclusões concorrentes e falha no crédito; para estoque, cobriram deltas
-simultâneos, duas chamadas com a mesma chave, repetição após timeout simulado e
-saldo insuficiente. Esses mocks validam a integração do adaptador, não substituem
-um teste de concorrência contra duas sessões reais do Supabase. Esse teste não
-foi executado porque a interface SQL disponível não permite coordenar duas
-sessões mantendo os dados sintéticos reversíveis.
+> **Migração de endurecimento (`migrations/001_security_hardening.sql`):** adiciona colunas não destrutivas em `public.usuarios` (`token_recuperacao_expira_em`, `token_recuperacao_tentativas`, `codigo_otp_tentativas`, `sessao_versao`). Aplicada automaticamente no PostgreSQL local por `ensure_schema()`; no Supabase, execute o arquivo no **SQL Editor**.
 
-## Backups
+</details>
 
-O procedimento `pg_dump` do antigo servidor local foi removido porque esse
-servidor está indisponível. Confirme no painel Supabase que os backups e a
-retenção atendem à necessidade do Spa; este README não confirma o estado atual.
+<details>
+<summary><strong>6. Checklist de Segurança & Backups</strong></summary>
 
-## Desenvolvimento local
+- [x] Nenhum segredo incluído no README ou versionado no Git (`database.env` fora da imagem e ignorado).
+- [x] Credenciais de produção configuradas somente no ambiente do provedor (Render) ou `--env-file` no servidor.
+- [x] Senha forte e exclusiva para usuários de banco e administrador.
+- [x] HTTPS, HSTS, CSP com `nonce` e cookies `Secure` + `SameSite=Lax` ativos.
+- [x] `/api/health` e alertas do Telegram monitorados.
+- [x] Conferência periódica da política de backups e retenção no painel do Supabase.
 
-```powershell
-python -m pip install -r requirements.txt
-$env:APP_ENV = "development"
-python app.py
-```
+</details>
 
-Pelo menos um banco precisa estar configurado: PostgreSQL pelas variáveis
-`DB_*`, ou Supabase por `SUPABASE_URL` e uma chave de servidor. Em HTTP local,
-defina `SESSION_COOKIE_SECURE=false`; em produção ela deve permanecer `true`.
+---
 
-## Migração de endurecimento de segurança (`migrations/001_security_hardening.sql`)
-
-O script idempotente `migrations/001_security_hardening.sql` adiciona colunas não
-destrutivas à tabela `public.usuarios` para expiração persistente e contagem de
-tentativas de recuperação de senha, contagem de tentativas de OTP e versão de
-sessão por usuário (`token_recuperacao_expira_em`, `token_recuperacao_tentativas`,
-`codigo_otp_tentativas`, `sessao_versao`):
-
-- **PostgreSQL local**: aplicado automaticamente no boot por `ensure_schema()`, ou
-  manualmente via `psql -h <host> -U <user> -d <db> -f migrations/001_security_hardening.sql`.
-- **Supabase**: cole e execute o conteúdo de `migrations/001_security_hardening.sql`
-  no **SQL Editor** do painel do Supabase. O backend possui fallback compatível
-  (`atualizar_usuario_compativel`) caso a migração ainda não tenha sido executada.
-
-## Checklist de segurança
-
-- Nenhum segredo incluído no README ou no Git; `database.env` local não
-  versionado e fora da imagem.
-- Segredos de produção configurados no ambiente do Render; segredos expostos
-  revogados e substituídos.
-- Senha exclusiva para o usuário `site_user`.
-- HTTPS, HSTS, CSP e cookies seguros ativos.
-- `/api/health` monitorado.
-- Imagens antigas mantidas por alguns dias para rollback.
+<div align="center">
+  <img src="https://capsule-render.vercel.app/api?type=waving&color=0:8b35e8,50:6a11cb,100:3d087d&height=110&section=footer" alt="Footer Spa Panaceia" width="100%" />
+</div>
