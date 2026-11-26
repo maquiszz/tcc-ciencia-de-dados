@@ -1,60 +1,31 @@
-<a id="topo"></a>
-
 <div align="center">
 
-<img src="https://capsule-render.vercel.app/api?type=waving&color=0:2b065c,50:6a11cb,100:a855f7&height=240&section=header&text=Spa%20Panaceia&fontSize=58&fontColor=fff3d8&fontAlignY=36&desc=Plataforma%20Digital%20de%20Bem-Estar%2C%20Agendamento%2C%20Fidelidade%20%26%20IA&descAlignY=58&descSize=17&animation=fadeIn" alt="Banner Spa Panaceia" width="100%" />
-
-<img src="https://readme-typing-svg.demolab.com?font=Inter&weight=600&size=18&duration=2800&pause=900&color=8B5CF6&center=true&vCenter=true&width=760&lines=Catalogo+Interativo+%2B+Agendamento+com+Lock+Transacional;Clube+de+Fidelidade%2C+Vouchers+%26+Lista+de+Espera+por+E-mail;Dashboard+Analitico+%2B+Estoque+Idempotente+com+UUID;Concierge+IA+(OpenAI)+%2B+CSP+Nonce+%26+Alertas+no+Telegram" alt="Destaques Spa Panaceia" />
-
-<br/>
+<img src="https://capsule-render.vercel.app/api?type=waving&color=0:3d087d,50:6a11cb,100:8b35e8&height=230&section=header&text=Spa%20Panaceia&fontSize=54&fontColor=fff3d8&fontAlignY=38&desc=Bem-estar%2C%20Agendamentos%2C%20Fidelidade%2C%20Estoque%20%26%20IA%20em%20Producao&descAlignY=60&descSize=17&animation=fadeIn" alt="Banner Spa Panaceia" width="100%" />
 
 <p>
-  <a href="https://github.com/maquiszz/tcc-ciencia-de-dados/commits/main">
-    <img src="https://img.shields.io/github/last-commit/maquiszz/tcc-ciencia-de-dados?style=for-the-badge&color=6a11cb&labelColor=1e1b2e&label=%C3%9Altimo%20Commit" alt="Último Commit" />
-  </a>
-  <img src="https://img.shields.io/github/repo-size/maquiszz/tcc-ciencia-de-dados?style=for-the-badge&color=8b35e8&labelColor=1e1b2e&label=Reposit%C3%B3rio" alt="Tamanho do Repositório" />
-  <img src="https://img.shields.io/badge/Python-3.12-3776AB?style=for-the-badge&logo=python&logoColor=white&labelColor=1e1b2e" alt="Python 3.12" />
-  <img src="https://img.shields.io/badge/Flask-3.1-ffffff?style=for-the-badge&logo=flask&logoColor=white&labelColor=1e1b2e" alt="Flask 3.1" />
-  <img src="https://img.shields.io/badge/Supabase-Postgres%20%26%20RLS-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white&labelColor=1e1b2e" alt="Supabase" />
-  <img src="https://img.shields.io/badge/OpenAI-Concierge%20IA-412991?style=for-the-badge&logo=openai&logoColor=white&labelColor=1e1b2e" alt="OpenAI" />
-  <img src="https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white&labelColor=1e1b2e" alt="Docker" />
-  <img src="https://img.shields.io/badge/PWA-Instal%C3%A1vel-a855f7?style=for-the-badge&logo=pwa&logoColor=white&labelColor=1e1b2e" alt="PWA" />
+  <img src="https://img.shields.io/badge/Python-3.12-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python 3.12" />
+  <img src="https://img.shields.io/badge/Flask-3.1-000000?style=for-the-badge&logo=flask&logoColor=white" alt="Flask 3.1" />
+  <img src="https://img.shields.io/badge/Supabase-Active%20DB-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white" alt="Supabase" />
+  <img src="https://img.shields.io/badge/PostgreSQL-Compatible-4169E1?style=for-the-badge&logo=postgresql&logoColor=white" alt="PostgreSQL" />
+  <img src="https://img.shields.io/badge/Gunicorn-23.0-499848?style=for-the-badge&logo=gunicorn&logoColor=white" alt="Gunicorn 23" />
+  <img src="https://img.shields.io/badge/OpenAI-Concierge%20IA-412991?style=for-the-badge&logo=openai&logoColor=white" alt="OpenAI Concierge" />
+  <img src="https://img.shields.io/badge/Docker-Ready-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Docker Ready" />
+  <img src="https://img.shields.io/badge/PWA-Enabled-6a11cb?style=for-the-badge&logo=pwa&logoColor=white" alt="PWA Enabled" />
 </p>
 
-<table>
-  <tr>
-    <td align="center" width="190">
-      <br/>
-      <strong>50 Rotas</strong><br/>
-      <sub>Web, Auth, Cliente, Admin &amp; PWA</sub><br/><br/>
-    </td>
-    <td align="center" width="190">
-      <br/>
-      <strong>68 Testes</strong><br/>
-      <sub>49 Python + 19 JavaScript/CSP</sub><br/><br/>
-    </td>
-    <td align="center" width="190">
-      <br/>
-      <strong>10 Entidades</strong><br/>
-      <sub>Modelagem transacional com RLS</sub><br/><br/>
-    </td>
-    <td align="center" width="190">
-      <br/>
-      <strong>100% CSP-Safe</strong><br/>
-      <sub>Scripts por Nonce &amp; zero inline</sub><br/><br/>
-    </td>
-  </tr>
-</table>
+<p>
+  <strong>Aplicação web completa para gestão e experiência digital de um spa de bem-estar</strong> — unindo catálogo interativo, reservas em tempo real com lista de espera, clube de fidelidade com vouchers, controle atômico de estoque, dashboard analítico, concierge por IA e proteção em camadas contra abusos.
+</p>
 
 <p>
   <a href="#-sobre-o-projeto">Sobre</a> •
-  <a href="#-funcionalidades">Funcionalidades</a> •
-  <a href="#-engenharia-e-segurança">Engenharia &amp; Segurança</a> •
-  <a href="#-arquitetura-e-diagramas">Arquitetura &amp; Diagramas</a> •
-  <a href="#-stack-e-estrutura">Stack &amp; Estrutura</a> •
-  <a href="#-endpoints-da-api">API</a> •
-  <a href="#-como-executar-e-testar">Executar &amp; Testar</a> •
-  <a href="#-produção-e-sql">Produção &amp; SQL</a>
+  <a href="#-funcionalidades-principais">Funcionalidades</a> •
+  <a href="#-arquitetura-e-fluxo">Arquitetura</a> •
+  <a href="#-segurança-e-confiabilidade">Segurança</a> •
+  <a href="#-stack-e-estrutura-do-repositório">Stack & Estrutura</a> •
+  <a href="#-principais-endpoints-da-api">API</a> •
+  <a href="#-como-executar-e-testar">Como Rodar & Testar</a> •
+  <a href="#-operação-produção-e-migrações-sql">Produção & SQL</a>
 </p>
 
 </div>
@@ -63,296 +34,127 @@
 
 ## ✨ Sobre o Projeto
 
-O **Spa Panaceia** é a aplicação web completa desenvolvida para o **TCC de Ciência de Dados** (`tcc-ciencia-de-dados`), desenhada para ir muito além de um site institucional: ela integra **experiência de cliente (PWA + tema Claro/Escuro + IA)** com **operações transacionais seguras em produção** para reservas, lista de espera, fidelidade, estoque, auditoria e telemetria administrativa.
+O **Spa Panaceia** nasceu no contexto de **TCC de Ciência de Dados** e evoluiu para uma plataforma web em **Flask** pronta para produção, conectando a jornada acolhedora do cliente com rotinas administrativas robustas, idempotência transacional no banco de dados e telemetria operacional em tempo real.
 
-> [!IMPORTANT]
-> **Integridade sem *split-brain* entre bancos:** o backend suporta **Supabase** (produção ativa verificada no Render) e **PostgreSQL local** (alternativa Docker/ZimaOS), tratados como bases independentes. Por padrão, `DATABASE_FAILOVER_ENABLED=false` impede gravações silenciosas e divergentes caso um banco fique indisponível.
-
-> [!TIP]
-> **Código legível + ativos otimizados:** os arquivos-fonte (`database/servicos.html`, `templates/*.html`, `static/css/*.css`, `static/js/*.js`) permanecem limpos para edição e geram cópias minificadas `.min.*` via `scripts/build_frontend.py` com zero minificador em runtime.
-
----
-
-## 🚀 Funcionalidades
-
-<table width="100%">
-  <tr>
-    <td width="50%" valign="top">
-
-### 🪷 Experiência do Cliente (Web & PWA)
-- **Catálogo Interativo & Microinterações:** apresentação fluida dos tratamentos com alternância de tema Claro/Escuro, animações sutis e carregamento otimizado (`/api/servicos`).
-- **Favoritos & Repetir Agendamento:** marque tratamentos preferidos (`/api/favoritos`) e refaça reservas anteriores com um clique.
-- **Agendamento Inteligente:** calendário `Flatpickr`, verificação em tempo real de horários ocupados/bloqueados (`/api/horarios-ocupados`) e sincronia com relógio oficial (`/api/relogio`).
-- **Avaliações Pós-Atendimento:** clientes avaliam sessões concluídas em `/api/agendamentos/<id>/avaliar`.
-- **PWA Instalável & LGPD:** manifesto `/manifest.webmanifest`, service worker `/spa-sw.js`, política em `/privacidade` e exportação dos próprios dados (`/api/privacidade/exportar`).
-
-    </td>
-    <td width="50%" valign="top">
-
-### 📊 Gestão Executiva & Operação
-- **Dashboard Analítico (`/api/admin/analytics`):** KPIs por período (`30d` ou janela personalizada), receita por tratamento e acompanhamento operacional.
-- **Gestão Completa de Agenda & Bloqueios:** painel administrativo (`/api/admin/agendamentos`), bloqueio/desbloqueio de horários (`/api/admin/bloqueios`) e histórico de alterações (`agenda_auditoria`).
-- **Conclusão Transacional & Vouchers:** baixa segura de reservas (`/api/admin/agendamentos/<id>/concluir`) e validação de vouchers no balcão (`/api/admin/vouchers/utilizar`).
-- **Estoque Atômico & Idempotente:** controle de entradas/saídas protegido contra cliques duplos e timeouts (`PUT /api/estoque/<id>/movimentar`).
-- **Conversor Desktop CSV → XLSX:** utilitário auxiliar em [`dashboards/interface.py`](dashboards/interface.py) para estilização automática de planilhas com `OpenPyXL`.
-
-    </td>
-  </tr>
-  <tr>
-    <td width="50%" valign="top">
-
-### 💎 Fidelidade, Automação & Concierge IA
-- **Clube de Fidelidade Real:** crédito automático e atômico de **`trunc(valor / 10)` pontos** ao concluir um atendimento, sem depender de cálculo vindo do navegador.
-- **Resgate de Vouchers:** acompanhamento de saldo (`/api/usuario/pontos`), catálogo de recompensas (`/api/fidelidade`) e emissão em `/api/fidelidade/resgatar`.
-- **Lista de Espera + Brevo API:** interessados em horários lotados entram em fila (`/api/lista-espera`) e são avisados por e-mail quando surge uma vaga.
-- **Limpeza Automática (`pg_cron`):** rotina a cada 15 minutos no Supabase cancela reservas pendentes vencidas com registro automático na auditoria.
-- **Concierge Virtual com IA (`/api/chat`):** atendimento consultivo em português via **OpenAI (`gpt-4.1-mini`)** com **fallback local automático**.
-
-    </td>
-    <td width="50%" valign="top">
-
-### 🎯 Defesa Ativa & Telemetria em Tempo Real
-- **Hardening de Conta & Sessão:** OTP protegido por **HMAC-SHA256**, tokens assinados com expiração persistente no banco e invalidação global via `sessao_versao`.
-- **Anti-Scanner & Quarentena Imediata:** bloqueio automático instantâneo para *probes* conhecidos e User-Agents ofensivos com trilha em log estruturado.
-- **Proxy Confiável & Cloudflare:** leitura segura de IP real via `CF-Connecting-IP` restrita a `TRUSTED_PROXY_IPS`, filtro opcional por país (`CF-IPCountry`) e bloqueio por CIDR.
-- **CSP Estrita + Zero Inline:** scripts autorizados exclusivamente por **`nonce` dinâmico**, sem `eval` e sem atributos HTML `on*=`.
-- **Alertas Instantâneos no Telegram:** notificações operacionais de boot, logins (com IP/origem e dispositivo), estoque, contas, fidelidade, avaliações, LGPD e incidentes.
-
-    </td>
-  </tr>
-</table>
-
----
-
-## 🔒 Engenharia e Segurança
-
-<details open>
-<summary><strong>4 Diferenciais de Engenharia Aplicados no Código</strong></summary>
-
-1. **Agenda à prova de concorrência (`pg_advisory_xact_lock` + Triggers bidirecionais):**
-   reservas simultâneas e bloqueios administrativos adquirem o mesmo lock transacional por timestamp e respeitam o índice único parcial `uq_agendamentos_horario_ativo`, impedindo duas reservas ativas ou reserva em horário bloqueado.
-2. **Estoque imune a duplo clique e falha de rede (`operacao_id` UUID):**
-   o navegador mantém a mesma chave UUID até conclusão definitiva; a RPC `movimentar_estoque` registra o resultado na tabela `estoque_movimentacoes` na mesma transação do saldo e recusa reutilização divergente ou saldo negativo (`CHECK (quantidade >= 0)`).
-3. **Frontend CSP-Safe validado por testes automatizados:**
-   ações interativas usam despachante declarativo (`data-onclick`) validado por `tests/csp-declarative-events.test.js` tanto nos fontes quanto nas builds `.min.html`.
-4. **Central de Alertas no Telegram + IP Real Cloudflare:**
-   `cadastro_interface.py` captura o endereço real via proxy confiável, identifica origem/dispositivo e dispara notificações para **Boot do Servidor**, **Logins**, **Cadastro/Contas**, **Estoque**, **Fidelidade/Vouchers**, **Avaliações**, **Exportações LGPD** e **Quarentena de Segurança**.
-
-</details>
-
----
-
-## 🧩 Arquitetura e Diagramas
-
-### 1. Arquitetura em Camadas e Integrações
-
-```mermaid
-flowchart TB
-    subgraph EDGE["Borda, Cliente & Observabilidade"]
-        U["Navegador / PWA (servicos.html & Templates CSP Nonce)"]
-        CF["Cloudflare / Proxy Confiavel (CF-Connecting-IP & CF-IPCountry)"]
-        TG["Telegram Bot (Alertas Boot, Login, Estoque & Seguranca)"]
-    end
-
-    subgraph APP["Backend Flask + Gunicorn (1 Worker / 8 Threads)"]
-        ENTRY["app.py -> database/cadastro_interface.py"]
-        SEC["database/spa_security.py (HMAC-OTP, Rate Limit, Quarantine, Recovery)"]
-        STORE["database/postgres_store.py & database/conexao.py"]
-    end
-
-    subgraph DATA["Dados & Servicos Externos"]
-        SB[("Supabase Postgres (Ativo Producao: RLS & pg_cron)")]
-        PG[("PostgreSQL Local (Alternativa Docker / ZimaOS)")]
-        AI["OpenAI API (gpt-4.1-mini + Fallback Local)"]
-        BR["Brevo API (OTP, Recuperacao & Lista de Espera)"]
-    end
-
-    U --> CF --> ENTRY
-    ENTRY <--> SEC
-    ENTRY <--> STORE
-    STORE -->|"DATABASE_PRIMARY=supabase"| SB
-    STORE -.->|"DATABASE_PRIMARY=postgres"| PG
-    ENTRY --> AI
-    ENTRY --> BR
-    ENTRY --> TG
-```
-
-### 2. Fluxo Transacional: Reserva, Lista de Espera e Conclusão com Pontos
-
-```mermaid
-sequenceDiagram
-    actor C as Cliente
-    participant API as Flask + SecurityTools
-    participant DB as Banco (Supabase / Postgres)
-    participant BR as Brevo E-mail
-    participant TG as Telegram Bot
-
-    C->>API: POST /api/agendar (servico_id, data_atendimento + CSRF)
-    API->>DB: Lock transacional + trigger verificar_bloqueio_ao_reservar()
-    alt Horario livre
-        DB-->>API: Agendamento criado (Pendente)
-        API-->>C: 201 Reserva confirmada
-    else Horario ja reservado ou bloqueado
-        DB-->>API: ERRCODE P0001 (AGENDA_RESERVADA / AGENDA_BLOQUEADA)
-        API-->>C: Conflito -> Cliente pode entrar em /api/lista-espera
-    end
-
-    Note over C,BR: Se outra reserva for cancelada, a fila em agenda_lista_espera dispara aviso via Brevo
-
-    actor A as Admin
-    A->>API: POST /api/admin/agendamentos/{id}/concluir
-    API->>DB: RPC concluir_agendamento_creditar_pontos() (FOR UPDATE)
-    DB-->>API: Status = Concluido + trunc(valor / 10) pontos creditados
-    API->>TG: Notificacao operacional de atendimento / fidelidade
-    API-->>A: 200 Concluido com saldo atualizado
-```
-
-### 3. Modelo Entidade-Relacionamento (`erDiagram`)
-
-```mermaid
-erDiagram
-    USUARIOS ||--o{ AGENDAMENTOS : realiza
-    SERVICO ||--o{ AGENDAMENTOS : compoe
-    AGENDAMENTOS ||--o{ AGENDA_AUDITORIA : registra
-    USUARIOS ||--o{ AGENDA_LISTA_ESPERA : aguarda
-    SERVICO ||--o{ AGENDA_LISTA_ESPERA : solicita
-    USUARIOS ||--o{ RESGATES_PONTOS : resgata
-    USUARIOS ||--o{ SERVICOS_FAVORITOS : favorita
-    SERVICO ||--o{ SERVICOS_FAVORITOS : marcado_em
-    ESTOQUE ||--o{ ESTOQUE_MOVIMENTACOES : audita
-
-    USUARIOS {
-        text email PK
-        text nome
-        integer pontos
-        text role
-        integer sessao_versao
-    }
-    SERVICO {
-        bigint id PK
-        text tipo
-        numeric valor
-        integer agendamentos
-    }
-    AGENDAMENTOS {
-        bigint id PK
-        text email_cliente FK
-        bigint servico_id FK
-        timestamp data_atendimento
-        text status
-        integer avaliacao
-    }
-    AGENDA_BLOQUEIOS {
-        bigint id PK
-        timestamp data_atendimento UK
-        text motivo
-        text criado_por
-    }
-    AGENDA_LISTA_ESPERA {
-        bigint id PK
-        text email_cliente FK
-        bigint servico_id FK
-        timestamp data_atendimento
-        text status
-    }
-    AGENDA_AUDITORIA {
-        bigint id PK
-        bigint agendamento_id FK
-        text ator_email
-        text ator_tipo
-        text acao
-    }
-    RESGATES_PONTOS {
-        bigint id PK
-        text email_cliente FK
-        text codigo_voucher
-        integer pontos
-        text status
-    }
-    SERVICOS_FAVORITOS {
-        bigint id PK
-        text email_cliente FK
-        bigint servico_id FK
-    }
-    ESTOQUE {
-        bigint id PK
-        text nome
-        integer quantidade
-        integer quantidade_minima
-        text unidade
-    }
-    ESTOQUE_MOVIMENTACOES {
-        uuid operacao_id PK
-        bigint item_id FK
-        integer delta
-        jsonb resultado
-    }
-```
-
----
-
-## 📦 Stack e Estrutura
-
-| Camada | Tecnologias Verificadas |
+| Experiência do Cliente | Gestão, Dados & Engenharia |
 | :--- | :--- |
-| **Backend & Runtime** | Python `3.12`, Flask `3.1.0`, Gunicorn `23.0.0`, `Werkzeug 3.1.3`, `flask-cors 5.0.0`, `python-dotenv 1.1.1` |
-| **Dados & Analytics** | Supabase (`supabase==2.31.0`), PostgreSQL (`psycopg2-binary==2.9.11`), `pandas 3.0.3`, `numpy 2.4.6`, `openpyxl 3.1.5` |
-| **IA & Mensageria** | OpenAI (`openai==1.61.1`, modelo padrão `gpt-4.1-mini`), Brevo API (`requests==2.34.2`), Telegram Bot API |
-| **Frontend & PWA** | HTML5 + CSS3 + JS CSP-safe (`nonce`), `Inter` & `Manrope`, `Flatpickr 4.6.13` (SRI), Service Worker & Manifest PWA |
-| **Build & Qualidade** | `minify-html==0.18.1`, `unittest` (`49` testes Python), `node:test` (`19` testes JS), Docker (`python:3.12-slim`), `Procfile` |
+| Catálogo responsivo de tratamentos com **tema Claro/Escuro**, favoritos e animações suaves | **Dashboard Analítico** (`/api/admin/analytics`) com filtros por período e indicadores financeiros |
+| **Agendamento inteligente** com calendário (`Flatpickr`), bloqueio anti-duplicidade e **lista de espera** | **Controle de Estoque Atômico & Idempotente** via `operacao_id` UUID (prevenção de baixa duplicada) |
+| **Clube de Fidelidade** (`1 ponto a cada R$ 10` em atendimentos concluídos) + resgate de **vouchers** | **Auditoria completa de agenda** (`agenda_auditoria`), bloqueio de horários e cancelamento via `pg_cron` |
+| **Concierge Virtual** com OpenAI (`gpt-4.1-mini`) + fallback local determinístico | **Hardening Web & Edge**: CSP com `nonce`, `TRUSTED_HOSTS`, Cloudflare IP real, HMAC-OTP e alertas no Telegram |
+| **PWA instalável** (`/manifest.webmanifest`, `/spa-sw.js`) + portal de **Privacidade & LGPD** | **Banco flexível**: operação nativa com **Supabase** ou **PostgreSQL local** (Docker/ZimaOS), sem failover silencioso |
 
-<details>
-<summary><strong>Árvore completa de arquivos do repositório</strong></summary>
+---
+
+## 🚀 Funcionalidades Principais
+
+### 🪷 Portal do Cliente
+- **Catálogo de Serviços & Favoritos:** listagem dinâmica via `/api/servicos`, salvamento de tratamentos favoritos (`/api/favoritos`) e atalho de **repetir agendamento**.
+- **Agendamento em Tempo Real:** seleção de data/hora com verificação instantânea de disponibilidade (`/api/horarios-ocupados`) e sincronização de relógio do servidor (`/api/relogio`).
+- **Lista de Espera Automática:** se o horário estiver ocupado, o cliente entra na fila (`/api/lista-espera`) e recebe aviso por e-mail (Brevo) caso uma vaga seja liberada.
+- **Clube de Fidelidade & Vouchers:** acompanhamento de saldo (`/api/usuario/pontos`), recompensas disponíveis (`/api/fidelidade`) e emissão/resgate de vouchers.
+- **Avaliações Pós-Atendimento:** registro de feedback e nota para sessões concluídas (`/api/agendamentos/<id>/avaliar`).
+- **Concierge Virtual com IA:** atendimento conversacional em `/api/chat` usando a API da OpenAI, com **fallback local automático** para manter o chat funcional mesmo sem chave externa configurada.
+- **Privacidade & LGPD:** página dedicada em `/privacidade`, banner informativo não invasivo e exportação dos próprios dados pelo usuário em `/api/privacidade/exportar`.
+
+### 🛠️ Painel Administrativo & Dados
+- **Dashboard Analítico (`/api/admin/analytics`):** consolidação de agendamentos, receita e desempenho por serviço em janelas configuráveis (ex.: `30d` ou intervalo personalizado).
+- **Agenda, Bloqueios & Auditoria:** visualização geral (`/api/admin/agendamentos`), criação/remoção de bloqueios de horários (`/api/admin/bloqueios`), histórico detalhado por reserva (`/api/admin/agendamentos/<id>/historico`) e conclusão transacional com crédito de pontos (`/api/admin/agendamentos/<id>/concluir`).
+- **Baixa de Vouchers & Usuários:** validação/utilização de vouchers no balcão (`/api/admin/vouchers/utilizar`) e consulta administrativa de clientes (`/api/admin/usuarios`).
+- **Estoque Seguro (`PUT /api/estoque/<id>/movimentar`):** movimentações protegidas contra cliques repetidos e timeouts de rede por chave de idempotência UUID e trava `CHECK (quantidade >= 0)`.
+- **Utilitário Desktop de Planilhas (`dashboards/interface.py`):** ferramenta auxiliar em Python (`pandas` + `openpyxl` + `tkinter`) para converter exports CSV em planilhas Excel formatadas automaticamente.
+
+---
+
+## 🏗️ Arquitetura e Fluxo
+
+> **Regra de integridade de dados:** **Supabase** e **PostgreSQL local** são tratados como bancos independentes (não há replicação automática entre eles). Por padrão, `DATABASE_FAILOVER_ENABLED=false` garante que não ocorram gravações divergentes caso o banco primário fique indisponível.
+
+```mermaid
+flowchart LR
+    U["Cliente / Admin (Web & PWA)"] --> CF["Cloudflare / Proxy Confiavel (CF-Connecting-IP)"]
+    CF --> APP["Flask + Gunicorn (app.py & cadastro_interface.py)"]
+    APP --> SEC["Hardening & Auth (spa_security.py)"]
+    APP --> STORE["Camada de Persistencia (postgres_store.py / conexao.py)"]
+    STORE -->|"Primario Producao"| SB[("Supabase + RLS + pg_cron")]
+    STORE -.->|"Alternativa Docker/ZimaOS"| PG[("PostgreSQL Local")]
+    APP --> AI["Concierge IA (OpenAI + Fallback Local)"]
+    APP --> MAIL["Notificacoes E-mail (Brevo API)"]
+    APP --> TG["Alertas Seguranca & Boot (Telegram Bot)"]
+```
+
+---
+
+## 🛡️ Segurança e Confiabilidade
+
+| Camada | Mecanismo Implementado | Detalhes Técnicos |
+| :--- | :--- | :--- |
+| **Autenticação & OTP** | `SecurityTools` (`database/spa_security.py`) | Códigos OTP com **HMAC-SHA256**, tokens de recuperação assinados (`URLSafeTimedSerializer`) com expiração persistente no banco e versionamento de sessão (`sessao_versao`) |
+| **Anti-Abuso & Borda** | Rate limit + auto-quarentena + Cloudflare | Bloqueio automático imediato de scanners/User-Agents ofensivos (`seguranca.jsonl`), validação estrita de `TRUSTED_HOSTS`, suporte a `TRUSTED_PROXY_IPS`, `BLOCKED_IP_CIDRS` e `ALLOWED_COUNTRIES` |
+| **CSP & Sessão Web** | Headers de segurança + cookies protegidos | Scripts inline protegidos por **`nonce` dinâmico** sem `on*=` inline em HTML, `SESSION_COOKIE_SECURE=true`, `SameSite=Lax`, HSTS e anti-CSRF |
+| **Integridade na Agenda** | Advisory Locks + Triggers + `pg_cron` | `pg_advisory_xact_lock` + índice único `uq_agendamentos_horario_ativo` impedem reservas concorrentes; job `pg_cron` a cada 15 min cancela pendências vencidas com auditoria |
+| **Integridade no Estoque** | Idempotência transacional | RPC `movimentar_estoque` grava `operacao_id` UUID e atualiza saldo na mesma transação (`FOR UPDATE`), barrando saldo negativo via constraint |
+| **Observabilidade** | Telegram + Healthcheck JSON | Notificações instantâneas no Telegram em eventos de boot, logins e incidentes de segurança + monitoramento em `/api/health` |
+
+---
+
+## 🧰 Stack e Estrutura do Repositório
+
+### Tecnologias Utilizadas
+- **Backend:** Python `3.12`, Flask `3.1.0`, Gunicorn `23.0.0`, `flask-cors`, `python-dotenv`, `Werkzeug`
+- **Banco & Dados:** PostgreSQL (`psycopg2-binary`), Supabase (`supabase==2.31.0`), Pandas `3.0.3`, NumPy `2.4.6`, OpenPyXL `3.1.5`
+- **Integrações:** OpenAI (`openai==1.61.1`), Brevo API (`requests`), Telegram Bot API
+- **Frontend:** HTML5, CSS3, JavaScript modularizado com build otimizado via `minify-html` (`scripts/build_frontend.py`), Google Fonts (`Inter` & `Manrope`), `Flatpickr`, Manifest & Service Worker (PWA)
+- **Testes & Infra:** Python `unittest`, Node.js `node:test`, Docker (`python:3.12-slim`), `Procfile` (Render)
+
+### Estrutura do Projeto
 
 ```text
 projeto-site/
-├── app.py                              # Entrypoint único Gunicorn/Flask (app:app)
+├── app.py                              # Ponto de entrada único Gunicorn/Flask (app:app)
 ├── database/
-│   ├── cadastro_interface.py           # Rotas web, API cliente/admin, analytics, segurança e Telegram
-│   ├── spa_security.py                 # HMAC-OTP, tokens de recuperação, sessões e quarentena anti-scanner
-│   ├── postgres_store.py / conexao.py  # Persistência PostgreSQL local & cliente Supabase
-│   ├── multiplos_usuarios.py           # Rotinas operacionais multiusuário
-│   ├── servicos.html / .min.html       # Portal principal do Spa (catálogo, agenda, clube, painel admin)
+│   ├── cadastro_interface.py           # Núcleo Flask: rotas web, API cliente/admin, segurança e Telegram
+│   ├── spa_security.py                 # Criptografia HMAC-OTP, tokens de recuperação e rate limiting
+│   ├── postgres_store.py / conexao.py  # Adaptador PostgreSQL local e cliente Supabase
+│   ├── multiplos_usuarios.py           # Suporte operacional multiusuário
+│   ├── servicos.html / .min.html       # Portal principal do Spa (catálogo, agenda, fidelidade, admin)
 │   └── index.html
-├── templates/                          # index, privacidade, 404 (+ cópias .min.html)
+├── templates/                          # index, privacidade, 404 (+ versões .min.html)
 ├── static/
 │   ├── css/                            # privacy-notice.css / .min.css
-│   ├── js/                             # privacy-notice.js, registration.js (+ cópias .min.js)
-│   └── img/                            # logo_panaceia.png
+│   ├── js/                             # privacy-notice.js, registration.js (+ versões .min.js)
+│   └── img/                            # Identidade visual (logo_panaceia.png)
 ├── scripts/
-│   └── build_frontend.py               # Minifica HTML/CSS/JS mantendo os fontes legíveis
+│   └── build_frontend.py               # Gera ativos .min.html, .min.css e .min.js mantendo fontes legíveis
 ├── migrations/
-│   └── 001_security_hardening.sql      # Expiração e contagem persistentes de OTP/recuperação + sessao_versao
+│   └── 001_security_hardening.sql      # Migração idempotente de expiração/tentativas OTP e sessão
 ├── dashboards/
-│   └── interface.py                    # Utilitário desktop Tkinter + OpenPyXL (CSV -> XLSX estilizado)
-├── tests/                              # 49 testes Python (unittest) + 19 testes JS (node:test)
-├── Dockerfile & Procfile               # Container não-root (usuário spa, porta 5000) e comando Render
+│   └── interface.py                    # Utilitário desktop (Tkinter + OpenPyXL) para CSV → XLSX formatado
+├── tests/                              # Suítes de teste Python (unittest) e JavaScript (node:test / CSP)
+├── Dockerfile & Procfile               # Empacotamento Docker (porta 5000) e deploy Render (1 worker / 8 threads)
 ├── requirements.txt                    # Dependências de runtime
-└── requirements-build.txt              # Dependência isolada de build frontend
+└── requirements-build.txt              # Dependência isolada de build frontend (minify-html)
 ```
 
-</details>
-
 ---
 
-## 📡 Endpoints da API
+## 📡 Principais Endpoints da API
 
-| Grupo | Rotas Principais | Finalidade |
+| Categoria | Rota | Descrição |
 | :--- | :--- | :--- |
-| **Público, SEO & PWA** | `GET /`, `/cadastro`, `/privacidade`, `/robots.txt`, `/sitemap.xml`, `/api/health`, `/manifest.webmanifest`, `/spa-sw.js`, `/app-icon.svg` | Portal principal, diagnóstico de saúde/banco/Telegram, SEO canônico e suporte PWA |
-| **Catálogo & Agenda** | `GET /api/servicos`, `GET /api/horarios-ocupados`, `GET /api/relogio` | Listagem de tratamentos, disponibilidade em tempo real e hora oficial |
-| **Conta & Segurança** | `POST /cadastrar`, `/api/validar-codigo`, `/api/reenviar-codigo`, `/api/login`, `/api/logout`, `/api/esqueci-senha`, `/api/redefinir-senha`, `GET /api/me` | Cadastro com OTP por e-mail, login, recuperação assinada e controle de sessão |
-| **Área do Cliente** | `POST /api/agendar`, `GET /api/meus-agendamentos`, `PUT/DELETE /api/agendamentos/<id>`, `POST .../avaliar`, `GET/POST/DELETE /api/lista-espera`, `GET/POST/DELETE /api/favoritos/<id>` | Reservas, remarcação/cancelamento, avaliações, espera e favoritos |
-| **Fidelidade, IA & LGPD** | `GET /api/usuario/pontos`, `GET /api/fidelidade`, `POST /api/fidelidade/resgatar`, `GET /api/privacidade/exportar`, `POST /api/chat` | Pontuação, vouchers, exportação de dados do titular e Concierge IA |
-| **Administração** | `GET /api/admin/agendamentos`, `GET /api/admin/analytics`, `GET/POST/DELETE /api/admin/bloqueios`, `GET /api/admin/agendamentos/<id>/historico`, `POST .../concluir`, `POST /api/admin/vouchers/utilizar`, `GET /api/admin/usuarios`, `GET/POST /api/estoque`, `PUT /api/estoque/<id>/movimentar`, `DELETE /api/estoque/<id>` | Gestão completa da agenda, analytics, conclusão transacional, vouchers e estoque |
+| **Público & PWA** | `GET /`, `/cadastro`, `/privacidade`, `/api/servicos`, `/api/horarios-ocupados`, `/api/relogio`, `/manifest.webmanifest`, `/spa-sw.js` | Páginas, catálogo, horários livres, relógio oficial e manifesto PWA |
+| **Diagnóstico & SEO** | `GET /api/health`, `/robots.txt`, `/sitemap.xml` | Status do banco ativo, restrições de agenda, status do Telegram e SEO canônico |
+| **Autenticação** | `POST /cadastrar`, `/api/validar-codigo`, `/api/reenviar-codigo`, `/api/login`, `/api/logout`, `/api/esqueci-senha`, `/api/redefinir-senha`, `GET /api/me` | Fluxo completo de conta, OTP por e-mail, sessão segura e recuperação de senha |
+| **Cliente** | `POST /api/agendar`, `GET /api/meus-agendamentos`, `PUT/DELETE /api/agendamentos/<id>`, `POST .../avaliar`, `GET/POST/DELETE /api/lista-espera`, `GET/POST/DELETE /api/favoritos/<id>`, `GET /api/fidelidade`, `POST /api/fidelidade/resgatar`, `GET /api/usuario/pontos`, `GET /api/privacidade/exportar`, `POST /api/chat` | Reservas, avaliações, espera, favoritos, pontos/vouchers, LGPD e Concierge IA |
+| **Administração** | `GET /api/admin/agendamentos`, `GET /api/admin/analytics`, `GET/POST/DELETE /api/admin/bloqueios`, `GET /api/admin/agendamentos/<id>/historico`, `POST /api/admin/agendamentos/<id>/concluir`, `POST /api/admin/vouchers/utilizar`, `GET /api/admin/usuarios`, `GET/POST /api/estoque`, `PUT /api/estoque/<id>/movimentar`, `DELETE /api/estoque/<id>` | Gestão executiva, analytics, agenda, créditos transacionais, vouchers e estoque atômico |
 
 ---
 
-## ⚡ Como Executar e Testar
+## 💻 Como Executar e Testar
 
-### 1. Rodar Localmente (Desenvolvimento)
+### 1. Desenvolvimento Local
 
-> Configure antes um banco válido (`DB_*` para PostgreSQL local **ou** `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY`). Em HTTP local sem TLS, mantenha `APP_ENV=development` e `SESSION_COOKIE_SECURE=false`.
+> Exige configurar ao menos um banco (`DB_*` para PostgreSQL local **ou** `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY`). Em HTTP local sem TLS, defina `APP_ENV=development` e `SESSION_COOKIE_SECURE=false`.
 
 ```powershell
 python -m pip install -r requirements.txt
@@ -361,26 +163,26 @@ $env:SESSION_COOKIE_SECURE = "false"
 python app.py
 ```
 
-### 2. Recompilar Ativos Minificados (Frontend)
+### 2. Gerar Ativos Minificados do Frontend (após editar HTML/CSS/JS)
 
-Sempre que editar arquivos em `database/servicos.html`, `templates/` ou `static/`, regenere e versionamento as cópias `.min.*`:
+Os arquivos-fonte permanecem legíveis; gere as versões `.min.*` e versione ambos em conjunto:
 
 ```bash
 python -m pip install -r requirements-build.txt
 python scripts/build_frontend.py
 ```
 
-### 3. Executar a Suíte Completa (68 Testes)
+### 3. Executar as Suítes de Teste
 
 ```bash
-# 49 testes Python (rotas públicas, segurança, projeção PostgreSQL, contratos e validação de estoque)
+# Testes Python (rotas, projeção PostgreSQL, contratos de estoque, auditoria de segurança)
 python -m unittest discover -s tests -p "test_*.py"
 
-# 19 testes Node.js (CSP sem inline handlers, cadastro, perfil paralelo e idempotência de estoque)
+# Testes JavaScript (CSP sem inline handlers, registro, perfil paralelo, idempotência de estoque)
 node --test tests/*.test.js
 ```
 
-### 4. Subir com Docker
+### 4. Container Docker (Alternativa Local / ZimaOS)
 
 ```bash
 docker build -t spa-panaceia .
@@ -389,28 +191,31 @@ docker run -d --name panaceia-spa --restart unless-stopped -p 5000:5000 --env-fi
 
 ---
 
-## 📚 Produção e SQL
+## 📚 Operação, Produção e Migrações SQL
 
-Todo o detalhamento operacional de produção (Render + Supabase), alternativa Docker/ZimaOS e scripts SQL completos com triggers, locks e `pg_cron` está organizado abaixo:
+Os detalhes completos de infraestrutura, variáveis de ambiente, estado verificado de deploy, rotinas de atualização no ZimaOS e scripts SQL transacionais do Supabase ficam organizados abaixo para consulta rápida:
 
 <details>
-<summary><strong>1. Estado do Deploy Verificado & Regras dos Dois Bancos</strong></summary>
+<summary><strong>1. Arquitetura de Produção & Estado do Deploy Verificado</strong></summary>
 
-- **Deploy ativo verificado:** Render com Flask servido por Gunicorn (`Procfile`: 1 worker e 8 threads).
-- **Banco primário em produção:** Supabase (`DATABASE_PRIMARY=supabase`, `DATABASE_FAILOVER_ENABLED=false`).
-- **PostgreSQL local em Docker/ZimaOS:** alternativa operacional documentada; os dois bancos não são réplicas e não possuem sincronização automática.
-- **Verificação pública pré-publicação em 07/10/2026:**
-  - `https://spa-panaceia.onrender.com/` respondeu HTTP `200` com TLS válido e healthcheck confirmando Supabase ativo.
-  - `https://spapanaceia.com.br/` e `https://www.spapanaceia.com.br/` retornaram HTTP `530` do Cloudflare na ocasião (TLS até a borda válido; origem própria dependente de revisão de DNS/Cloudflare).
-  - `https://panaceia.onrender.com/` refere-se a um serviço separado (`PANACEIA`), não ao serviço `Spa Panaceia`.
-- **SEO & Privacidade:** `PUBLIC_SITE_URL` só emite canonical, `og:url` e sitemap quando a URL HTTPS aponta para um host confiável pelo backend (caso contrário `/sitemap.xml` responde `503` deliberadamente). Analytics permanece desativado por padrão.
+- **Deploy ativo verificado:** Render, com aplicação Flask servida via Gunicorn (`Procfile` com `--workers 1 --threads 8 --timeout 60`).
+- **Banco ativo confirmado:** Supabase (`DATABASE_PRIMARY=supabase`, `DATABASE_FAILOVER_ENABLED=false`).
+- **PostgreSQL local em Docker/ZimaOS:** alternativa operacional documentada via `Dockerfile`; os dois bancos são independentes e não possuem sincronização automática (mantenha `DATABASE_FAILOVER_ENABLED=false` sem um plano testado de reconciliação).
+- **Verificação pública pré-publicação registrada em 07/10/2026:**
+  - `https://spa-panaceia.onrender.com/` respondeu HTTP `200` com TLS válido; healthcheck apontou Supabase como banco ativo.
+  - `https://spapanaceia.com.br/` e `https://www.spapanaceia.com.br/` responderam HTTP `530` do Cloudflare na ocasião (TLS de borda válido; origem própria pendente de conferência após ajustes de DNS/origem).
+  - `https://panaceia.onrender.com/` refere-se a um serviço separado chamado `PANACEIA`, não ao serviço `Spa Panaceia`.
+- **Ativos, SEO & Privacidade:**
+  - Página principal servida de `database/servicos.html`; templates em `templates/`; logo e favicon SVG leve nativo em `/app-icon.svg`.
+  - Analytics desativado por padrão; o aviso em `/privacidade` documenta armazenamento funcional e pontos que dependem de definição humana.
+  - `PUBLIC_SITE_URL` só emite canonical/`og:url`/sitemap quando a URL HTTPS corresponde a um host confiável pelo backend (sem ela, `/sitemap.xml` retorna `503` intencionalmente).
 
 </details>
 
 <details>
-<summary><strong>2. Variáveis de Ambiente (.env) & Hardening de Proxy Cloudflare</strong></summary>
+<summary><strong>2. Modelo de Variáveis de Ambiente (.env) & Regras de Proxy</strong></summary>
 
-No Render, configure `DATABASE_PRIMARY=supabase`, `DATABASE_FAILOVER_ENABLED=false`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` e `FLASK_SECRET_KEY` diretamente nas variáveis de ambiente do serviço. O exemplo abaixo representa a configuração para a alternativa local/Docker com `database.env` fora do Git — **nunca insira segredos reais no repositório**:
+No Render, configure diretamente no ambiente do serviço (`DATABASE_PRIMARY=supabase`, `DATABASE_FAILOVER_ENABLED=false`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `FLASK_SECRET_KEY`). O exemplo abaixo ilustra a alternativa Docker/ZimaOS com PostgreSQL local — **nunca coloque segredos reais no Git ou neste README**:
 
 ```env
 APP_ENV=production
@@ -425,7 +230,7 @@ DB_CONNECT_TIMEOUT=10
 DB_POOL_MIN=1
 DB_POOL_MAX=10
 
-# Banco principal e cooldown antes de testar novamente um banco offline.
+# Banco principal e tempo de espera antes de testar novamente um banco offline.
 DATABASE_PRIMARY=postgres
 DATABASE_FAILOVER_ENABLED=false
 DB_FAILOVER_COOLDOWN_SECONDS=60
@@ -465,19 +270,20 @@ OPENAI_MODEL=gpt-4.1-mini
 LOG_LEVEL=INFO
 ```
 
-**Regras operacionais de proxy & segurança:**
-- O backend **não** usa chave `anon`/publicável como credencial do servidor (`SUPABASE_SERVICE_ROLE_KEY` apenas; o nome legado `service_role` ainda é aceito temporariamente).
-- `CF-Connecting-IP` só é aceito quando `REMOTE_ADDR` pertence a `TRUSTED_PROXY_IPS` ([faixas oficiais Cloudflare](https://developers.cloudflare.com/fundamentals/concepts/cloudflare-ip-addresses/)).
-- `TRUSTED_HOSTS` recusa qualquer `Host` fora da lista com HTTP `400`.
-- `ALLOWED_COUNTRIES=BR` exige `CF-IPCountry` no Cloudflare atrás de proxy confiável; `TRUSTED_VPN_HEADER` depende de regra de proxy/WAF.
-- Como rate limiting e bloqueio adaptativo operam na memória do único worker Gunicorn, mantenha proteção de WAF/limite de requisições também na borda.
+**Regras operacionais de proxy e failover:**
+- Nunca utilize chave `anon`/publicável no backend; use exclusivamente `SUPABASE_SERVICE_ROLE_KEY`.
+- `TRUSTED_PROXY_IP_HEADER` (`CF-Connecting-IP`) só é aceito quando `REMOTE_ADDR` pertence a `TRUSTED_PROXY_IPS` ([faixas oficiais Cloudflare](https://developers.cloudflare.com/fundamentals/concepts/cloudflare-ip-addresses/)).
+- `TRUSTED_HOSTS` rejeita `Host` não listado com HTTP `400`. Para testes HTTP locais em IP privado, use `APP_ENV=development` isoladamente.
+- `ALLOWED_COUNTRIES=BR` exige `CF-IPCountry` habilitado no Cloudflare atrás de proxy confiável; `TRUSTED_VPN_HEADER` depende de regra de WAF/proxy configurada.
+- Bloqueios adaptativos e limites de login residem na memória do único worker Gunicorn: mantenha WAF/rate limiting também na borda.
+- **Comportamento entre os dois bancos:** leituras com falha de conexão podem tentar contingência apenas se `DATABASE_FAILOVER_ENABLED=true`; gravações que falharem após envio nunca são repetidas para evitar duplicidade, e erros de negócio nunca disparam failover.
 
 </details>
 
 <details>
-<summary><strong>3. Atualização & Diagnóstico em Produção no ZimaOS</strong></summary>
+<summary><strong>3. Atualização em Produção via ZimaOS (Docker)</strong></summary>
 
-Confirme que `TELEGRAM_BOT_TOKEN` e `TELEGRAM_CHAT_ID` estão no `database.env` sem `\r\n` (CRLF):
+Confirme antes que `TELEGRAM_BOT_TOKEN` e `TELEGRAM_CHAT_ID` estão presentes em `database.env` sem `\r\n` (CRLF):
 
 ```bash
 cd /DATA/AppData/projetos/tcc-ciencia-de-dados && git stash && git pull origin main && sudo docker --config /DATA/.docker image build --no-cache -t tcc-panaceia . && (sudo docker stop panaceia-spa; sudo docker rm panaceia-spa) && sudo docker run -d --name panaceia-spa --restart unless-stopped -p 5000:5000 --env-file /DATA/AppData/projetos/tcc-ciencia-de-dados/database.env tcc-panaceia
@@ -490,14 +296,14 @@ curl -fsS http://127.0.0.1:5000/api/health
 sudo docker logs --tail 50 panaceia-spa
 ```
 
-Saída esperada: `"telegram_configurado": true`, `INFO:spa.telegram:Notificações do Telegram configuradas` e `INFO:spa.telegram:Alerta entregue ao Telegram com sucesso`.
+Esperado no JSON e logs: `"telegram_configurado": true`, `INFO:spa.telegram:Notificações do Telegram configuradas` e `INFO:spa.telegram:Alerta entregue ao Telegram com sucesso`.
 
 </details>
 
 <details>
-<summary><strong>4. SQL — Lista de Espera, Auditoria e Bloqueio de Horários (Supabase / Postgres)</strong></summary>
+<summary><strong>4. SQL — Agenda, Lista de Espera, Auditoria e Bloqueio de Horários</strong></summary>
 
-No PostgreSQL local as tabelas são criadas no startup; no **Supabase**, execute no **SQL Editor** uma vez (RLS habilitado sem acesso para `anon`/`authenticated`):
+O PostgreSQL local cria as tabelas no startup; no **Supabase**, execute no **SQL Editor** com RLS estrito (`service_role` apenas):
 
 ```sql
 CREATE TABLE IF NOT EXISTS public.agenda_lista_espera (
@@ -541,7 +347,7 @@ GRANT ALL ON public.agenda_lista_espera, public.agenda_auditoria TO service_role
 GRANT USAGE, SELECT ON SEQUENCE public.agenda_lista_espera_id_seq, public.agenda_auditoria_id_seq TO service_role;
 ```
 
-**Bloqueio de horários e triggers bidirecionais anti-duplicidade (`pg_advisory_xact_lock`):**
+**Bloqueio de horários + triggers anti-duplicidade com advisory lock:**
 
 ```sql
 CREATE TABLE IF NOT EXISTS public.agenda_bloqueios (
@@ -637,12 +443,16 @@ GRANT ALL ON public.agenda_bloqueios TO service_role;
 GRANT USAGE, SELECT ON SEQUENCE public.agenda_bloqueios_id_seq TO service_role;
 ```
 
+> **Checagem rápida:** no PostgreSQL local, se `/api/health` retornar `"restricao_agenda": false`, verifique duplicatas (`GROUP BY data_atendimento HAVING COUNT(*) > 1`) e crie `uq_agendamentos_horario_ativo`. No Supabase, `restricao_agenda` retorna `null` (`restricao_agenda_verificavel: false`) pois a Data API não lê catálogos DDL diretamente — confira os objetos no SQL Editor.
+
 </details>
 
 <details>
-<summary><strong>5. SQL — Crédito Transacional, pg_cron de Vencidos, Estoque Atômico & Segurança (001)</strong></summary>
+<summary><strong>5. SQL — Crédito Transacional de Pontos, Cancelamento Automático (pg_cron) & Estoque Idempotente</strong></summary>
 
 #### Conclusão transacional de atendimento (`POST /api/admin/agendamentos/<id>/concluir`)
+
+Calcula `trunc(valor / 10)` a partir de `servico.valor`, soma pontos em `usuarios` e altera status para `Concluido` na mesma transação (`FOR UPDATE`):
 
 ```sql
 BEGIN;
@@ -714,7 +524,7 @@ NOTIFY pgrst, 'reload schema';
 COMMIT;
 ```
 
-#### Cancelamento automático via `pg_cron` (15 em 15 min, fuso `America/Sao_Paulo`)
+#### Cancelamento automático de pendências vencidas via `pg_cron` (a cada 15 min em `America/Sao_Paulo`)
 
 ```sql
 BEGIN;
@@ -900,25 +710,24 @@ NOTIFY pgrst, 'reload schema';
 COMMIT;
 ```
 
-> **Migração [`migrations/001_security_hardening.sql`](migrations/001_security_hardening.sql):** adiciona `token_recuperacao_expira_em`, `token_recuperacao_tentativas`, `codigo_otp_tentativas` e `sessao_versao` em `public.usuarios`. Aplicada automaticamente no PostgreSQL local no boot; no Supabase, rode uma vez no **SQL Editor**.
+> **Migração de endurecimento (`migrations/001_security_hardening.sql`):** adiciona colunas não destrutivas em `public.usuarios` (`token_recuperacao_expira_em`, `token_recuperacao_tentativas`, `codigo_otp_tentativas`, `sessao_versao`). Aplicada automaticamente no PostgreSQL local por `ensure_schema()`; no Supabase, execute o arquivo no **SQL Editor**.
 
 </details>
 
 <details>
-<summary><strong>6. Checklist de Segurança & Backups em Produção</strong></summary>
+<summary><strong>6. Checklist de Segurança & Backups</strong></summary>
 
-- [x] Nenhum segredo no README, HTML/JS ou histórico Git (`database.env` ignorado e fora da imagem Docker).
-- [x] Credenciais gerenciadas via variáveis de ambiente do Render ou `--env-file` no servidor.
-- [x] Senha forte exclusiva para usuários de banco e administrador.
-- [x] HTTPS, HSTS, CSP por `nonce` e cookies `Secure` + `SameSite=Lax`.
-- [x] Monitoramento ativo em `/api/health` e notificações em tempo real via Telegram.
-- [x] Política de backups e retenção conferida no painel do Supabase.
+- [x] Nenhum segredo incluído no README ou versionado no Git (`database.env` fora da imagem e ignorado).
+- [x] Credenciais de produção configuradas somente no ambiente do provedor (Render) ou `--env-file` no servidor.
+- [x] Senha forte e exclusiva para usuários de banco e administrador.
+- [x] HTTPS, HSTS, CSP com `nonce` e cookies `Secure` + `SameSite=Lax` ativos.
+- [x] `/api/health` e alertas do Telegram monitorados.
+- [x] Conferência periódica da política de backups e retenção no painel do Supabase.
 
 </details>
 
 ---
 
 <div align="center">
-  <p><a href="#topo">⬆️ Voltar ao topo</a></p>
-  <img src="https://capsule-render.vercel.app/api?type=waving&color=0:a855f7,50:6a11cb,100:2b065c&height=115&section=footer" alt="Rodapé Spa Panaceia" width="100%" />
+  <img src="https://capsule-render.vercel.app/api?type=waving&color=0:8b35e8,50:6a11cb,100:3d087d&height=110&section=footer" alt="Footer Spa Panaceia" width="100%" />
 </div>
